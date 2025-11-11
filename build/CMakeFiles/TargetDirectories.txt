@@ -1,0 +1,4 @@
+/mnt/d/Master/M2/Projet3D/test2/build/CMakeFiles/GLAD.dir
+/mnt/d/Master/M2/Projet3D/test2/build/CMakeFiles/projet3D.dir
+/mnt/d/Master/M2/Projet3D/test2/build/CMakeFiles/edit_cache.dir
+/mnt/d/Master/M2/Projet3D/test2/build/CMakeFiles/rebuild_cache.dir
