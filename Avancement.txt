@@ -1,0 +1,50 @@
+Les avancements sur le moteur de jeux : 
+- Base ECS : fait.
+- Modèle data-driven : fait avec hot reload, mais pas très pratique.
+- raytracing : en cours.
+
+
+Composants : 
+- AudioComponent : Pour les systèmes audio -> Base de code, à améliorer et compléter.
+- CameraComponent : Pour les paramètres et calcul de matrices -> Intégration d'effets de caméra dans les systèmes.
+- controllerComponent : Pour les paramètres des controllers.
+- InputEvent : pour le dispatch des input.
+- LayerComponent : à utiliser dans le futur (peut-etre intégration dans Entity) pour le filtrage.
+- LightComponent : Paramètres de la lumière -> Ajouter les différents type de lumière.
+- LuaScriptComponent : Pour le chargement des script Lua.
+- MaterialComponent : Pour le chargement des textures et couleurs -> Adapter pour le raytracing pour les paramètres à envoyer.
+- MeshComponent : Informations géométriques sur le mesh et chargements.
+- ScriptComponent : Script Non lua -> voué à disparaître.
+- TagComponent : Comme le layer, pour le tri.
+- TransformComponent : Pour appliquer les transformations géométriques dans l'espace local et monde.
+
+Entities : 
+- Entity : ID du component -> A adapter après entityManager
+
+systèmes : 
+- Audio Système : basé sur miniAudio.h, permet de jouer un son en boucle, spatial, et autres FX -> Implémentation complète dans le futur.
+- ControllerSystem : Pour la détection des entrées utilisateur et le dispatch.
+- entityManager : Pour la gestion des entités et l'enregistrement des composants.
+- LightSystem : Pour l'envoie des infos de la lumière au shaders.
+- RenderSystem : Pour l'envoie aux shaders de la géométrie pour l'affichage.
+- ScriptSystem : Pour la gestion des scripts Lua -> A finir.
+- TransformSystem : Pour le calcul des transformations entre parents et enfants.
+
+
+A venir : 
+- Revoir le système de dispatch pour les contrôles avec un Dispatcher pour tous les sytèmes.
+- Terminer le scripting en ajoutant tous les components dans lua et lier les entités (A peut modifier B).
+- Moteur physique avec collisions et physique avancée.
+- Moteur d'animations.
+- Système UI.
+- CaméraSystem pour une meilleure gestion des caméra.
+- Intégration avec le raytracing (optimisations à voir -> structure d'accélération)
+- Terminer Audio
+- Revoir les lumières (avec raytracing)
+- SceneManager : pour le chargement des scènes du jeu
+- GameManager : Pour la gestion des mécaniques de jeu
+
+
+En vrai : 
+- Un éditeur...
+- Un mode jeu et éditeur

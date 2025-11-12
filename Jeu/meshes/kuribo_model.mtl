@@ -1,0 +1,13 @@
+# Blender MTL File: 'kuribo_model.blend'
+# Material Count: 4
+
+newmtl kuribo_all
+Ns 0.000000
+Ka 0.000000 0.000000 0.000000
+Kd 0.835938 0.835938 0.835938
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd kuribo_cmp4.png

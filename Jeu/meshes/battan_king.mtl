@@ -1,0 +1,35 @@
+# Blender MTL File: 'battan_king.blend'
+# Material Count: 4
+
+newmtl mat_body
+Ns 0.000000
+Ka 0.000000 0.000000 0.000000
+Kd 0.835938 0.835938 0.835938
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd battan_king_back_1.png
+
+newmtl mat_crown
+Ns 0.000000
+Ka 0.000000 0.000000 0.000000
+Kd 0.835938 0.835938 0.835938
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd ookan.png
+
+newmtl mat_face
+Ns 0.000000
+Ka 0.000000 0.000000 0.000000
+Kd 0.835938 0.835938 0.835938
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd battan_king_face.png

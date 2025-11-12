@@ -1,0 +1,181 @@
+Build directory does not exist. Creating build directory....
+Build directory created.
+Building project...
+-- The C compiler identification is GNU 11.4.0
+-- The CXX compiler identification is GNU 11.4.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found OpenGL: /usr/lib/x86_64-linux-gnu/libOpenGL.so   
+-- Looking for pthread.h
+-- Looking for pthread.h - found
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE  
+-- Using X11 for window creation
+-- Using GLX for context creation
+-- Found X11: /usr/include   
+-- Looking for XOpenDisplay in /usr/lib/x86_64-linux-gnu/libX11.so;/usr/lib/x86_64-linux-gnu/libXext.so
+-- Looking for XOpenDisplay in /usr/lib/x86_64-linux-gnu/libX11.so;/usr/lib/x86_64-linux-gnu/libXext.so - found
+-- Looking for gethostbyname
+-- Looking for gethostbyname - found
+-- Looking for connect
+-- Looking for connect - found
+-- Looking for remove
+-- Looking for remove - found
+-- Looking for shmat
+-- Looking for shmat - found
+-- Looking for IceConnectionNumber in ICE
+-- Looking for IceConnectionNumber in ICE - found
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/e20210007484/M2/Projet3D/HAI928I/Engine/build
+Building the project with make...
+[  1%] Building C object external/CMakeFiles/GLEW_1130.dir/glew-1.13.0/src/glew.c.o
+[  6%] Building C object external/glfw-3.1.2/src/CMakeFiles/glfw.dir/monitor.c.o
+[  9%] Building C object external/glfw-3.1.2/src/CMakeFiles/glfw.dir/input.c.o
+[  9%] Building C object external/glfw-3.1.2/src/CMakeFiles/glfw.dir/x11_init.c.o
+[  9%] Building C object external/glfw-3.1.2/src/CMakeFiles/glfw.dir/x11_window.c.o
+[  9%] Building C object external/glfw-3.1.2/src/CMakeFiles/glfw.dir/context.c.o
+[  9%] Building C object external/glfw-3.1.2/src/CMakeFiles/glfw.dir/xkb_unicode.c.o
+[  9%] Building C object external/glfw-3.1.2/src/CMakeFiles/glfw.dir/init.c.o
+[ 13%] Building C object external/glfw-3.1.2/src/CMakeFiles/glfw.dir/posix_time.c.o
+[ 13%] Building C object external/glfw-3.1.2/src/CMakeFiles/glfw.dir/x11_monitor.c.o
+[ 13%] Building C object external/glfw-3.1.2/src/CMakeFiles/glfw.dir/window.c.o
+[ 14%] Building C object external/glfw-3.1.2/src/CMakeFiles/glfw.dir/linux_joystick.c.o
+[ 14%] Building C object external/glfw-3.1.2/src/CMakeFiles/glfw.dir/posix_tls.c.o
+[ 15%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/lauxlib.c.o
+[ 15%] Building C object external/glfw-3.1.2/src/CMakeFiles/glfw.dir/glx_context.c.o
+[ 15%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/lapi.c.o
+[ 15%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/lbaselib.c.o
+[ 18%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/lctype.c.o
+[ 18%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/ldblib.c.o
+[ 18%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/lcorolib.c.o
+[ 19%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/lcode.c.o
+[ 24%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/ldebug.c.o
+[ 24%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/ldump.c.o
+[ 24%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/linit.c.o
+[ 24%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/ldo.c.o
+[ 25%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/liolib.c.o
+[ 25%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/lfunc.c.o
+[ 25%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/lgc.c.o
+[ 31%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/lmem.c.o
+[ 31%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/llex.c.o
+[ 31%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/lopcodes.c.o
+[ 33%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/loadlib.c.o
+[ 33%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/lmathlib.c.o
+[ 35%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/lparser.c.o
+[ 35%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/lstring.c.o
+[ 35%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/lobject.c.o
+[ 39%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/loslib.c.o
+[ 40%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/lstate.c.o
+[ 39%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/ltablib.c.o
+[ 40%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/ltable.c.o
+[ 40%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/lstrlib.c.o
+[ 40%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/lundump.c.o
+[ 40%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/ltm.c.o
+[ 40%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/lzio.c.o
+[ 40%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/lvm.c.o
+[ 40%] Building C object CMakeFiles/lua_static.dir/_deps/lua-src/lutf8lib.c.o
+[ 41%] Linking C static library libglfw3.a
+[ 42%] Linking C static library liblua_static.a
+[ 42%] Built target glfw
+[ 71%] Building C object external/glfw-3.1.2/examples/CMakeFiles/gears.dir/gears.c.o
+[ 71%] Building C object external/glfw-3.1.2/tests/CMakeFiles/cursor.dir/cursor.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/msaa.dir/msaa.c.o
+[ 73%] Building C object external/glfw-3.1.2/examples/CMakeFiles/simple.dir/simple.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/empty.dir/empty.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/events.dir/__/deps/getopt.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/empty.dir/__/deps/tinycthread.c.o
+[ 73%] Building C object external/glfw-3.1.2/examples/CMakeFiles/particles.dir/__/deps/getopt.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/title.dir/title.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/joysticks.dir/joysticks.c.o
+[ 73%] Building C object external/glfw-3.1.2/examples/CMakeFiles/splitview.dir/splitview.c.o
+[ 73%] Building C object external/glfw-3.1.2/examples/CMakeFiles/heightmap.dir/heightmap.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/threads.dir/__/deps/tinycthread.c.o
+[ 73%] Building C object external/glfw-3.1.2/examples/CMakeFiles/heightmap.dir/__/deps/glad.c.o
+[ 73%] Building C object external/glfw-3.1.2/examples/CMakeFiles/wave.dir/wave.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/tearing.dir/tearing.c.o
+[ 73%] Building C object external/glfw-3.1.2/examples/CMakeFiles/boing.dir/boing.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/iconify.dir/iconify.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/reopen.dir/reopen.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/clipboard.dir/clipboard.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/tearing.dir/__/deps/getopt.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/gamma.dir/gamma.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/iconify.dir/__/deps/getopt.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/monitors.dir/__/deps/getopt.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/events.dir/events.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/glfwinfo.dir/__/deps/getopt.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/threads.dir/threads.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/windows.dir/windows.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/monitors.dir/monitors.c.o
+[ 73%] Building C object external/glfw-3.1.2/examples/CMakeFiles/particles.dir/__/deps/tinycthread.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/msaa.dir/__/deps/getopt.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/gamma.dir/__/deps/getopt.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/sharing.dir/sharing.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/clipboard.dir/__/deps/getopt.c.o
+[ 73%] Building C object external/glfw-3.1.2/tests/CMakeFiles/glfwinfo.dir/glfwinfo.c.o
+[ 73%] Building C object external/glfw-3.1.2/examples/CMakeFiles/particles.dir/particles.c.o
+[ 77%] Linking C executable windows
+[ 77%] Linking C executable reopen
+[ 77%] Linking C executable simple
+[ 79%] Linking C executable gamma
+[ 79%] Linking C executable title
+[ 79%] Linking C executable iconify
+[ 83%] Linking C executable clipboard
+[ 93%] Linking C executable joysticks
+[ 93%] Linking C executable msaa
+[ 94%] Linking C executable splitview
+[ 94%] Linking C executable heightmap
+[ 94%] Linking C executable gears
+[ 94%] Linking C executable boing
+[ 94%] Linking C executable cursor
+[ 94%] Linking C executable tearing
+[ 94%] Linking C executable wave
+[ 94%] Linking C executable empty
+[ 94%] Linking C executable glfwinfo
+[ 94%] Linking C static library libGLEW_1130.a
+[ 94%] Linking C executable events
+[ 94%] Linking C executable threads
+[ 94%] Linking C executable sharing
+[ 94%] Linking C executable monitors
+[ 94%] Linking C executable particles
+[ 94%] Built target lua_static
+[ 94%] Built target simple
+[ 94%] Built target title
+[ 94%] Built target reopen
+[ 94%] Built target windows
+[ 94%] Built target iconify
+[ 94%] Built target threads
+[ 94%] Built target events
+[ 94%] Built target wave
+[ 94%] Built target monitors
+[ 94%] Built target cursor
+[ 94%] Built target splitview
+[ 94%] Built target empty
+[ 94%] Built target gamma
+[ 94%] Built target boing
+[ 94%] Built target joysticks
+[ 94%] Built target particles
+[ 94%] Built target gears
+[ 94%] Built target sharing
+[ 94%] Built target clipboard
+[ 94%] Built target glfwinfo
+[ 94%] Built target heightmap
+[ 94%] Built target msaa
+[ 94%] Built target tearing
+[ 94%] Built target GLEW_1130
+[ 95%] Building CXX object CMakeFiles/Engine.dir/main.cpp.o
+[100%] Building CXX object CMakeFiles/Engine.dir/common/Mesh.cpp.o
+[100%] Building CXX object CMakeFiles/Engine.dir/common/texture.cpp.o
+[100%] Building CXX object CMakeFiles/Engine.dir/common/shader.cpp.o
+[100%] Building CXX object CMakeFiles/Engine.dir/common/vboindexer.cpp.o
+[100%] Building CXX object CMakeFiles/Engine.dir/common/objloader.cpp.o
+[100%] Building CXX object CMakeFiles/Engine.dir/common/controls.cpp.o
