@@ -137,5 +137,6 @@
     "valarray": "cpp",
     "variant": "cpp",
     "unordered_set": "cpp"
-  }
+  },
+  "cmake.sourceDirectory": "D:/Master/M2/Projet3D/git/Projet3D/Engine"
 }

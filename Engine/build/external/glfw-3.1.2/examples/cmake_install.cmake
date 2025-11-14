@@ -1,4 +1,4 @@
-# Install script for directory: /mnt/d/Master/M2/Projet3D/HAI928I/HAI928I/Engine/external/glfw-3.1.2/examples
+# Install script for directory: /mnt/d/Master/M2/Projet3D/git/Projet3D/Engine/external/glfw-3.1.2/examples
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

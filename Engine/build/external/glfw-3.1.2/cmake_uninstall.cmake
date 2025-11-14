@@ -1,9 +1,9 @@
 
-if (NOT EXISTS "/mnt/d/Master/M2/Projet3D/HAI928I/HAI928I/Engine/build/external/glfw-3.1.2/install_manifest.txt")
-  message(FATAL_ERROR "Cannot find install manifest: \"/mnt/d/Master/M2/Projet3D/HAI928I/HAI928I/Engine/build/external/glfw-3.1.2/install_manifest.txt\"")
+if (NOT EXISTS "/mnt/d/Master/M2/Projet3D/git/Projet3D/Engine/build/external/glfw-3.1.2/install_manifest.txt")
+  message(FATAL_ERROR "Cannot find install manifest: \"/mnt/d/Master/M2/Projet3D/git/Projet3D/Engine/build/external/glfw-3.1.2/install_manifest.txt\"")
 endif()
 
-file(READ "/mnt/d/Master/M2/Projet3D/HAI928I/HAI928I/Engine/build/external/glfw-3.1.2/install_manifest.txt" files)
+file(READ "/mnt/d/Master/M2/Projet3D/git/Projet3D/Engine/build/external/glfw-3.1.2/install_manifest.txt" files)
 string(REGEX REPLACE "\n" ";" files "${files}")
 
 foreach (file ${files})

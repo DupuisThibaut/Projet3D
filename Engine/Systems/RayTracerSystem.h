@@ -331,13 +331,13 @@ public:
         // std::unordered_map<glm::uint32_t,MaterialComponent> matCompo = entityManager->GetComponents<MaterialComponent>();
         // std::unordered_map<glm::uint32_t,TransformComponent> tCompo = entityManager->GetComponents<TransformComponent>();
 
-        std::cout<<"debut fonction"<<std::endl;
+        // std::cout<<"debut fonction"<<std::endl;
         std::vector<bvh> bvhs;
         bvh root;bvhs.push_back(root);
         int nbBVH=1,nbV=0,nbT=0;
         float minx=FLT_MAX,miny=FLT_MAX,minz=FLT_MAX,maxx=-FLT_MAX,maxy=-FLT_MAX,maxz=-FLT_MAX;
         for(auto& e : entities){
-            std::cout<<"debut de la boucle"<<std::endl;
+            // std::cout<<"debut de la boucle"<<std::endl;
             if(!entityManager->HasComponent<CameraComponent>(e.id)){
                 MaterialComponent mat = entityManager->GetComponent<MaterialComponent>(e.id);
                 TransformComponent t = entityManager->GetComponent<TransformComponent>(e.id);
@@ -368,16 +368,16 @@ public:
                     if(M.type==PrimitiveType::PLANE){
                         sq b;
                         glm::mat4 model=t.worldMatrix;
-                        std::cout<<"rota : "<<t.rotation[0]<<" rota : "<<t.rotation[1]<<" rota : "<<t.rotation[2]<<std::endl;
+                        // std::cout<<"rota : "<<t.rotation[0]<<" rota : "<<t.rotation[1]<<" rota : "<<t.rotation[2]<<std::endl;
                         glm::mat3 rotaScale(model);
-                        std::cout<<"worldMatrix : "<<model[0][0]<<" worldMatrix : "<<model[0][1]<<" worldMatrix : "<<model[0][2]<<" worldMatrix : "<<model[0][3]<<std::endl;
-                        std::cout<<"worldMatrix : "<<model[1][0]<<" worldMatrix : "<<model[1][1]<<" worldMatrix : "<<model[1][2]<<" worldMatrix : "<<model[1][3]<<std::endl;
-                        std::cout<<"worldMatrix : "<<model[2][0]<<" worldMatrix : "<<model[2][1]<<" worldMatrix : "<<model[2][2]<<" worldMatrix : "<<model[2][3]<<std::endl;
-                        std::cout<<"worldMatrix : "<<model[3][0]<<" worldMatrix : "<<model[3][1]<<" worldMatrix : "<<model[3][2]<<" worldMatrix : "<<model[3][3]<<std::endl;
+                        // std::cout<<"worldMatrix : "<<model[0][0]<<" worldMatrix : "<<model[0][1]<<" worldMatrix : "<<model[0][2]<<" worldMatrix : "<<model[0][3]<<std::endl;
+                        // std::cout<<"worldMatrix : "<<model[1][0]<<" worldMatrix : "<<model[1][1]<<" worldMatrix : "<<model[1][2]<<" worldMatrix : "<<model[1][3]<<std::endl;
+                        // std::cout<<"worldMatrix : "<<model[2][0]<<" worldMatrix : "<<model[2][1]<<" worldMatrix : "<<model[2][2]<<" worldMatrix : "<<model[2][3]<<std::endl;
+                        // std::cout<<"worldMatrix : "<<model[3][0]<<" worldMatrix : "<<model[3][1]<<" worldMatrix : "<<model[3][2]<<" worldMatrix : "<<model[3][3]<<std::endl;
                         glm::vec3 m_right_vector=rotaScale*M.m_right_vector;
                         glm::vec3 m_up_vector=rotaScale*M.m_up_vector;
-                        std::cout<<"rv : "<<m_right_vector[0]<<" rv : "<<m_right_vector[1]<<" rv : "<<m_right_vector[2]<<std::endl;
-                        std::cout<<"uv : "<<m_up_vector[0]<<" uv : "<<m_up_vector[1]<<" uv : "<<m_up_vector[2]<<std::endl;
+                        // std::cout<<"rv : "<<m_right_vector[0]<<" rv : "<<m_right_vector[1]<<" rv : "<<m_right_vector[2]<<std::endl;
+                        // std::cout<<"uv : "<<m_up_vector[0]<<" uv : "<<m_up_vector[1]<<" uv : "<<m_up_vector[2]<<std::endl;
                         b.blx=t.position[0];
                         b.bly=t.position[1];
                         b.blz=t.position[2];
@@ -392,12 +392,12 @@ public:
                         b.nx=m_normal[0];
                         b.ny=m_normal[1];
                         b.nz=m_normal[2];
-                        std::cout<<"centre x : "<<b.blx<<" centre y : "<<b.bly<<" centre z : "<<b.blz<<std::endl;
-                        std::cout<<"m_right_vector x : "<<b.rx<<" m_right_vector y : "<<b.ry<<" m_right_vector z : "<<b.rz<<std::endl;
-                        std::cout<<"m_up_vector x : "<<b.ux<<" m_up_vector y : "<<b.uy<<" m_up_vector z : "<<b.uz<<std::endl;
-                        std::cout<<"m_normal x : "<<b.nx<<" m_normal y : "<<b.ny<<" m_normal z : "<<b.nz<<std::endl;
-                        std::cout<<"length right : "<<length(m_right_vector)<<std::endl;
-                        std::cout<<"length up : "<<length(m_up_vector)<<std::endl;
+                        // std::cout<<"centre x : "<<b.blx<<" centre y : "<<b.bly<<" centre z : "<<b.blz<<std::endl;
+                        // std::cout<<"m_right_vector x : "<<b.rx<<" m_right_vector y : "<<b.ry<<" m_right_vector z : "<<b.rz<<std::endl;
+                        // std::cout<<"m_up_vector x : "<<b.ux<<" m_up_vector y : "<<b.uy<<" m_up_vector z : "<<b.uz<<std::endl;
+                        // std::cout<<"m_normal x : "<<b.nx<<" m_normal y : "<<b.ny<<" m_normal z : "<<b.nz<<std::endl;
+                        // std::cout<<"length right : "<<length(m_right_vector)<<std::endl;
+                        // std::cout<<"length up : "<<length(m_up_vector)<<std::endl;
                         b.ra=mat.ambient_material[0];
                         b.ga=mat.ambient_material[1];
                         b.ba=mat.ambient_material[2];
@@ -496,8 +496,8 @@ public:
         bvhs[0].minx=minx;bvhs[0].miny=miny;bvhs[0].minz=minz;bvhs[0].maxx=maxx;bvhs[0].maxy=maxy;bvhs[0].maxz=maxz;bvhs[0].left=-1;bvhs[0].right=-1;bvhs[0].prof=0;bvhs[0].nb=0;bvhs[0].count=0;bvhs[0].start=0;
 
         
-        std::cout<<"min : "<<minx<<" min : "<<miny<<" min : "<<minz<<std::endl;
-        std::cout<<"max : "<<maxx<<" max : "<<maxy<<" max : "<<maxz<<std::endl;
+        // std::cout<<"min : "<<minx<<" min : "<<miny<<" min : "<<minz<<std::endl;
+        // std::cout<<"max : "<<maxx<<" max : "<<maxy<<" max : "<<maxz<<std::endl;
 
          //Spheres
         glGenBuffers(1, &ssboSpheres);

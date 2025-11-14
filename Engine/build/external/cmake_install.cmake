@@ -1,4 +1,4 @@
-# Install script for directory: /mnt/d/Master/M2/Projet3D/HAI928I/HAI928I/Engine/external
+# Install script for directory: /mnt/d/Master/M2/Projet3D/git/Projet3D/Engine/external
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -44,7 +44,7 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("/mnt/d/Master/M2/Projet3D/HAI928I/HAI928I/Engine/build/external/glfw-3.1.2/cmake_install.cmake")
+  include("/mnt/d/Master/M2/Projet3D/git/Projet3D/Engine/build/external/glfw-3.1.2/cmake_install.cmake")
 
 endif()
 

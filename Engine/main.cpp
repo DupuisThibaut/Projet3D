@@ -552,7 +552,8 @@ int main( int argc, char* argv[] )
 
     gameFolder = argv[1];
     if(argc == 3) mode = argv[2];
-    scenePath = gameFolder + "/scene.json";
+    // scenePath = gameFolder + "/scene.json";
+    scenePath = gameFolder + "/cornelBox.json";
 
     // Test Lua integration
     // 1. Créer un nouvel état Lua
@@ -807,12 +808,11 @@ int main( int argc, char* argv[] )
     std::cout << "--- Initialization... ---" << std::endl;
     RenderSystem renderSystem(&entityManager, programID);
     LightSystem lightSystem(&entityManager, programID);
+    lightSystem.update();
     TransformSystem transformSystem(&entityManager);
     transformSystem.update();
     RayTracerSystem rayTracerSystem(&entityManager, computeProg, texture);
-    std::cout<<"yep"<<std::endl;
     rayTracerSystem.onCreate(entities);
-    std::cout<<"omg"<<std::endl;
     scriptSystem.registerEntityManager(&entityManager);
     input.setScriptSystem(&scriptSystem);
     input.setRenderSystem(&renderSystem);

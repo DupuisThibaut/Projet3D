@@ -1,4 +1,4 @@
-# Install script for directory: /mnt/d/Master/M2/Projet3D/HAI928I/HAI928I/Engine/external/glfw-3.1.2/src
+# Install script for directory: /mnt/d/Master/M2/Projet3D/git/Projet3D/Engine/external/glfw-3.1.2/src
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -43,10 +43,10 @@ if(NOT DEFINED CMAKE_OBJDUMP)
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "/mnt/d/Master/M2/Projet3D/HAI928I/HAI928I/Engine/build/external/glfw-3.1.2/src/libglfw3.a")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "/mnt/d/Master/M2/Projet3D/git/Projet3D/Engine/build/external/glfw-3.1.2/src/libglfw3.a")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  include("/mnt/d/Master/M2/Projet3D/HAI928I/HAI928I/Engine/build/external/glfw-3.1.2/src/CMakeFiles/glfw.dir/install-cxx-module-bmi-noconfig.cmake" OPTIONAL)
+  include("/mnt/d/Master/M2/Projet3D/git/Projet3D/Engine/build/external/glfw-3.1.2/src/CMakeFiles/glfw.dir/install-cxx-module-bmi-noconfig.cmake" OPTIONAL)
 endif()
 

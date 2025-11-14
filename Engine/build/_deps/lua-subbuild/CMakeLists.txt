@@ -28,8 +28,8 @@ set_property(GLOBAL PROPERTY _CMAKE_FindGit_GIT_EXECUTABLE_VERSION
 include(ExternalProject)
 ExternalProject_Add(lua-populate
                      "UPDATE_DISCONNECTED" "False" "GIT_REPOSITORY" "https://github.com/lua/lua.git" "EXTERNALPROJECT_INTERNAL_ARGUMENT_SEPARATOR" "GIT_TAG" "v5.4.6"
-                    SOURCE_DIR          "/mnt/d/Master/M2/Projet3D/HAI928I/HAI928I/Engine/build/_deps/lua-src"
-                    BINARY_DIR          "/mnt/d/Master/M2/Projet3D/HAI928I/HAI928I/Engine/build/_deps/lua-build"
+                    SOURCE_DIR          "/mnt/d/Master/M2/Projet3D/git/Projet3D/Engine/build/_deps/lua-src"
+                    BINARY_DIR          "/mnt/d/Master/M2/Projet3D/git/Projet3D/Engine/build/_deps/lua-build"
                     CONFIGURE_COMMAND   ""
                     BUILD_COMMAND       ""
                     INSTALL_COMMAND     ""

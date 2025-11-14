@@ -3,9 +3,9 @@
 # No other meaning or use of this file is supported.
 
 method=git
-command=/usr/bin/cmake;-P;/mnt/d/Master/M2/Projet3D/HAI928I/HAI928I/Engine/build/_deps/lua-subbuild/lua-populate-prefix/tmp/lua-populate-gitclone.cmake
-source_dir=/mnt/d/Master/M2/Projet3D/HAI928I/HAI928I/Engine/build/_deps/lua-src
-work_dir=/mnt/d/Master/M2/Projet3D/HAI928I/HAI928I/Engine/build/_deps
+command=/usr/bin/cmake;-P;/mnt/d/Master/M2/Projet3D/git/Projet3D/Engine/build/_deps/lua-subbuild/lua-populate-prefix/tmp/lua-populate-gitclone.cmake
+source_dir=/mnt/d/Master/M2/Projet3D/git/Projet3D/Engine/build/_deps/lua-src
+work_dir=/mnt/d/Master/M2/Projet3D/git/Projet3D/Engine/build/_deps
 repository=https://github.com/lua/lua.git
 remote=origin
 init_submodules=TRUE
