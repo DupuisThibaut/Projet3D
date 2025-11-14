@@ -41,6 +41,10 @@ struct bvh{
     float minx,miny,minz;int nb;float maxx,maxy,maxz;int prof;int left,right,start,count;
 };
 
+struct world{
+    glm::mat4 modelMat;
+};
+
 std::vector<std::vector<unsigned short>> newTriangles;
 std::vector<bvh> creerBVH(std::vector<glm::vec3> vertices, std::vector<std::vector<unsigned short>> triangles){
     std::vector<bvh> bvhs;
@@ -249,6 +253,7 @@ public:
     GLuint ssboTriangles=0;
     GLuint ssboMeshes=0;
     GLuint ssboBVH=0;
+    GLuint ssboWorld=0;
     GLuint texture;
 
     std::vector<sp> sps;        
@@ -258,6 +263,7 @@ public:
     std::vector<tri> ts;
     std::vector<m> ms;
     std::vector<bvh> bvhs;
+    std::vector<world> worlds;
 
 
     RayTracerSystem(EntityManager* em, GLuint computeProg, GLuint texture) : entityManager(em), computeProg(computeProg), texture(texture){
@@ -282,6 +288,8 @@ public:
             glm::vec3 cpos = entityManager->GetComponent<TransformComponent>(camera.first).position;
             glm::vec3 camPosGLM(cpos[0], cpos[1], cpos[2]);
 
+            // std::cout<<"camPos : "<<camPosGLM.x<<" camPos : "<<camPosGLM.y<<" camPos : "<<camPosGLM.z<<std::endl;
+
             glUseProgram(computeProg);
             // upload uniforms every frame
             GLint locRes = glGetUniformLocation(computeProg, "uResolution");
@@ -292,14 +300,7 @@ public:
             if (locInv >= 0) glUniformMatrix4fv(locInv, 1, GL_FALSE, &invVP[0][0]);
         }
 
-        glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER,1,ssboSpheres);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER,2,ssboSquares);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER,3,ssboLights);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER,4,ssboVertices);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER,5,ssboTriangles);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER,6,ssboMeshes);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER,7,ssboBVH);
+        
         glDispatchCompute(groups_x, groups_y, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT|GL_SHADER_IMAGE_ACCESS_BARRIER_BIT|GL_TEXTURE_FETCH_BARRIER_BIT);
         glUseProgram(0);
@@ -366,16 +367,28 @@ public:
                     //Squares
                     if(M.type==PrimitiveType::PLANE){
                         sq b;
+                        glm::mat4 model=t.worldMatrix;
+                        std::cout<<"rota : "<<t.rotation[0]<<" rota : "<<t.rotation[1]<<" rota : "<<t.rotation[2]<<std::endl;
+                        glm::mat3 rotaScale(model);
+                        std::cout<<"worldMatrix : "<<model[0][0]<<" worldMatrix : "<<model[0][1]<<" worldMatrix : "<<model[0][2]<<" worldMatrix : "<<model[0][3]<<std::endl;
+                        std::cout<<"worldMatrix : "<<model[1][0]<<" worldMatrix : "<<model[1][1]<<" worldMatrix : "<<model[1][2]<<" worldMatrix : "<<model[1][3]<<std::endl;
+                        std::cout<<"worldMatrix : "<<model[2][0]<<" worldMatrix : "<<model[2][1]<<" worldMatrix : "<<model[2][2]<<" worldMatrix : "<<model[2][3]<<std::endl;
+                        std::cout<<"worldMatrix : "<<model[3][0]<<" worldMatrix : "<<model[3][1]<<" worldMatrix : "<<model[3][2]<<" worldMatrix : "<<model[3][3]<<std::endl;
+                        glm::vec3 m_right_vector=rotaScale*M.m_right_vector;
+                        glm::vec3 m_up_vector=rotaScale*M.m_up_vector;
+                        std::cout<<"rv : "<<m_right_vector[0]<<" rv : "<<m_right_vector[1]<<" rv : "<<m_right_vector[2]<<std::endl;
+                        std::cout<<"uv : "<<m_up_vector[0]<<" uv : "<<m_up_vector[1]<<" uv : "<<m_up_vector[2]<<std::endl;
                         b.blx=t.position[0];
                         b.bly=t.position[1];
                         b.blz=t.position[2];
-                        b.rx=M.m_right_vector[0];
-                        b.ry=M.m_right_vector[1];
-                        b.rz=M.m_right_vector[2];
-                        b.ux=M.m_up_vector[0];
-                        b.uy=M.m_up_vector[1];
-                        b.uz=M.m_up_vector[2];
-                        glm::vec3 m_normal = cross(M.m_right_vector , M.m_up_vector);
+                        b.rx=m_right_vector[0];
+                        b.ry=m_right_vector[1];
+                        b.rz=m_right_vector[2];
+                        b.ux=m_up_vector[0];
+                        b.uy=m_up_vector[1];
+                        b.uz=m_up_vector[2];
+                        glm::vec3 m_normal=cross(m_right_vector,m_up_vector);
+                        m_normal=normalize(m_normal);
                         b.nx=m_normal[0];
                         b.ny=m_normal[1];
                         b.nz=m_normal[2];
@@ -383,6 +396,8 @@ public:
                         std::cout<<"m_right_vector x : "<<b.rx<<" m_right_vector y : "<<b.ry<<" m_right_vector z : "<<b.rz<<std::endl;
                         std::cout<<"m_up_vector x : "<<b.ux<<" m_up_vector y : "<<b.uy<<" m_up_vector z : "<<b.uz<<std::endl;
                         std::cout<<"m_normal x : "<<b.nx<<" m_normal y : "<<b.ny<<" m_normal z : "<<b.nz<<std::endl;
+                        std::cout<<"length right : "<<length(m_right_vector)<<std::endl;
+                        std::cout<<"length up : "<<length(m_up_vector)<<std::endl;
                         b.ra=mat.ambient_material[0];
                         b.ga=mat.ambient_material[1];
                         b.ba=mat.ambient_material[2];
@@ -403,6 +418,7 @@ public:
                     }
                     //Meshes
                     if(M.type==PrimitiveType::MESH){
+                        world w;w.modelMat=t.worldMatrix;worlds.push_back(w);
                         std::vector<bvh> bvhsYep=creerBVH(M.vertices,M.triangles);
                         M.triangles=newTriangles;
                         int nbV=0,nbT=0;
@@ -472,11 +488,16 @@ public:
                     b.z=t.position[2];
                     b.r=t.scale[0];
                     ls.push_back(b);
+                    std::cout<<"light x : "<<b.x<<" light y : "<<b.y<<" light z : "<<b.z<<std::endl;
                 }
             }
         }
         std::cout<<"creation donnees finies !"<<std::endl;
         bvhs[0].minx=minx;bvhs[0].miny=miny;bvhs[0].minz=minz;bvhs[0].maxx=maxx;bvhs[0].maxy=maxy;bvhs[0].maxz=maxz;bvhs[0].left=-1;bvhs[0].right=-1;bvhs[0].prof=0;bvhs[0].nb=0;bvhs[0].count=0;bvhs[0].start=0;
+
+        
+        std::cout<<"min : "<<minx<<" min : "<<miny<<" min : "<<minz<<std::endl;
+        std::cout<<"max : "<<maxx<<" max : "<<maxy<<" max : "<<maxz<<std::endl;
 
          //Spheres
         glGenBuffers(1, &ssboSpheres);
@@ -523,6 +544,13 @@ public:
         glBufferData(GL_SHADER_STORAGE_BUFFER, bvhs.size()*sizeof(bvh), bvhs.data(), GL_STATIC_DRAW);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, ssboBVH);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+        glGenBuffers(1,&ssboWorld);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboWorld);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, worlds.size()*sizeof(world), worlds.data(), GL_STATIC_DRAW);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, ssboWorld);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
 
         // glGenBuffers(1, &debugBuffer);
         // glBindBuffer(GL_SHADER_STORAGE_BUFFER, debugBuffer);

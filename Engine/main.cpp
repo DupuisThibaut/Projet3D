@@ -806,12 +806,13 @@ int main( int argc, char* argv[] )
     }
     std::cout << "--- Initialization... ---" << std::endl;
     RenderSystem renderSystem(&entityManager, programID);
+    LightSystem lightSystem(&entityManager, programID);
+    TransformSystem transformSystem(&entityManager);
+    transformSystem.update();
     RayTracerSystem rayTracerSystem(&entityManager, computeProg, texture);
     std::cout<<"yep"<<std::endl;
     rayTracerSystem.onCreate(entities);
     std::cout<<"omg"<<std::endl;
-    LightSystem lightSystem(&entityManager, programID);
-    TransformSystem transformSystem(&entityManager);
     scriptSystem.registerEntityManager(&entityManager);
     input.setScriptSystem(&scriptSystem);
     input.setRenderSystem(&renderSystem);

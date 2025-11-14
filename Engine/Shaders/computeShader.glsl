@@ -17,6 +17,11 @@ uniform int nbMesh;
 // 	vec3
 // }
 
+struct World{
+	mat4 modelMat;
+};
+layout(std430,binding=9)buffer Worlds{World worlds[];};
+
 struct Sphere{
 	vec3 centre; 
 	float rayon; 
@@ -52,6 +57,7 @@ layout(std430,binding=2)buffer Squares{Square squares[];};
 
 float intersectSquare(vec3 ro, vec3 rd, vec3 m_bottom_left, vec3 m_right_vector, vec3 m_up_vector, vec3 m_normal){
 	if(dot(rd,m_normal)>=0.0)return -1.0;
+	// if(dot(rd,m_normal)>=0.0)m_normal=-m_normal;
 	float d=dot(m_bottom_left,m_normal);
 	float t=(d-dot(ro,m_normal))/dot(rd,m_normal);
 	if(t<0.0)return -1.0;
@@ -151,7 +157,11 @@ float intersectBVH(vec3 ro, vec3 rd, vec3 minp, vec3 maxp) {
     return tnear;
 }
 
-float intersectMesh(vec3 ro, vec3 rd, int premierVertex, int premierTriangle, int nbTriangle, int premierBVH){
+float intersectMesh(vec3 ro, vec3 rd, int indice){
+	int premierVertex=meshes[indice].info[0];
+	int premierBVH=meshes[indice].info[1];
+	int premierTriangle=meshes[indice].info[2];
+	int nbTriangle=meshes[indice].info[3];
 	int sp=0;
 	int stack[64];
 	stack[sp++]=premierBVH;
@@ -217,13 +227,15 @@ intersection intersectScene(vec3 ro, vec3 rd){
         if(t>0.0 && t<res.tmin){res.tmin=t;res.hitIndex=i;res.inter=2;}
     }
 
-	if(intersectBVH(ro,rd,bvhs[0].minp.xyz,bvhs[0].maxp.xyz)>0.0){
+	// if(intersectBVH(roLocal,rdLocal,bvhs[0].minp.xyz,bvhs[0].maxp.xyz)>0.0){
 		for(int i=0;i<nbMesh;i++){
-			int b=meshes[i].info[1];
-			float t=intersectMesh(ro,rd,meshes[i].info[0],meshes[i].info[2],meshes[i].info[3],b);
+			mat4 invModelMatrix=inverse(worlds[i].modelMat);
+			vec3 roLocal=(invModelMatrix*vec4(ro,1.0)).xyz;
+			vec3 rdLocal=normalize((invModelMatrix*vec4(rd,0.0)).xyz);
+			float t=intersectMesh(roLocal,rdLocal,i);
 			if(t>0.0 && t<res.tmin){res.tmin=t;res.hitIndex=i;res.inter=3;}
 		}
-	}
+	// }
 
 	return res;
 }
@@ -273,9 +285,9 @@ vec3 couleur(vec3 ro, vec3 rd, intersection inter,ivec2 pix){
 		finalColor[0]=l[0]*ambient[0]+l[0]*diffuse[0]*cosT+l[0]*specular[0]*pow(cosA,shininess);
 		finalColor[1]=l[1]*ambient[1]+l[1]*diffuse[1]*cosT+l[1]*specular[1]*pow(cosA,shininess);
 		finalColor[2]=l[2]*ambient[2]+l[2]*diffuse[2]*cosT+l[2]*specular[2]*pow(cosA,shininess);
-		vec3 ro2=p+n*0.00001;
-		intersection intersectionLumiere=intersectScene(ro2,L);
-		if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<length(L))finalColor=vec3(0.0,0.0,0.0);
+		// vec3 ro2=p+n*0.00001;
+		// intersection intersectionLumiere=intersectScene(ro2,L);
+		// if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<length(L))finalColor=vec3(0.0,0.0,0.0);
 		// vec3 ro2=p+n*0.001;
 		// intersection intersectionLumiere=intersectScene(ro2,L);
 		// if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<Ldist){
@@ -316,9 +328,9 @@ vec3 couleur(vec3 ro, vec3 rd, intersection inter,ivec2 pix){
 		finalColor[0]=l[0]*ambient[0]+l[0]*diffuse[0]*cosT+l[0]*specular[0]*pow(cosA,shininess);
 		finalColor[1]=l[1]*ambient[1]+l[1]*diffuse[1]*cosT+l[1]*specular[1]*pow(cosA,shininess);
 		finalColor[2]=l[2]*ambient[2]+l[2]*diffuse[2]*cosT+l[2]*specular[2]*pow(cosA,shininess);
-		vec3 ro2=p+n*0.00001;
-		intersection intersectionLumiere=intersectScene(ro2,L);
-		if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<length(L))finalColor=vec3(0.0,0.0,0.0);
+		// vec3 ro2=p+n*0.00001;
+		// intersection intersectionLumiere=intersectScene(ro2,L);
+		// if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<length(L))finalColor=vec3(0.0,0.0,0.0);
 		// vec3 ro2=p+n*0.001;
 		// intersection intersectionLumiere=intersectScene(ro2,L);
 		// if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<Ldist){
