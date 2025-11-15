@@ -144,19 +144,19 @@ struct MeshComponent {
         glBindVertexArray(0);
     }
 
-    void loadPrimitive(const std::string& primitiveType, glm::vec3 center, glm::vec3 right_vector=glm::vec3(1.0,0.0,0.0), glm::vec3 up_vector=glm::vec3(0.0,1.0,0.0), float rayon=1.0f) {
+    void loadPrimitive(const std::string& primitiveType, glm::vec3 right_vector=glm::vec3(1.0,0.0,0.0), glm::vec3 up_vector=glm::vec3(0.0,1.0,0.0), float rayon=1.0f) {
         if (primitiveType == "PLANE"){
             type=PrimitiveType::PLANE;
-            centre=center;
+            centre=glm::vec3(0,0,0);
             m_right_vector=right_vector;
             m_up_vector=up_vector;
-            Plane plane(center, right_vector, up_vector);
-            // plane.createGridMesh(subdivisions, subdivisions, vertices, normals, uvs, indices);
+            Plane plane(centre, right_vector, up_vector);
+            plane.createGridMesh(subdivisions, subdivisions, vertices, normals, uvs, indices);
         }
         else if (primitiveType == "SPHERE"){
             type=PrimitiveType::SPHERE;
-            Sphere sphere(center, rayon);
-            centre=center;
+            Sphere sphere(rayon);
+            centre=glm::vec3(0,0,0);
             rayon=rayon;
             sphere.build_arrays(subdivisions, subdivisions, vertices, normals, uvs, indices);
         }

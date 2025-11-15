@@ -1,5 +1,5 @@
-#ifndef AUDIOCOMPONENT_H
-#define AUDIOCOMPONENT_H
+#ifndef MYAUDIOCOMPONENT_H
+#define MYAUDIOCOMPONENT_H
 #include <string>
 #include <common/miniaudio.h>
 
@@ -9,7 +9,7 @@ enum class AudioType {
     SFX,
     SPATIAL
 };
-struct AudioComponent {
+struct MyAudioComponent {
     AudioType type = AudioType::NONE;
     std::string audioFilePath;
     ma_sound* sound = nullptr;
@@ -18,4 +18,4 @@ struct AudioComponent {
     bool playOnStart = false;
     bool isPlaying = false;
 };
-#endif // AUDIOCOMPONENT_H
+#endif // MYAUDIOCOMPONENT_H

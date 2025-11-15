@@ -1,25 +1,40 @@
+local vie = 100
+
+
 function onInit()
-    -- print("[Lua] Script chargé : ChangeColor.lua")
-    -- Initialisation du script
-    material.color = {r = 1.0, g = 0.0, b = 0.0} -- Rouge initial
+    if this.material then
+        this.material.color = { 1.0, 0.0, 0.0 }
+        --set_global("vie", vie)
+        --print("[Lua] Script chargé : ChangeColor.lua")
+    end
 end
 
 function onUpdate(dt)
-    -- Changement de couleur en fonction du temps
-    local time = os.clock()
-    local speed = 1.0
-    material.color = {
-            r = (math.sin(time * speed) + 1) / 2,           -- varie entre 0 et 1
-            g = (math.sin(time * speed + 2 * math.pi / 3) + 1) / 2, -- déphasé
-            b = (math.sin(time * speed + 4 * math.pi / 3) + 1) / 2  -- déphasé
+    if this.material then
+        local time = os.clock()
+        local speed = 1.0
+        this.material.color = {
+            r = (math.sin(time * speed) + 1) / 2,
+            g = (math.sin(time * speed + 2*math.pi/3) + 1) / 2,
+            b = (math.sin(time * speed + 4*math.pi/3) + 1) / 2
         }
+    end
 end
-
+local created = false
 function onInput(event)
-    -- Gérer les entrées si nécessaire
-    for i, btn in ipairs(event.buttons) do
-        if btn == "C" then
-            material.color = {r = math.random(), g = math.random(), b = math.random()}
+    for _, btn in ipairs(event.buttons) do
+        if btn == "C" and this.material then
+            if not created then
+                local t = create_entity()
+                add_component(t, "Transform", { position = {-0.5, -9.0, 0.0} })
+                local mesh = add_component(t, "Mesh", { type = "primitive", name = "SPHERE" })
+                local m = add_component(t, "Material", { color = { 1.0,0.0,1.0 }, type = "color" })
+                created = true
+                print("[Lua] Created new entity with id: " .. t)
+            end
+            vie = vie - 0.1
+            if vie < 0 then vie = 0 end
+            set_global("vie", vie)
         end
     end
 end

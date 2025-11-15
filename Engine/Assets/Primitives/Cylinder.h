@@ -10,7 +10,11 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/norm.hpp>
 #include <algorithm>
+#if defined(__APPLE__) || defined(MACOSX)
+#include <GLUT/glut.h>
+#else
 #include <GL/glut.h>
+#endif
 
 
 

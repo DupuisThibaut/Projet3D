@@ -10,7 +10,11 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/norm.hpp>
 #include <algorithm>
+#if defined(__APPLE__) || defined(MACOSX)
+#include <GLUT/glut.h>
+#else
 #include <GL/glut.h>
+#endif
 
 // struct RaySphereIntersection{
 //     bool intersectionExists;
@@ -46,7 +50,7 @@ public:
     float m_radius;
 
     Sphere() : Mesh() {}
-    Sphere(glm::vec3 c , float r) : Mesh() , m_center(c) , m_radius(r) {}
+    Sphere(float r) : Mesh() , m_center(glm::vec3(0.0f)) , m_radius(r) {}
 
 // ...existing code...
     void build_arrays(int nTheta , int nPhi, std::vector<glm::vec3> & positions, std::vector<glm::vec3> & normals, std::vector<glm::vec2> & uvs, std::vector<unsigned short> & indices ) {

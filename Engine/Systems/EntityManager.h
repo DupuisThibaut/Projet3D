@@ -46,6 +46,10 @@ private:
     }
 
 public:
+
+    bool HasEntity(EntityID e) const {
+        return usedIds.count(e) != 0;
+    }
     EntityID CreateEntity(){
         if(!freeIds.empty()){ EntityID id = freeIds.front(); freeIds.pop(); usedIds.insert(id); return id;}
         EntityID id = nextEntityId;

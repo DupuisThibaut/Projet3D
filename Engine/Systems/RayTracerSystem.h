@@ -210,9 +210,6 @@ std::vector<bvh> creerBVH(std::vector<glm::vec3> vertices, std::vector<std::vect
     return bvhs;
 }
 
-static const unsigned int TEXTURE_WIDTH = 512;
-static const unsigned int TEXTURE_HEIGHT = 512;
-
 unsigned int quadVAO = 0;
 unsigned int quadVBO;
 void renderQuad()
@@ -246,6 +243,7 @@ class RayTracerSystem {
 public:
     EntityManager* entityManager;
     GLuint computeProg;
+    GLuint quadProg;
     GLuint ssboSpheres=0;
     GLuint ssboSquares=0;
     GLuint ssboLights=0;
@@ -265,12 +263,134 @@ public:
     std::vector<bvh> bvhs;
     std::vector<world> worlds;
 
+    unsigned int TEXTURE_WIDTH = 512;
+    unsigned int TEXTURE_HEIGHT = 512;
 
-    RayTracerSystem(EntityManager* em, GLuint computeProg, GLuint texture) : entityManager(em), computeProg(computeProg), texture(texture){
+    unsigned int groups_x = 1;
+    unsigned int groups_y = 1;
+
+
+    RayTracerSystem(EntityManager* em) : entityManager(em){
 
     }
 
-    void update(const std::vector<Entity>& entities, GLuint quadProg) {
+    bool initialize(){
+        glGenTextures(1, &texture);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA,GL_FLOAT, NULL);
+        glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+
+        const char* path="Shaders/computeShader.glsl";
+        std::ifstream sfile;
+        sfile.open(path);
+        std::stringstream sstream;
+        sstream<<sfile.rdbuf();
+        sfile.close();
+        std::string ccode=sstream.str();
+        const char* source=ccode.c_str();
+        GLuint cs=glCreateShader(GL_COMPUTE_SHADER);
+        glShaderSource(cs,1,&source,NULL);
+        glCompileShader(cs);
+
+        //erreur
+        GLint success;
+        glGetShaderiv(cs, GL_COMPILE_STATUS, &success);
+        if(!success) {
+            GLint maxLength = 0;
+            glGetShaderiv(cs, GL_INFO_LOG_LENGTH, &maxLength);
+            std::vector<GLchar> errorLog(maxLength);
+            glGetShaderInfoLog(cs, maxLength, &maxLength, &errorLog[0]);
+            std::cout << "Erreur de compilation du compute shader:" << std::endl;
+            std::cout << &errorLog[0] << std::endl;
+        }
+
+        computeProg=glCreateProgram();
+        glAttachShader(computeProg,cs);
+        glLinkProgram(computeProg);
+
+        //erreur
+        glGetProgramiv(computeProg, GL_LINK_STATUS, &success);
+        if(!success) {
+            GLint maxLength = 0;
+            glGetProgramiv(computeProg, GL_INFO_LOG_LENGTH, &maxLength);
+            std::vector<GLchar> errorLog(maxLength);
+            glGetProgramInfoLog(computeProg, maxLength, &maxLength, &errorLog[0]);
+            std::cout << "Erreur de liaison du compute shader:" << std::endl;
+            std::cout << &errorLog[0] << std::endl;
+            return false;
+        }
+
+
+        const char* vpath="Shaders/vertex.glsl";
+        std::ifstream vfile;
+        vfile.open(vpath);
+        std::stringstream vsstream;
+        vsstream<<vfile.rdbuf();
+        vfile.close();
+        std::string vcode=vsstream.str();
+        const char* vsource=vcode.c_str();
+        GLuint vs=glCreateShader(GL_VERTEX_SHADER);
+        glShaderSource(vs,1,&vsource,NULL);
+        glCompileShader(vs);
+
+        const char* fpath="Shaders/fragment.glsl";
+        std::ifstream ffile;
+        ffile.open(fpath);
+        std::stringstream fsstream;
+        fsstream<<ffile.rdbuf();
+        ffile.close();
+        std::string fcode=fsstream.str();
+        const char* fsource=fcode.c_str();
+        GLuint fs=glCreateShader(GL_FRAGMENT_SHADER);
+        glShaderSource(fs,1,&fsource,NULL);
+        glCompileShader(fs);
+
+        quadProg=glCreateProgram();
+        glAttachShader(quadProg,vs);
+        glAttachShader(quadProg,fs);
+        glLinkProgram(quadProg);
+
+
+        glUseProgram(quadProg);
+        GLint loc = glGetUniformLocation(quadProg, "tex");
+        if (loc >= 0) glUniform1i(loc, 0);
+        glUseProgram(0);
+        unsigned int LOCAL_X = 16;
+        unsigned int LOCAL_Y = 16;
+        groups_x = (TEXTURE_WIDTH  + LOCAL_X - 1) / LOCAL_X;
+        groups_y = (TEXTURE_HEIGHT + LOCAL_Y - 1) / LOCAL_Y;
+        return true;
+    }
+
+    bool resize(int width, int height){
+        if(width<=0 || height<=0) return false;
+        TEXTURE_WIDTH = width;
+        TEXTURE_HEIGHT = height;
+        if(texture)
+            glDeleteTextures(1, &texture);
+        glGenTextures(1, &texture);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA,GL_FLOAT, NULL);
+        glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        unsigned int LOCAL_X = 16;
+        unsigned int LOCAL_Y = 16;
+        groups_x = (TEXTURE_WIDTH  + LOCAL_X - 1) / LOCAL_X;
+        groups_y = (TEXTURE_HEIGHT + LOCAL_Y - 1) / LOCAL_Y;
+        return true;
+    }
+
+    void update(const std::vector<Entity>& entities) {
         const unsigned int LOCAL_X = 16;
         const unsigned int LOCAL_Y = 16;
         unsigned int groups_x = (TEXTURE_WIDTH  + LOCAL_X - 1) / LOCAL_X;

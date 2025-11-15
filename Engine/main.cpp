@@ -1,6 +1,11 @@
 // Include standard headers
 #include <GL/glew.h>
+
+#if defined(__APPLE__) || defined(MACOSX)
+#include <OpenGL/gl.h>
+#else
 #include <GL/gl.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
@@ -54,10 +59,11 @@ using namespace glm;
 #include "Components/CameraComponent.h"
 #include "Components/LightComponent.h"
 #include "Components/ControllerComponent.h"
-#include "Components/AudioComponent.h"
+#include "Components/MyAudioComponent.h"
 #include "Components/ScriptComponent.h"
 // Systems
 #include "Systems/EntityManager.h"
+#include "Systems/Dispatcher.h"
 #include "Systems/RenderSystem.h"
 #include "Systems/LightSystem.h"
 #include "Systems/ControllerSystem.h"
@@ -73,15 +79,15 @@ using namespace glm;
 using json = nlohmann::json;
 
 // settings
-const unsigned int SCR_WIDTH = 512;
-const unsigned int SCR_HEIGHT = 512;
+unsigned int SCR_WIDTH = 512;
+unsigned int SCR_HEIGHT = 512;
 
-static GLuint computeProg = 0;
-static GLuint quadProg = 0;
-
+constexpr unsigned int MIN_WINDOW_WIDTH = 512;
+constexpr unsigned int MIN_WINDOW_HEIGHT = 512;
 std::string gameFolder;
 std::string scenePath;
 std::string mode;
+std::string mode2;
 json sceneData;
 
 
@@ -106,12 +112,9 @@ std::vector<Entity> entities;
 EntityManager entityManager;
 AudioSystem audioSystem(&entityManager);
 ScriptSystem scriptSystem;
-ControllerSystem input;
-
-const unsigned int LOCAL_X = 16;
-const unsigned int LOCAL_Y = 16;
-unsigned int groups_x = (TEXTURE_WIDTH  + LOCAL_X - 1) / LOCAL_X;
-unsigned int groups_y = (TEXTURE_HEIGHT + LOCAL_Y - 1) / LOCAL_Y;
+Dispatcher dispatcher;
+ControllerSystem input = ControllerSystem(dispatcher);
+RayTracerSystem* gRayTracerSystem = nullptr;
 
 
 void loadScene(){
@@ -165,7 +168,7 @@ std::ifstream sceneFile(scenePath);
                     if (entityData["mesh"].contains("subdivisions")) {
                         m.subdivisions = entityData["mesh"]["subdivisions"];
                     }
-                    m.loadPrimitive("PLANE", glm::vec3(entityManager.GetComponent<TransformComponent>(e.id).worldMatrix[3]));
+                    m.loadPrimitive("PLANE");
                 }
                 else if (entityData["mesh"]["mesh_type"] == "SPHERE") {
                     if(entityData["mesh"].contains("subdivisions")) {
@@ -294,7 +297,7 @@ std::ifstream sceneFile(scenePath);
             entityManager.AddComponent<ControllerComponent>(e.id,controller);
         }
         if(entityData.contains("audio")){
-            AudioComponent audio;
+            MyAudioComponent audio;
             if(entityData["audio"].contains("type")){
                 std::string typeStr = entityData["audio"]["type"].get<std::string>();
                 // lowercase for robust comparison
@@ -320,7 +323,7 @@ std::ifstream sceneFile(scenePath);
             } else {
                 //audioComponents[e.id] = audio;
                 audioSystem.addAudio(e.id, audio);
-                entityManager.AddComponent<AudioComponent>(e.id,audio);
+                entityManager.AddComponent<MyAudioComponent>(e.id,audio);
                 std::cout << "Registered audio for entity ID " << e.id << ": " << audio.audioFilePath << std::endl;
             }
         }
@@ -538,22 +541,27 @@ void processInput(GLFWwindow *window)
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 // ---------------------------------------------------------------------------------------------
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
+    if(gRayTracerSystem){
+        gRayTracerSystem->resize(width, height);
+    }
 }
 
 int main( int argc, char* argv[] )
 {
-    if (argc > 3) {
+    if (argc < 3) {
         std::cerr << "❌ Usage: ./Engine <game_folder> <mode>" << std::endl;
         return -1;
     }
 
     gameFolder = argv[1];
-    if(argc == 3) mode = argv[2];
+    if(argc >= 3) mode = argv[2];
+    if(argc >= 4) mode2 = argv[3];
     // scenePath = gameFolder + "/scene.json";
-    scenePath = gameFolder + "/cornelBox.json";
+    scenePath = gameFolder + "/scene.json";
 
     // Test Lua integration
     // 1. Créer un nouvel état Lua
@@ -600,6 +608,16 @@ int main( int argc, char* argv[] )
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
+
+    const GLFWvidmode* modeVid = glfwGetVideoMode(glfwGetPrimaryMonitor());
+    if(modeVid){
+        SCR_WIDTH = std::max(MIN_WINDOW_WIDTH, static_cast<unsigned int>(modeVid->width * 0.75));
+        SCR_HEIGHT = std::max(MIN_WINDOW_HEIGHT, static_cast<unsigned int>(modeVid->height * 0.75));
+    } else {
+        SCR_WIDTH = MIN_WINDOW_WIDTH;
+        SCR_HEIGHT = MIN_WINDOW_HEIGHT;
+    }
 
     // Open a window and create its OpenGL context
     window = glfwCreateWindow( SCR_WIDTH, SCR_HEIGHT, "Engine - GLFW", NULL, NULL);
@@ -610,6 +628,8 @@ int main( int argc, char* argv[] )
         return -1;
     }
     glfwMakeContextCurrent(window);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
     // Initialize GLEW
     glewExperimental = true; // Needed for core profile
@@ -652,92 +672,6 @@ int main( int argc, char* argv[] )
     glEnable(GL_CULL_FACE);
 
     GLuint programID = LoadShaders( "Shaders/vertex_shader.glsl", "Shaders/fragment_shader.glsl" );
-
-    GLuint texture;
-    glGenTextures(1, &texture);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA,GL_FLOAT, NULL);
-    glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-
-    const char* path="Shaders/computeShader.glsl";
-    std::ifstream sfile;
-    sfile.open(path);
-    std::stringstream sstream;
-    sstream<<sfile.rdbuf();
-    sfile.close();
-    std::string ccode=sstream.str();
-    const char* source=ccode.c_str();
-    GLuint cs=glCreateShader(GL_COMPUTE_SHADER);
-    glShaderSource(cs,1,&source,NULL);
-    glCompileShader(cs);
-
-    //erreur
-    GLint success;
-    glGetShaderiv(cs, GL_COMPILE_STATUS, &success);
-    if(!success) {
-        GLint maxLength = 0;
-        glGetShaderiv(cs, GL_INFO_LOG_LENGTH, &maxLength);
-        std::vector<GLchar> errorLog(maxLength);
-        glGetShaderInfoLog(cs, maxLength, &maxLength, &errorLog[0]);
-        std::cout << "Erreur de compilation du compute shader:" << std::endl;
-        std::cout << &errorLog[0] << std::endl;
-    }
-
-    computeProg=glCreateProgram();
-    glAttachShader(computeProg,cs);
-    glLinkProgram(computeProg);
-
-    //erreur
-    glGetProgramiv(computeProg, GL_LINK_STATUS, &success);
-    if(!success) {
-        GLint maxLength = 0;
-        glGetProgramiv(computeProg, GL_INFO_LOG_LENGTH, &maxLength);
-        std::vector<GLchar> errorLog(maxLength);
-        glGetProgramInfoLog(computeProg, maxLength, &maxLength, &errorLog[0]);
-        std::cout << "Erreur de liaison du compute shader:" << std::endl;
-        std::cout << &errorLog[0] << std::endl;
-    }
-
-
-    const char* vpath="Shaders/vertex.glsl";
-    std::ifstream vfile;
-    vfile.open(vpath);
-    std::stringstream vsstream;
-    vsstream<<vfile.rdbuf();
-    vfile.close();
-    std::string vcode=vsstream.str();
-    const char* vsource=vcode.c_str();
-    GLuint vs=glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vs,1,&vsource,NULL);
-    glCompileShader(vs);
-
-    const char* fpath="Shaders/fragment.glsl";
-    std::ifstream ffile;
-    ffile.open(fpath);
-    std::stringstream fsstream;
-    fsstream<<ffile.rdbuf();
-    ffile.close();
-    std::string fcode=fsstream.str();
-    const char* fsource=fcode.c_str();
-    GLuint fs=glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fs,1,&fsource,NULL);
-    glCompileShader(fs);
-
-    quadProg=glCreateProgram();
-    glAttachShader(quadProg,vs);
-    glAttachShader(quadProg,fs);
-    glLinkProgram(quadProg);
-
-
-    glUseProgram(quadProg);
-    GLint loc = glGetUniformLocation(quadProg, "tex");
-    if (loc >= 0) glUniform1i(loc, 0);
-    glUseProgram(0);
 
 
     // For speed computation
@@ -783,7 +717,7 @@ int main( int argc, char* argv[] )
 
     input.onCreate(window);
     std::cout << "--- Loading scene... ---" << std::endl;
-    if (mode == "-b") {
+    if (mode == "-b" || mode2 == "-b") {
         loadBenchmarkScene(sizeBenchmark);
         std::cout << "--- Benchmark scene with " << sizeBenchmark << " cubes loaded. ---" << std::endl;
         lastFrame = glfwGetTime();
@@ -801,17 +735,24 @@ int main( int argc, char* argv[] )
         }
     }
     if(!anyActiveCamera){
-        uint32_t camEntityId = 1000;
+        uint32_t camEntityId = UINT32_MAX;
         for (const auto &kv : entityManager.GetComponents<CameraComponent>()) if (kv.first < camEntityId) camEntityId = kv.first;
         entityManager.GetComponent<CameraComponent>(camEntityId).isActive = true;
     }
     std::cout << "--- Initialization... ---" << std::endl;
-    RenderSystem renderSystem(&entityManager, programID);
+    RenderSystem renderSystem(&entityManager, programID, &dispatcher);
+    scriptSystem.registerDispatcher(&dispatcher);
+    scriptSystem.registerEntities(&entities);
     LightSystem lightSystem(&entityManager, programID);
     lightSystem.update();
     TransformSystem transformSystem(&entityManager);
     transformSystem.update();
-    RayTracerSystem rayTracerSystem(&entityManager, computeProg, texture);
+    RayTracerSystem rayTracerSystem(&entityManager);
+    gRayTracerSystem = &rayTracerSystem;
+    rayTracerSystem.resize(SCR_WIDTH, SCR_HEIGHT);
+    if(!rayTracerSystem.initialize()){
+        std::cerr << "Failed to initialize RayTracerSystem." << std::endl;
+    }
     rayTracerSystem.onCreate(entities);
     scriptSystem.registerEntityManager(&entityManager);
     input.setScriptSystem(&scriptSystem);
@@ -831,7 +772,7 @@ int main( int argc, char* argv[] )
         // -----
         processInput(window);
         input.update(window,deltaTime);
-        if(mode == "-b"){
+        if(mode == "-b" || mode2 == "-b"){
             updateBenchmark(deltaTime);
         }
         
@@ -861,10 +802,15 @@ int main( int argc, char* argv[] )
         lightSystem.update();
         scriptSystem.onUpdate(deltaTime);
         transformSystem.update();
-        // renderSystem.update(entities);
-        rayTracerSystem.update(entities,quadProg);
-        
-
+#if defined(__APPLE__) || defined(MACOSX)
+        renderSystem.update(entities);
+#else
+        if(mode == "-r" || mode2 == "-r"){
+            rayTracerSystem.update(entities);
+        } else {
+            renderSystem.update(entities);
+        }
+#endif
 
         // Swap buffers
         glfwSwapBuffers(window);

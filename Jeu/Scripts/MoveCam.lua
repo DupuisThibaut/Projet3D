@@ -41,55 +41,49 @@ function onInit()
 end
 
 function onUpdate(dt)
-    -- Rien à faire ici pour l'instant
+    -- on utilise 'this.camera' et 'this.transform' directement
 end
 
 function onInput(event)
+    local cam = this.camera
+    local tr  = this.transform
+    if not cam or not tr then return end
+
     local speed = 5.0
     local sensitivity = 0.1
-    -- Calcul des directions
-    local forward = normalize(camera.target)
+    -- forward est un tableau {x,y,z} retourné par la métatable camera.target
+    local forward = normalize(cam.target)
     local right = normalize(cross(forward, {0,1,0}))
     local scrollY = event.scroll
 
-    -- Mouvement translation
-    for i, btn in ipairs(event.buttons) do
-        if btn == "Forward" then
-            transform.position = add(transform.position, scale(forward, speed * event.dt))
-        elseif btn == "Backward" then
-            transform.position = subtract(transform.position, scale(forward, speed * event.dt))
-        elseif btn == "Right" then
-            transform.position = add(transform.position, scale(right, speed * event.dt))
-        elseif btn == "Left" then
-            transform.position = subtract(transform.position, scale(right, speed * event.dt))
-        end
+    for _, btn in ipairs(event.buttons) do
+        if btn == "Forward" then 
+            tr.position = add(tr.position, scale(forward, speed * event.dt))
+        elseif btn == "Backward" then tr.position = subtract(tr.position, scale(forward, speed * event.dt))
+        elseif btn == "Right" then tr.position = add(tr.position, scale(right, speed * event.dt))
+        elseif btn == "Left" then tr.position = subtract(tr.position, scale(right, speed * event.dt)) end
 
-        -- Zoom avec la molette
         if scrollY ~= 0 and btn == "RightMouse" then
             sensitivity = sensitivity + scrollY * 0.01
-            if sensitivity < 0.01 then sensitivity = 0.01 end
-            if sensitivity > 1.0 then sensitivity = 1.0 end
             scrollY = 0
         end
     end
 
-    -- Mouvement souris pour rotation caméra
     if event.mouseMoved then
-        camera.yaw   = camera.yaw   + event.mouseDeltaX * sensitivity
-        camera.pitch = camera.pitch + event.mouseDeltaY * sensitivity
-
-        if camera.pitch > 89.0 then camera.pitch = 89.0 end
-        if camera.pitch < -89.0 then camera.pitch = -89.0 end
+        cam.yaw   = cam.yaw   + event.mouseDeltaX * sensitivity
+        cam.pitch = cam.pitch + event.mouseDeltaY * sensitivity
+        if cam.pitch > 89.0 then cam.pitch = 89.0 end
+        if cam.pitch < -89.0 then cam.pitch = -89.0 end
 
         local dir = {
-            math.cos(math.rad(camera.yaw)) * math.cos(math.rad(camera.pitch)),
-            math.sin(math.rad(camera.pitch)),
-            math.sin(math.rad(camera.yaw)) * math.cos(math.rad(camera.pitch))}
-        camera.target = normalize(dir)
+            math.cos(math.rad(cam.yaw)) * math.cos(math.rad(cam.pitch)),
+            math.sin(math.rad(cam.pitch)),
+            math.sin(math.rad(cam.yaw)) * math.cos(math.rad(cam.pitch))
+        }
+        cam.target = normalize(dir)
     end
 
-    -- Translation finale avec scroll
     if scrollY ~= 0 then
-        transform.position = add(transform.position, {0,0,-scrollY*0.5})
+        tr.position = add(tr.position, {0,0,-scrollY*0.5})
     end
 end

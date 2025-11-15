@@ -10,12 +10,17 @@
 #include "../Components/LuaScriptComponent.h"
 #include "../Components/InputEvent.h"
 #include "../Systems/ScriptSystem.h"
+#include "../Systems/Dispatcher.h"
 
 class ControllerSystem {
 public:
     InputEvent event;
     double lastMouseX = 0.0, lastMouseY = 0.0;
     bool rightMouseDown = false;
+    Dispatcher& dispatcher;
+    
+
+    ControllerSystem(Dispatcher& disp) : dispatcher(disp) {}
 
     void onCreate(GLFWwindow* window){
         // Stocker un pointeur vers ce système pour les callbacks
@@ -68,13 +73,7 @@ public:
         } else {
             rightMouseDown = false;
         }
-        if(scriptSystem) {
-            scriptSystem->onInput(event);
-        }
-        if(renderSystem) {
-            renderSystem->onInput(event);
-        }
-        dispatch(event);
+        dispatcher.dispatch(event);
         event.scroll = 0.0; // reset scroll after reading
     }
 

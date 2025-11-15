@@ -63,8 +63,33 @@ class RenderSystem {
 public:
     EntityManager* entityManager;
     GLuint shaderProgram;
-    RenderSystem(EntityManager* em, GLuint shaderProg) : entityManager(em), shaderProgram(shaderProg) {}
+    Dispatcher* dispatcher;
+    RenderSystem(EntityManager* em, GLuint shaderProg, Dispatcher* disp) : entityManager(em), shaderProgram(shaderProg), dispatcher(disp) {
+        dispatcher->subscribe([this](const InputEvent& event) {
+            this->onInput(event);
+            return false; // Ne pas arrêter la propagation
+        });
+    }
+
+    void debugPrintScene() {
+        if (!entityManager) { std::cerr << "[RenderSystem] no entityManager\n"; return; }
+        auto &meshes = entityManager->GetComponents<MeshComponent>();
+        std::cerr << "[RenderSystem] Mesh count = " << meshes.size() << "\n";
+        for (const auto &kv : meshes) {
+            uint32_t id = kv.first;
+            std::cerr << "  Mesh entity " << id;
+            std::cerr << " mesh="     << (entityManager->HasComponent<MeshComponent>(id)     ? "yes" : "no");
+            if(entityManager->HasComponent<MeshComponent>(id)) {
+                const MeshComponent& mesh = entityManager->GetComponent<MeshComponent>(id);
+                std::cerr << " (vao=" << mesh.VAO << " vtx=" << mesh.vertexCount << ")";
+            }
+            std::cerr << " transform=" << (entityManager->HasComponent<TransformComponent>(id) ? "yes" : "no");
+            std::cerr << " material="  << (entityManager->HasComponent<MaterialComponent>(id)  ? "yes" : "no");
+            std::cerr << "\n";
+        }
+    }
     void update(const std::vector<Entity>& entities) {
+        //debugPrintScene();
         glm::mat4 view;
         glm::mat4 proj;
         for(auto& camera : entityManager->GetComponents<CameraComponent>()){

@@ -7,7 +7,9 @@ function error_exit {
 }
 
 GAME_PATH="${1:-}"
-MODE="${2:-}"
+MODE1="${2:-}"
+MODE2="${3:-}"
+
 # Check if the build directory exists
 if [ ! -d "build" ]; then
     echo "Build directory does not exist. Creating build directory...."
@@ -28,4 +30,4 @@ echo "Building the project with make..."
 make -j || error_exit "Failed to build project."
 echo "Project built."
 cd ../
-./Engine "$GAME_PATH" "$MODE" || error_exit "Failed to launch the project."
+./Engine "$GAME_PATH" "$MODE1" "$MODE2" || error_exit "Failed to launch the project."

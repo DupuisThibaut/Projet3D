@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <iostream>
 
-#include "../Components/AudioComponent.h"
+#include "../Components/MyAudioComponent.h"
 #include "../Components/TransformComponent.h"
 #include "../common/miniaudio.h"
 
@@ -32,7 +32,7 @@ public:
 
     ~AudioSystem() {
         for (auto &kv : audioComponents) {
-            AudioComponent &comp = kv.second;
+            MyAudioComponent &comp = kv.second;
             if (comp.sound) {
                 ma_sound_stop(comp.sound);
                 ma_sound_uninit(comp.sound);
@@ -43,9 +43,9 @@ public:
         if (initialized) ma_engine_uninit(&engine);
     }
 
-    void addAudio(uint32_t id, AudioComponent& audio) {
+    void addAudio(uint32_t id, MyAudioComponent& audio) {
         if (!initialized) return;
-        AudioComponent comp = audio;
+        MyAudioComponent comp = audio;
         comp.sound = new ma_sound();
         unsigned int flags = MA_SOUND_FLAG_DECODE;
         if (comp.type == AudioType::MUSIC) flags = MA_SOUND_FLAG_STREAM;
@@ -99,7 +99,7 @@ public:
         if (!initialized) return;
         for (auto &kv : audioComponents) {
             uint32_t id = kv.first;
-            AudioComponent &comp = kv.second;
+            MyAudioComponent &comp = kv.second;
             if (comp.type == AudioType::SPATIAL && comp.sound) {
                 auto it = entityManager->GetComponents<TransformComponent>().find(id);
                 if (it != entityManager->GetComponents<TransformComponent>().end()) {
@@ -138,7 +138,7 @@ public:
 private:
     ma_engine engine;
     bool initialized = false;
-    std::unordered_map<uint32_t, AudioComponent> audioComponents;
+    std::unordered_map<uint32_t, MyAudioComponent> audioComponents;
 };
 
 #endif // AUDIOSYSTEM_H
