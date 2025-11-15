@@ -25,10 +25,8 @@ Moteur de jeu 3D développé en C++ avec OpenGL, utilisant une architecture ECS 
 - **ControllerSystem** : gestion des entrées clavier/souris (WASD, ESC)
 
 ### Rendu
-- Shaders vertex/fragment programmables
-- Frustum culling avec bounding spheres
-- Support textures (avec fallback pour NPOT)
-- Matériaux avec couleurs/textures
+- Support textures
+- Raytracing
 
 ### Audio (En développement)
 - 3 types : `MUSIC`, `SFX`, `SPATIAL`
@@ -44,7 +42,7 @@ Moteur de jeu 3D développé en C++ avec OpenGL, utilisant une architecture ECS 
 ### Chargement de scènes
 - Format JSON (`scene.json`)
 - Support meshes OFF et primitives (PLANE, SPHERE, BOX, CYLINDER, CONE, CAPSULE)
-- Hiérarchies d'entités (parent-children)
+- Hiérarchies d'entités (parent-enfant)
 
 ### Mode Benchmark
 - Test de performance avec grille de cubes
@@ -91,9 +89,16 @@ make -j$(nproc)
 ./execute.sh ../Jeu/ -b
 ```
 
+### Mode Raytracing
+``` bash
+./execute.sh ../Jeu/ -r
+```
+
 ### Contrôles
 - **WASD** : déplacement caméra (si `Controller` attaché)
 - **Souris** : orientation caméra
+- **R/F** : Activer et Désactiver le Wireframe
+- **C** : faire apparaître une sphère
 - **ESC** : quitter
 
 ## 📁 Structure du projet
@@ -189,10 +194,8 @@ HAI928I/
 
 ## ⚡ Optimisations
 
-- **Frustum culling** : ne dessine que les objets visibles
-- **Bounding spheres** : calcul automatique lors du chargement des meshes
-- **Hiérarchie de transforms** : mise à jour incrémentale (dirty flag)
 - **ECS** : itération cache-friendly sur les composants
+- **BVH** : Strucure d'accélération pour le raytracing
 
 ## 🐛 Debug
 
@@ -211,23 +214,6 @@ HAI928I/
 1. Vérifier chemins des fichiers WAV
 2. Vérifier que `AudioSystem` est initialisé après `loadScene()`
 3. Vérifier que la caméra active a un `TransformComponent`
-
-## 📊 Performances (Benchmark)
-
-Exemple de sortie :
-```
---- Benchmark scene with 50 cubes loaded. ---
-Moyenne FPS pour 50 cubes : 120.3 et 48400 triangles.
---- Benchmark scene with 75 cubes loaded. ---
-Moyenne FPS pour 75 cubes : 95.7 et 72600 triangles.
---- Benchmark scene with 112 cubes loaded. ---
-Moyenne FPS pour 112 cubes : 68.4 et 108416 triangles.
---- Benchmark scene with 168 cubes loaded. ---
-Moyenne FPS pour 168 cubes : 42.1 et 162624 triangles.
---- Benchmark scene with 252 cubes loaded. ---
-Moyenne FPS pour 252 cubes : 22.8 et 243984 triangles.
---- Benchmark terminé. ---
-```
 
 ## 📄 Licence
 
