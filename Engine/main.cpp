@@ -30,6 +30,11 @@ GLFWwindow* window;
 #include <iostream>
 #include <fstream>
 
+// Include IMGUI
+
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 
 using namespace glm;
 
@@ -48,6 +53,9 @@ using namespace glm;
 #include "Assets/Primitives/Cone.h"
 #include "Assets/Primitives/Capsule.h"
 
+#include <common/json.hpp>
+using json = nlohmann::json;
+
 
 // Entities
 #include "Entities/Entity.h"
@@ -61,6 +69,8 @@ using namespace glm;
 #include "Components/ControllerComponent.h"
 #include "Components/MyAudioComponent.h"
 #include "Components/ScriptComponent.h"
+#include "Components/TagComponent.h"
+#include "Components/LayerComponent.h"
 // Systems
 #include "Systems/EntityManager.h"
 #include "Systems/Dispatcher.h"
@@ -71,12 +81,12 @@ using namespace glm;
 #include "Systems/TransformSystem.h"
 #include "Systems/ScriptSystem.h"
 #include "Systems/RayTracerSystem.h"
+#include "Systems/EditorSystem.h"
 
 // Scripts
 #include "Scripts/CameraController.h"
 
-#include <common/json.hpp>
-using json = nlohmann::json;
+
 
 // settings
 unsigned int SCR_WIDTH = 512;
@@ -115,6 +125,7 @@ ScriptSystem scriptSystem;
 Dispatcher dispatcher;
 ControllerSystem input = ControllerSystem(dispatcher);
 RayTracerSystem* gRayTracerSystem = nullptr;
+EditorSystem* gEditorSystem = nullptr;
 
 
 void loadScene(){
@@ -217,6 +228,7 @@ std::ifstream sceneFile(scenePath);
                 }
             } else if (entityData["mesh"]["type"] == "file") {
                 std::string meshPath = gameFolder + "/" + entityData["mesh"]["path"].get<std::string>();
+                m.meshFilePath=meshPath;
                 m.load_OFF(meshPath);
             }
             //meshComponents[e.id] = m;
@@ -544,6 +556,8 @@ void processInput(GLFWwindow *window)
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
+    SCR_WIDTH = width;
+    SCR_HEIGHT = height;
     glViewport(0, 0, width, height);
     if(gRayTracerSystem){
         gRayTracerSystem->resize(width, height);
@@ -619,6 +633,8 @@ int main( int argc, char* argv[] )
         SCR_HEIGHT = MIN_WINDOW_HEIGHT;
     }
 
+    std::cout << "Window size: " << SCR_WIDTH << "x" << SCR_HEIGHT << std::endl;
+
     // Open a window and create its OpenGL context
     window = glfwCreateWindow( SCR_WIDTH, SCR_HEIGHT, "Engine - GLFW", NULL, NULL);
     if( window == NULL ){
@@ -628,9 +644,14 @@ int main( int argc, char* argv[] )
         return -1;
     }
     glfwMakeContextCurrent(window);
+    int framebufferWidth, framebufferHeight;
+    glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
+    SCR_WIDTH = framebufferWidth;
+    SCR_HEIGHT = framebufferHeight;
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
+
     // Initialize GLEW
     glewExperimental = true; // Needed for core profile
     if (glewInit() != GLEW_OK) {
@@ -640,15 +661,8 @@ int main( int argc, char* argv[] )
         return -1;
     }
 
-    // ...existing code...
-    // Initialize GLEW
-    glewExperimental = true; // Needed for core profile
-    if (glewInit() != GLEW_OK) {
-        fprintf(stderr, "Failed to initialize GLEW\n");
-        getchar();
-        glfwTerminate();
-        return -1;
-    }
+    gEditorSystem = new EditorSystem(&entityManager, &entities, scenePath);
+    gEditorSystem->initialize(window);
 
     // Ensure we can capture the escape key being pressed below
     glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
@@ -677,43 +691,6 @@ int main( int argc, char* argv[] )
     // For speed computation
     double lastTime = glfwGetTime();
     int nbFrames = 0;
-
-    // === 1. Définition des sommets du carré (2D centré sur l'origine) ===
-    float squareVertices[] = {
-        -0.5f, -0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f,
-        0.5f,  0.5f, 0.0f,
-        -0.5f,  0.5f, 0.0f
-    };
-
-    // Indices pour former deux triangles
-    unsigned short squareIndices[] = {
-        0, 1, 2,
-        2, 3, 0
-    };
-
-    // === 2. Création du VAO/VBO ===
-    GLuint VAO, VBO, EBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-
-    glBindVertexArray(VAO);
-
-    // VBO : positions
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(squareVertices), squareVertices, GL_STATIC_DRAW);
-
-    // EBO : indices
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(squareIndices), squareIndices, GL_STATIC_DRAW);
-
-    // Layout (location = 0 dans le shader)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    glBindVertexArray(0);
-
 
     input.onCreate(window);
     std::cout << "--- Loading scene... ---" << std::endl;
@@ -747,6 +724,8 @@ int main( int argc, char* argv[] )
     lightSystem.update();
     TransformSystem transformSystem(&entityManager);
     transformSystem.update();
+#if defined (__APPLE__) || defined(MACOSX)
+#else
     RayTracerSystem rayTracerSystem(&entityManager);
     gRayTracerSystem = &rayTracerSystem;
     rayTracerSystem.resize(SCR_WIDTH, SCR_HEIGHT);
@@ -754,6 +733,7 @@ int main( int argc, char* argv[] )
         std::cerr << "Failed to initialize RayTracerSystem." << std::endl;
     }
     rayTracerSystem.onCreate(entities);
+#endif
     scriptSystem.registerEntityManager(&entityManager);
     input.setScriptSystem(&scriptSystem);
     input.setRenderSystem(&renderSystem);
@@ -779,7 +759,7 @@ int main( int argc, char* argv[] )
         // Clear the screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         {
-            const auto &camMap = entityManager.GetComponents<CameraComponent>();
+            auto &camMap = entityManager.GetComponents<CameraComponent>();
             const auto &transMap = entityManager.GetComponents<TransformComponent>();
             uint32_t activeCamId = UINT32_MAX;
             for (const auto &kv : camMap) if (kv.second.isActive) { activeCamId = kv.first; break; }
@@ -791,9 +771,10 @@ int main( int argc, char* argv[] )
                 } else {
                     listenerPos = glm::vec3(0.0f);
                 }
-                const auto &cam = camMap.at(activeCamId);
+                auto &cam = const_cast<CameraComponent&>(camMap.at(activeCamId));
                 glm::vec3 listenerForward = cam.target;
                 glm::vec3 listenerUp = cam.up;
+                //cam.aspectRatio = static_cast<float>(SCR_WIDTH)/ static_cast<float>(SCR_HEIGHT);
                 audioSystem.updateListener(listenerPos, listenerForward, listenerUp);
             }
         }
@@ -802,16 +783,36 @@ int main( int argc, char* argv[] )
         lightSystem.update();
         scriptSystem.onUpdate(deltaTime);
         transformSystem.update();
-#if defined(__APPLE__) || defined(MACOSX)
-        renderSystem.update(entities);
-#else
-        if(mode == "-r" || mode2 == "-r"){
-            rayTracerSystem.update(entities);
-        } else {
-            renderSystem.update(entities);
+
+
+        float viewportX, viewportWidth, viewportHeight;
+        unsigned int viewportWidthInt, viewportHeightInt;
+        if(gEditorSystem){
+            gEditorSystem->processFontReload();
         }
+        gEditorSystem->beginFrame();
+        gEditorSystem->renderMenuBar();
+        gEditorSystem->renderHierarchy();
+        gEditorSystem->renderInspector();
+        gEditorSystem->renderStats(deltaTime);
+
+        gEditorSystem->configureViewport(viewportX,viewportWidth,viewportHeight,viewportWidthInt,viewportHeightInt);
+
+// ════════════════════════════════════════════════════════════════
+//  RENDU DE LA SCÈNE 3D
+// ════════════════════════════════════════════════════════════════
+#if defined(__APPLE__) || defined(MACOSX)
+renderSystem.update(entities);
+#else
+if(mode == "-r" || mode2 == "-r"){
+    rayTracerSystem.update(entities);
+} else {
+    renderSystem.update(entities);
+}
 #endif
 
+        gEditorSystem->restoreViewport();
+        gEditorSystem->endFrame();
         // Swap buffers
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -821,8 +822,11 @@ int main( int argc, char* argv[] )
            glfwWindowShouldClose(window) == 0 );
 
     glDeleteProgram(programID);
-    glDeleteVertexArrays(1, &VAO);
 
+    if(gEditorSystem){
+        gEditorSystem->shutdown();
+        delete gEditorSystem;
+    }
     // Close OpenGL window and terminate GLFW
     glfwTerminate();
 

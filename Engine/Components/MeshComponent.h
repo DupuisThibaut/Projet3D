@@ -29,6 +29,7 @@ struct MeshComponent {
     GLuint vertexCount = 0;
     
     PrimitiveType type;
+    std::string meshFilePath="";
 
     BoundingSphere boundingSphereFrustrumCulling;
 

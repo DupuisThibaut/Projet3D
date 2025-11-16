@@ -6,8 +6,11 @@
 #include <string>
 #include "Ray.h"
 
+#if defined(__APPLE__) 
+#include <GLUT/glut.h>
+#else
 #include <GL/glut.h>
-
+#endif
 #include <cfloat>
 
 #include <glm/glm.hpp>

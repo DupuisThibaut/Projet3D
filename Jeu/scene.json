@@ -1,143 +1,303 @@
 {
   "entities": [
     {
+      "audio": {
+        "isPlaying": false,
+        "loop": true,
+        "path": "../Jeu/audios/SoundTrack/Super Mario 64 - Main Theme Music - Bob-Omb Battlefield.wav",
+        "play_on_start": false,
+        "type": "MUSIC",
+        "volume": 1.0
+      },
       "id": 0,
-      "transform": {
-        "position": [0, -9.5, 0.0],
-        "rotation": [-90.0, 0.0, 0.0],
-        "scale": [10.0, 10.0, 10.0],
-        "parent": -1,
-        "children": []
+      "material": {
+        "path": "../Jeu/./texture/grass.png",
+        "type": "texture"
       },
       "mesh": {
-        "type": "primitive",
+        "height": 1.0,
         "mesh_type": "PLANE",
-        "subdivisions": 100,
-        "normal": [0.0, 1.0, 0.0],
-        "height": 2.0,
-        "width": 0.4
+        "normal": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "subdivisions": 100.0,
+        "type": "primitive",
+        "width": 1.0
       },
-      "material":{
-        "type":"texture",
-        "color":[1.0, 1.0, 1.0],
-        "ambient":[0.0, 1.0, 0.0],
-        "diffuse":[1.0, 0.0, 0.0],
-        "specular":[1.0, 0.0, 0.0],
-        "shininess":0.5,
-        "path":"./texture/grass.png"
-      },
-      "audio": {
-        "type": "MUSIC",
-        "path": "audios/SoundTrack/Super Mario 64 - Main Theme Music - Bob-Omb Battlefield.wav",
-        "volume": 1.0,
-        "play_on_start": false,
-        "loop": true,
-        "isPlaying": true
+      "transform": {
+        "children": [],
+        "parent": 4294967295,
+        "position": [
+          0.0,
+          -9.5,
+          0.0
+        ],
+        "rotation": [
+          -90.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          10.0,
+          10.0,
+          10.0
+        ]
       }
     },
     {
       "id": 1,
-      "transform": {
-        "position": [0.0, -9.0, 0.0],
-        "rotation": [45.0, 90.0, 0.0],
-        "scale": [0.5, 0.5, 0.5],
-        "parent": -1,
-        "children": []
+      "material": {
+        "ambient": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "color": [
+          0.8921005725860596,
+          0.5726369619369507,
+          0.03526243939995766
+        ],
+        "diffuse": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "shininess": 0.5,
+        "specular": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "type": "color"
       },
       "mesh": {
-        "type": "file",
-        "path": "./mesh/suzanne.off"
-      },
-      "material":{
-        "type":"color",
-        "color":[1.0, 0.0, 0.0],
-        "ambient":[1.0, 0.0, 0.0],
-        "diffuse":[1.0, 0.0, 0.0],
-        "specular":[1.0, 0.0, 0.0],
-        "shininess":0.5,
-        "path":"./texture/2k_moon.jpg"
+        "path": "../Jeu/./mesh/suzanne.off",
+        "type": "file"
       },
       "script": {
-        "type": "Lua",
-        "path": "./Scripts/ChangeColor.lua"
+        "path": "../Jeu/./Scripts/ChangeColor.lua",
+        "type": "Lua"
+      },
+      "transform": {
+        "children": [],
+        "parent": 4294967295,
+        "position": [
+          0.0,
+          -9.0,
+          0.0
+        ],
+        "rotation": [
+          45.0,
+          90.0,
+          0.0
+        ],
+        "scale": [
+          0.5,
+          0.5,
+          0.5
+        ]
       }
     },
     {
-      "id" : 2,
       "camera": {
-        "idCam": 0,
-        "target": [0.0, 0.0, 0.0],
-        "up": [0.0, 1.0, 0.0],
+        "far_plane": 100.0,
         "fov": 45.0,
-        "near_plane": 0.1,
-        "far_plane": 100.0
-      },
-      "transform": {
-        "position": [0.0, -9.0, 3.0],
-        "rotation": [0.0, 0.0, 0.0],
-        "scale": [1.0, 1.0, 1.0],
-        "parent": -1,
-        "children": []
+        "idCam": 0,
+        "near_plane": 0.10000000149011612,
+        "target": [
+          -0.06625741720199585,
+          -0.14864540100097656,
+          -0.9866684079170227
+        ],
+        "up": [
+          0.0,
+          1.0,
+          0.0
+        ]
       },
       "controller": {
         "speed": 2.5
       },
+      "id": 2,
       "script": {
-        "type": "Lua",
-        "path": "./Scripts/MoveCam.lua"
+        "path": "../Jeu/./Scripts/MoveCam.lua",
+        "type": "Lua"
+      },
+      "transform": {
+        "children": [],
+        "parent": 4294967295,
+        "position": [
+          -0.2945804297924042,
+          -7.25580358505249,
+          9.46919059753418
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
       }
     },
     {
       "id": 3,
       "light": {
-        "intensity": 0.7
+        "intensity": 0.699999988079071
       },
-      "transform": {
-        "position": [0.0, -12.0, 0.0],
-        "rotation": [0.0, 0.0, 0.0],
-        "scale": [1.0, 1.0, 1.0],
-        "parent": -1,
-        "children": []
-      },
-      "material":{
-        "type":"color",
-        "color":[0.9, 0.9, 1.0],
-        "ambient":[1.0, 0.0, 0.0],
-        "diffuse":[1.0, 0.0, 0.0],
-        "specular":[1.0, 0.0, 0.0],
-        "shininess":0.5
+      "material": {
+        "ambient": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "color": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "diffuse": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "shininess": 0.5,
+        "specular": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "type": "color"
       },
       "script": {
-        "type": "Lua",
-        "path": "./Scripts/SunCycle.lua"
+        "path": "../Jeu/./Scripts/SunCycle.lua",
+        "type": "Lua"
+      },
+      "transform": {
+        "children": [],
+        "parent": 4294967295,
+        "position": [
+          15.696511268615723,
+          12.394333839416504,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
       }
     },
     {
       "id": 4,
-      "transform": {
-      "position": [-2.5, -9.0, 0.0],
-      "rotation": [0.0, 0.0, 0.0],
-      "scale": [0.5, 0.5, 0.5],
-      "parent": -1,
-      "children": []
+      "material": {
+        "ambient": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "color": [
+          0.8999999761581421,
+          0.8999999761581421,
+          1.0
+        ],
+        "diffuse": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "shininess": 0.5,
+        "specular": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "type": "color"
       },
       "mesh": {
-      "type": "primitive",
-      "mesh_type": "SPHERE",
-      "subdivisions": 100,
-      "normal": [0.0, 1.0, 0.0],
-      "height": 2.0,
-      "width": 0.4
+        "mesh_type": "SPHERE",
+        "subdivisions": 100.0,
+        "type": "primitive"
       },
-      "material":{
-      "type":"color",
-      "color":[0.9, 0.9, 1.0],
-      "ambient":[1.0, 0.0, 0.0],
-      "diffuse":[1.0, 0.0, 0.0],
-      "specular":[1.0, 0.0, 0.0],
-      "shininess":0.5
+      "transform": {
+        "children": [],
+        "parent": 4294967295,
+        "position": [
+          -2.5,
+          -9.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          0.5,
+          0.5,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "material": {
+        "ambient": [
+          0.25,
+          0.20000000298023224,
+          0.07000000029802322
+        ],
+        "color": [
+          1.0,
+          0.8399999737739563,
+          0.0
+        ],
+        "diffuse": [
+          0.75,
+          0.6100000143051147,
+          0.23000000417232513
+        ],
+        "shininess": 51.20000076293945,
+        "specular": [
+          0.6299999952316284,
+          0.5600000023841858,
+          0.3700000047683716
+        ],
+        "type": "color"
+      },
+      "mesh": {
+        "mesh_type": "BOX",
+        "type": "primitive"
+      },
+      "transform": {
+        "children": [],
+        "parent": 4294967295,
+        "position": [
+          1.600000023841858,
+          -9.5,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
       }
     }
   ]
 }
-

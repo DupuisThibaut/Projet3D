@@ -8,7 +8,7 @@
 #include "../Components/LightComponent.h"
 #include "../Components/ControllerComponent.h"
 #include "../Components/MyAudioComponent.h"
-#include "../Components/TagConponent.h"
+#include "../Components/TagComponent.h"
 #include "../Components/LayerComponent.h"
 #include "../Components/InputEvent.h"
 #include "../Systems/EntityManager.h"

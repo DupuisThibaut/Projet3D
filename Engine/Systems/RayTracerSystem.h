@@ -10,6 +10,9 @@
 #include <functional>
 #include <iostream>
 #include <string_view>
+#if defined(__APPLE__)
+#include <sstream>
+#endif
 
 
 struct sp{
