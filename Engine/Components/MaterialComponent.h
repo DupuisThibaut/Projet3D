@@ -55,7 +55,7 @@ struct MaterialComponent {
         return true;
     }
 
-    void setColor(const glm::vec3& col, const glm::vec3& diffuse, const glm::vec3& specular, const glm::vec3& ambient, float shini) {
+    void setColor(const glm::vec3& col, const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular, float shini) {
         type = Type::Color;
         color = col;
         diffuse_material=diffuse;

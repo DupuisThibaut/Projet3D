@@ -18,6 +18,7 @@ struct sp{
 
 struct sq{
     float blx,bly,blz,p1,rx,ry,rz,p2,ux,uy,uz,p3,nx,ny,nz,p4,ra,ga,ba,b,rd,gd,bd,c,rs,gs,bs,s;
+    // uvec2 texture;
 };
 
 struct l{
@@ -43,6 +44,8 @@ struct bvh{
 
 struct world{
     glm::mat4 modelMat;
+    glm::mat4 invModelMatrix;
+    glm::mat3 normalMat;
 };
 
 std::vector<std::vector<unsigned short>> newTriangles;
@@ -496,6 +499,10 @@ public:
                         // std::cout<<"worldMatrix : "<<model[3][0]<<" worldMatrix : "<<model[3][1]<<" worldMatrix : "<<model[3][2]<<" worldMatrix : "<<model[3][3]<<std::endl;
                         glm::vec3 m_right_vector=rotaScale*M.m_right_vector;
                         glm::vec3 m_up_vector=rotaScale*M.m_up_vector;
+                        float lengthUV=length(m_up_vector);
+                        float lengthRV=length(m_right_vector);
+                        m_up_vector=normalize(m_up_vector);
+                        m_right_vector=normalize(m_right_vector);
                         // std::cout<<"rv : "<<m_right_vector[0]<<" rv : "<<m_right_vector[1]<<" rv : "<<m_right_vector[2]<<std::endl;
                         // std::cout<<"uv : "<<m_up_vector[0]<<" uv : "<<m_up_vector[1]<<" uv : "<<m_up_vector[2]<<std::endl;
                         b.blx=t.position[0];
@@ -516,8 +523,8 @@ public:
                         // std::cout<<"m_right_vector x : "<<b.rx<<" m_right_vector y : "<<b.ry<<" m_right_vector z : "<<b.rz<<std::endl;
                         // std::cout<<"m_up_vector x : "<<b.ux<<" m_up_vector y : "<<b.uy<<" m_up_vector z : "<<b.uz<<std::endl;
                         // std::cout<<"m_normal x : "<<b.nx<<" m_normal y : "<<b.ny<<" m_normal z : "<<b.nz<<std::endl;
-                        // std::cout<<"length right : "<<length(m_right_vector)<<std::endl;
-                        // std::cout<<"length up : "<<length(m_up_vector)<<std::endl;
+                        // std::cout<<"length right : "<<lengthRV<<std::endl;
+                        // std::cout<<"length up : "<<lengthUV<<std::endl;
                         b.ra=mat.ambient_material[0];
                         b.ga=mat.ambient_material[1];
                         b.ba=mat.ambient_material[2];
@@ -528,17 +535,39 @@ public:
                         b.gs=mat.specular_material[1];
                         b.bs=mat.specular_material[2];
                         b.s=mat.shininess;
+                        // std::cout<<"ambient_material x : "<<b.ra<<" ambient_material y : "<<b.ga<<" ambient_material z : "<<b.ba<<std::endl;
+                        // std::cout<<"diffuse_material x : "<<b.rd<<" diffuse_material y : "<<b.gd<<" diffuse_material z : "<<b.bd<<std::endl;
+                        // std::cout<<"specular_material x : "<<b.rs<<" specular_material y : "<<b.gs<<" specular_material z : "<<b.bs<<std::endl;
+                        // std::cout<<"shininess : "<<b.s<<std::endl;
                         b.b=0.0f;
                         b.c=0.0f;
-                        b.p1=0.0f;
-                        b.p2=0.0f;
-                        b.p3=0.0f;
-                        b.p4=0.0f;
+                        b.p3=lengthUV;
+                        b.p2=lengthRV;
+                        b.p1=length(m_right_vector);
+                        b.p4=length(m_up_vector);
+                        // if (GLEW_ARB_bindless_texture) {
+                        //     std::cout << "Bindless active!" << std::endl;
+                        // }
+                        // GLuint textPlane;
+                        // glGenTextures(1, &textPlane);
+                        // glBindTexture(GL_TEXTURE_2D, textPlane);
+                        // int w,h,c;
+                        // unsigned char* img=stbi_load(mat.texturePath.c_str(),&w,&h,&c,4);
+                        // glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
+                        // glGenerateMipmap(GL_TEXTURE_2D);
+                        // stbi_image_free(img);
+                        // GLuint64 text=glGetTextureHandleARB(textPlane);
+                        // glMakeTextureHandleResidentARB(text);
+                        // uint32_t lo=uint32_t(text & 0xFFFFFFFFull);
+                        // uint32_t hi=uint32_t(text >> 32);
+                        // b.texture[0]=lo;
+                        // b.texture[1]=hi;
+                        // b.texture=text;
                         sqs.push_back(b);
                     }
                     //Meshes
                     if(M.type==PrimitiveType::MESH){
-                        world w;w.modelMat=t.worldMatrix;worlds.push_back(w);
+                        world w;w.modelMat=t.worldMatrix;w.invModelMatrix=inverse(t.worldMatrix);w.normalMat=transpose(inverse(mat3(t.worldMatrix)));worlds.push_back(w);
                         std::vector<bvh> bvhsYep=creerBVH(M.vertices,M.triangles);
                         M.triangles=newTriangles;
                         int nbV=0,nbT=0;

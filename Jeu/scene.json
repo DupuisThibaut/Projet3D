@@ -20,10 +20,10 @@
       "material":{
         "type":"texture",
         "color":[1.0, 1.0, 1.0],
-        "ambient":[0.0, 1.0, 0.0],
-        "diffuse":[1.0, 0.0, 0.0],
-        "specular":[1.0, 0.0, 0.0],
-        "shininess":0.5,
+        "ambient":[0.0, 0.0, 0.0],
+        "diffuse":[1.0, 1.0, 1.0],
+        "specular":[1.0, 1.0, 1.0],
+        "shininess":16.0,
         "path":"./texture/grass.png"
       },
       "audio": {
@@ -51,10 +51,10 @@
       "material":{
         "type":"color",
         "color":[1.0, 0.0, 0.0],
-        "ambient":[1.0, 0.0, 0.0],
-        "diffuse":[1.0, 0.0, 0.0],
-        "specular":[1.0, 0.0, 0.0],
-        "shininess":0.5,
+        "ambient":[0.0, 0.0, 0.0],
+        "diffuse":[1.0, 1.0, 1.0],
+        "specular":[1.0, 1.0, 1.0],
+        "shininess":16.0,
         "path":"./texture/2k_moon.jpg"
       },
       "script": {
@@ -132,10 +132,10 @@
       "material":{
       "type":"color",
       "color":[0.9, 0.9, 1.0],
-      "ambient":[1.0, 0.0, 0.0],
-      "diffuse":[1.0, 0.0, 0.0],
-      "specular":[1.0, 0.0, 0.0],
-      "shininess":0.5
+      "ambient":[0.0, 0.0, 0.0],
+      "diffuse":[1.0, 1.0, 1.0],
+      "specular":[1.0, 1.0, 1.0],
+      "shininess":16.0
       }
     }
   ]

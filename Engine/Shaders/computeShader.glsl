@@ -19,6 +19,8 @@ uniform int nbMesh;
 
 struct World{
 	mat4 modelMat;
+	mat4 invModelMatrix;
+	mat3 normalMat;
 };
 layout(std430,binding=9)buffer Worlds{World worlds[];};
 
@@ -52,10 +54,11 @@ struct Square{
 	vec4 ambient;
 	vec4 diffuse;
 	vec4 specular;
+	// uvec2 text;
 };
 layout(std430,binding=2)buffer Squares{Square squares[];};
 
-float intersectSquare(vec3 ro, vec3 rd, vec3 m_bottom_left, vec3 m_right_vector, vec3 m_up_vector, vec3 m_normal){
+float intersectSquare(vec3 ro, vec3 rd, vec3 m_bottom_left, vec3 m_right_vector, vec3 m_up_vector, vec3 m_normal, float lengthUV, float lengthRV){
 	if(dot(rd,m_normal)>=0.0)return -1.0;
 	// if(dot(rd,m_normal)>=0.0)m_normal=-m_normal;
 	float d=dot(m_bottom_left,m_normal);
@@ -63,9 +66,11 @@ float intersectSquare(vec3 ro, vec3 rd, vec3 m_bottom_left, vec3 m_right_vector,
 	if(t<0.0)return -1.0;
 	vec3 p=ro+t*rd;
 	vec3 q=p-m_bottom_left;
-	float proj1=dot(q,m_right_vector)/length(m_right_vector);
-	float proj2=dot(q,m_up_vector)/length(m_up_vector);
-	if((proj1<=length(m_right_vector) && proj1>=0.0) && (proj2<=length(m_up_vector) && proj2>=0.0)){
+	float proj1=dot(q,m_right_vector);
+	float proj2=dot(q,m_up_vector);
+	// float proj1=dot(q,m_right_vector)/length(m_right_vector);
+	// float proj2=dot(q,m_up_vector)/length(m_up_vector);
+	if((proj1<=lengthRV && proj1>=0.0) && (proj2<=lengthUV && proj2>=0.0)){
 		return t;
 	}
 	return -1.0;
@@ -175,7 +180,7 @@ float intersectMesh(vec3 ro, vec3 rd, int indice){
 			if(left!=-1){
 				stack[sp++]=left;
 			}
-			if(right!=1){
+			if(right!=-1){
 				stack[sp++]=right;
 			}
 			if(left==-1 && right==-1){
@@ -223,17 +228,29 @@ intersection intersectScene(vec3 ro, vec3 rd){
     }
 
     for (int i=0;i<nbSquare;++i) {
-        float t=intersectSquare(ro,rd,squares[i].m_bottom_left.xyz,squares[i].m_right_vector.xyz,squares[i].m_up_vector.xyz,squares[i].m_normal.xyz);
+        float t=intersectSquare(ro,rd,squares[i].m_bottom_left.xyz,squares[i].m_right_vector.xyz,squares[i].m_up_vector.xyz,squares[i].m_normal.xyz,squares[i].m_up_vector[3],squares[i].m_right_vector[3]);
         if(t>0.0 && t<res.tmin){res.tmin=t;res.hitIndex=i;res.inter=2;}
     }
 
 	// if(intersectBVH(roLocal,rdLocal,bvhs[0].minp.xyz,bvhs[0].maxp.xyz)>0.0){
 		for(int i=0;i<nbMesh;i++){
-			mat4 invModelMatrix=inverse(worlds[i].modelMat);
+			mat4 model=worlds[i].modelMat;
+			mat4 invModelMatrix=worlds[i].invModelMatrix;
 			vec3 roLocal=(invModelMatrix*vec4(ro,1.0)).xyz;
 			vec3 rdLocal=normalize((invModelMatrix*vec4(rd,0.0)).xyz);
 			float t=intersectMesh(roLocal,rdLocal,i);
-			if(t>0.0 && t<res.tmin){res.tmin=t;res.hitIndex=i;res.inter=3;}
+			if(t>0.0){
+				vec3 pLocal=roLocal+rdLocal*t;
+				vec3 pMonde=(model*vec4(pLocal,1.0)).xyz;
+				float t2=length(pMonde-ro);
+				if(t2<res.tmin){
+					mat3 normalMat=worlds[i].normalMat;
+					// mat3 normalMat=transpose(inverse(mat3(model)));
+					normalTriangleFinal=normalize(normalMat*normalTriangleFinal);
+					// normalTriangleFinal=normalize(mat3(model)*normalTriangleFinal);
+					res.tmin=t2;res.hitIndex=i;res.inter=3;
+				}
+			}
 		}
 	// }
 
@@ -258,6 +275,22 @@ vec3 randomInUnitSphere(vec2 seed, float radius) {
     );
 }
 
+// vec3 randomInUnitSphere(vec2 seed, float radius)
+// {
+//     float u = rand(seed);
+//     float v = rand(seed * 2.0);
+//     float w = rand(seed * 3.0);
+//     float theta = 2.0 * 3.14159265359 * u;
+//     float phi   = acos(1.0 - 2.0 * v);
+//     float r = radius * pow(w, 1.0 / 3.0);
+//     float sinPhi = sin(phi);
+//     return vec3(
+//         r * sinPhi * cos(theta),
+//         r * sinPhi * sin(theta),
+//         r * cos(phi)
+//     );
+// }
+
 vec3 couleur(vec3 ro, vec3 rd, intersection inter,ivec2 pix){
 	int hitIndex=inter.hitIndex;
 	float tmin=inter.tmin;
@@ -273,11 +306,11 @@ vec3 couleur(vec3 ro, vec3 rd, intersection inter,ivec2 pix){
 		vec3 v=ro-p;
 		L=normalize(L);
 		v=normalize(v);
-		n=normalize(n);
-		float cosT=dot(n,L);
+		// n=normalize(n);
+		float cosT=max(dot(n,L),0.0);
 		vec3 r=reflect(-L,n);
 		r=normalize(r);
-		float cosA=dot(r,v);
+		float cosA=max(dot(r,v),0.0);
 		float shininess=spheres[hitIndex].specular.w;
 		vec3 ambient=spheres[hitIndex].ambient.rgb;
 		vec3 diffuse=spheres[hitIndex].diffuse.rgb;
@@ -288,24 +321,25 @@ vec3 couleur(vec3 ro, vec3 rd, intersection inter,ivec2 pix){
 		// vec3 ro2=p+n*0.00001;
 		// intersection intersectionLumiere=intersectScene(ro2,L);
 		// if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<length(L))finalColor=vec3(0.0,0.0,0.0);
-		// vec3 ro2=p+n*0.001;
-		// intersection intersectionLumiere=intersectScene(ro2,L);
-		// if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<Ldist){
-		// 	finalColor=vec3(0.0,0.0,0.0);
-		// }
+		vec3 ro2=p+n*0.01;
+		intersection intersectionLumiere=intersectScene(ro2,L);
+		if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<Ldist){
+			// finalColor=vec3(0.0,0.0,0.0);
+			finalColor=finalColor*0.1;
+		}
 		// float nombreRayonOmbreDouce=0.0;
-		// int nombreRayon=10;
+		// int nombreRayon=1;
 		// float pourcentageOmbre=0.0;
-		// vec3 nrd=L;
-		// vec3 ro2=p+n*0.001;
+		// vec3 newRay;
+		// vec3 ro2=p+n*0.01;
 		// for(int i=0;i<nombreRayon;i++){
-		// 	vec3 rand=randomInUnitSphere(vec2(float(i),pix.x+pix.y),lights[0].rayon);			
-		// 	vec3 nl=lights[0].pos+rand;
-		// 	vec3 rd2=normalize(nl-p);
+		// 	newRay=light+randomInUnitSphere(vec2(float(i),pix.x+pix.y),lights[0].rayon);
+		// 	float dist=length(newRay-p);			
+		// 	vec3 rd2=normalize(newRay-p);
 		// 	intersection intersectionLumiere=intersectScene(ro2,rd2);
-		// 	if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<length(rd2))nombreRayonOmbreDouce++;
+		// 	if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<dist)nombreRayonOmbreDouce++;
 		// }
-		// pourcentageOmbre=nombreRayonOmbreDouce/nombreRayon;
+		// pourcentageOmbre=nombreRayonOmbreDouce/float(nombreRayon);
 		// finalColor*=(1.0-pourcentageOmbre);
     }else if(interObjet==2){
 		vec3 light=lights[0].pos;
@@ -316,11 +350,11 @@ vec3 couleur(vec3 ro, vec3 rd, intersection inter,ivec2 pix){
 		vec3 v=ro-p;
 		L=normalize(L);
 		v=normalize(v);
-		n=normalize(n);
-		float cosT=dot(n,L);
+		// n=normalize(n);
+		float cosT=max(dot(n,L),0.0);
 		vec3 r=reflect(-L,n);
 		r=normalize(r);
-		float cosA=dot(r,v);
+		float cosA=max(dot(r,v),0.0);
 		float shininess=squares[hitIndex].specular.w;
 		vec3 ambient=squares[hitIndex].ambient.rgb;
 		vec3 diffuse=squares[hitIndex].diffuse.rgb;
@@ -331,37 +365,43 @@ vec3 couleur(vec3 ro, vec3 rd, intersection inter,ivec2 pix){
 		// vec3 ro2=p+n*0.00001;
 		// intersection intersectionLumiere=intersectScene(ro2,L);
 		// if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<length(L))finalColor=vec3(0.0,0.0,0.0);
-		// vec3 ro2=p+n*0.001;
-		// intersection intersectionLumiere=intersectScene(ro2,L);
-		// if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<Ldist){
-		// 	finalColor=vec3(0.0,0.0,0.0);
-		// }		
+		vec3 ro2=p+n*0.01;
+		intersection intersectionLumiere=intersectScene(ro2,L);
+		if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<Ldist){
+			// finalColor=vec3(0.0,0.0,0.0);
+			finalColor=finalColor*0.1;
+		}		
 		// float nombreRayonOmbreDouce=0.0;
-		// int nombreRayon=10;
+		// int nombreRayon=1;
 		// float pourcentageOmbre=0.0;
 		// vec3 newRay;
-		// vec3 ro2=p+n*0.001;
+		// vec3 ro2=p+n*0.01;
 		// for(int i=0;i<nombreRayon;i++){
-		// 	newRay=light+randomInUnitSphere(vec2(float(i),pix.x+pix.y),lights[0].rayon);			
+		// 	newRay=light+randomInUnitSphere(vec2(float(i),pix.x+pix.y),lights[0].rayon);
+		// 	float dist=length(newRay-p);			
 		// 	vec3 rd2=normalize(newRay-p);
 		// 	intersection intersectionLumiere=intersectScene(ro2,rd2);
-		// 	if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<length(rd2))nombreRayonOmbreDouce++;
+		// 	if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<dist)nombreRayonOmbreDouce++;
 		// }
-		// pourcentageOmbre=nombreRayonOmbreDouce/nombreRayon;
+		// pourcentageOmbre=nombreRayonOmbreDouce/float(nombreRayon);
 		// finalColor*=(1.0-pourcentageOmbre);
     }else if(interObjet==3){
 		vec3 light=lights[0].pos;
         vec3 p=ro+rd*tmin;
 		vec3 L=light-p;
-        vec3 n=normalTriangleFinal;
+		float Ldist=length(L);
+		// mat4 model=worlds[hitIndex].modelMat;
+		// mat3 normalMat=transpose(inverse(mat3(model)));
+        // vec3 n=normalize(mat3(model)*normalTriangleFinal);
+		vec3 n=normalTriangleFinal;
 		vec3 v=ro-p;
 		L=normalize(L);
 		v=normalize(v);
-		n=normalize(n);
-		float cosT=dot(n,L);
+		// n=normalize(n);
+		float cosT=max(dot(n,L),0.0);
 		vec3 r=reflect(-L,n);
 		r=normalize(r);
-		float cosA=dot(r,v);
+		float cosA=max(dot(r,v),0.0);
 		float shininess=meshes[hitIndex].specular.w;
 		vec3 ambient=meshes[hitIndex].ambient.rgb;
 		vec3 diffuse=meshes[hitIndex].diffuse.rgb;
@@ -369,9 +409,15 @@ vec3 couleur(vec3 ro, vec3 rd, intersection inter,ivec2 pix){
 		finalColor[0]=l[0]*ambient[0]+l[0]*diffuse[0]*cosT+l[0]*specular[0]*pow(cosA,shininess);
 		finalColor[1]=l[1]*ambient[1]+l[1]*diffuse[1]*cosT+l[1]*specular[1]*pow(cosA,shininess);
 		finalColor[2]=l[2]*ambient[2]+l[2]*diffuse[2]*cosT+l[2]*specular[2]*pow(cosA,shininess);
-		vec3 ro2=p+n*0.00001;
+		// vec3 ro2=p+n*0.00001;
+		// intersection intersectionLumiere=intersectScene(ro2,L);
+		// if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<length(L))finalColor=vec3(0.0,0.0,0.0);
+		vec3 ro2=p+n*0.01;
 		intersection intersectionLumiere=intersectScene(ro2,L);
-		if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<length(L))finalColor=vec3(0.0,0.0,0.0);
+		if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<Ldist){
+			finalColor=vec3(0.0,0.0,0.0);
+		}
+		// vec3 c=texture(sqs[hitIndex].tex,vec2(u,v)).rgb;
 		// float nombreRayonOmbreDouce=0.0;
 		// int nombreRayon=10;
 		// float pourcentageOmbre=0.0;

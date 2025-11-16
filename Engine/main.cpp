@@ -238,6 +238,7 @@ std::ifstream sceneFile(scenePath);
                     glm::vec3 ambient=glm::vec3(entityData["material"]["ambient"][0],
                                                 entityData["material"]["ambient"][1],
                                                 entityData["material"]["ambient"][2]);
+                    std::cout<<"ambient_material x : "<<ambient[0]<<" ambient_material y : "<<ambient[1]<<" ambient_material z : "<<ambient[2]<<std::endl;
                     glm::vec3 diffuse=glm::vec3(entityData["material"]["diffuse"][0],
                                                 entityData["material"]["diffuse"][1],
                                                 entityData["material"]["diffuse"][2]);
@@ -246,6 +247,10 @@ std::ifstream sceneFile(scenePath);
                                                 entityData["material"]["specular"][2]);
                     float shininess=entityData["material"]["shininess"];
                     mat.setColor(color,ambient,diffuse,specular,shininess);
+                    if( entityData["material"].contains("path")){
+                        std::string texturePath = gameFolder + "/" + entityData["material"]["path"].get<std::string>();
+                        mat.setTexture(texturePath);
+                    }
                 } else {
                 // Default material
                 mat.setColor(glm::vec3(1.0f, 1.0f, 1.0f),glm::vec3(1.0f, 1.0f, 1.0f),glm::vec3(1.0f, 1.0f, 1.0f),glm::vec3(1.0f, 1.0f, 1.0f),1.0f);
@@ -561,7 +566,7 @@ int main( int argc, char* argv[] )
     if(argc >= 3) mode = argv[2];
     if(argc >= 4) mode2 = argv[3];
     // scenePath = gameFolder + "/scene.json";
-    scenePath = gameFolder + "/scene.json";
+    scenePath = gameFolder + "/cornelBox.json";
 
     // Test Lua integration
     // 1. Créer un nouvel état Lua
