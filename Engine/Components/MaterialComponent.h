@@ -27,6 +27,8 @@ struct MaterialComponent {
     glm::vec3 ambient_material;
     float shininess;
 
+    int particularite;
+
     void setTexture(const std::string& path) {
         type = Type::Texture;
         texturePath = path;

@@ -3,8 +3,8 @@
     {
       "id": 0,
       "transform": {
-        "position": [-1.0, 0.0, -1.0],
-        "rotation": [0.0, 0.0, 0.0],
+        "position": [0.0, 1.0, -1.0],
+        "rotation": [90.0, 0.0, 0.0],
         "scale": [2.0, 2.0, 2.0],
         "parent": -1,
         "children": []
@@ -123,14 +123,15 @@
       "ambient":[0.0, 0.0, 0.0],
       "diffuse":[1.0, 1.0, 1.0],
       "specular":[1.0, 1.0, 1.0],
-      "shininess":16.0
+      "shininess":16.0,
+      "reflection":1
       }
     },
     {
       "id": 5,
       "transform": {
-        "position": [1.0, 0.0, -1.0],
-        "rotation": [0.0, -90.0, 0.0],
+        "position": [1.0, 1.0, 0.0],
+        "rotation": [0.0, 0.0, 90.0],
         "scale": [2.0, 2.0, 2.0],
         "parent": -1,
         "children": []
@@ -156,8 +157,8 @@
     {
       "id": 6,
       "transform": {
-        "position": [1.0, 0.0, 1.0],
-        "rotation": [0.0, 180.0, 0.0],
+        "position": [0.0, 1.0, 1.0],
+        "rotation": [-90.0, 0.0, 0.0],
         "scale": [2.0, 2.0, 2.0],
         "parent": -1,
         "children": []
@@ -183,8 +184,8 @@
     {
       "id": 7,
       "transform": {
-        "position": [-1.0, 0.0, 1.0],
-        "rotation": [0.0, 90.0, 0.0],
+        "position": [-1.0, 1.0, 0.0],
+        "rotation": [0.0, 0.0, -90.0],
         "scale": [2.0, 2.0, 2.0],
         "parent": -1,
         "children": []
@@ -210,8 +211,8 @@
     {
       "id": 8,
       "transform": {
-        "position": [-1.0, 0.0, 1.0],
-        "rotation": [90.0, 180.0, 180.0],
+        "position": [0.0, 0.0, 0.0],
+        "rotation": [0.0, 0.0, 0.0],
         "scale": [2.0, 2.0, 2.0],
         "parent": -1,
         "children": []
@@ -237,8 +238,8 @@
     {
       "id": 9,
       "transform": {
-        "position": [-1.0, 2.0, 1.0],
-        "rotation": [90.0, 90.0, 0.0],
+        "position": [0.0, 2.0, 0.0],
+        "rotation": [180.0, 0.0, 0.0],
         "scale": [2.0, 2.0, 2.0],
         "parent": -1,
         "children": []

@@ -10,14 +10,16 @@
 class Plane {
 public:
     public:
+    glm::vec3 m_centre;
     glm::vec3 m_normal;
     glm::vec3 m_bottom_left;
     glm::vec3 m_right_vector;
     glm::vec3 m_up_vector;
 
     Plane(){}
-    Plane(glm::vec3 const & bottomLeft , glm::vec3 const & rightVector , glm::vec3 const & upVector , float width=1. , float height=1. ,
+    Plane(glm::vec3 const & centre , glm::vec3 const & rightVector , glm::vec3 const & upVector , glm::vec3 const & bottomLeft , float width=1. , float height=1. ,
            float uMin = 0.f , float uMax = 1.f , float vMin = 0.f , float vMax = 1.f){
+            m_centre=centre;
             m_right_vector = rightVector;
             m_up_vector = upVector;
             m_normal = glm::normalize(glm::cross(rightVector , upVector));

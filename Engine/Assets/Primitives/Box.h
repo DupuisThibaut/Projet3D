@@ -20,6 +20,7 @@
 
 class Box : public Mesh {
 public:
+    glm::vec3 centre;
 
     Box() : Mesh() {}
     void build_arrays(std::vector<glm::vec3> & positions,

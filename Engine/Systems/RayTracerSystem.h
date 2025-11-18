@@ -14,11 +14,12 @@
 
 struct sp{
     float x,y,z,rayon,ra,ga,ba,b,rd,gd,bd,c,rs,gs,bs,s;
+    uvec2 texture;uvec2 padding;
 };
 
 struct sq{
     float blx,bly,blz,p1,rx,ry,rz,p2,ux,uy,uz,p3,nx,ny,nz,p4,ra,ga,ba,b,rd,gd,bd,c,rs,gs,bs,s;
-    // uvec2 texture;
+    uvec2 texture;uvec2 padding;
 };
 
 struct l{
@@ -36,16 +37,18 @@ struct tri{
 struct m{
     int pv,nbv,pt,nbt;
     float ar,ag,ab,p1,dr,dg,db,p2,sr,sg,sb,s;
+    uvec2 texture;uvec2 padding;
 };
 
 struct bvh{
-    float minx,miny,minz;int nb;float maxx,maxy,maxz;int prof;int left,right,start,count;
+    float minx,miny,minz,nb;float maxx,maxy,maxz,prof;int left,right,start,count;
 };
 
 struct world{
     glm::mat4 modelMat;
     glm::mat4 invModelMatrix;
     glm::mat3 normalMat;
+    glm::vec4 testSphere;
 };
 
 std::vector<std::vector<unsigned short>> newTriangles;
@@ -278,6 +281,7 @@ public:
     }
 
     bool initialize(){
+
         glGenTextures(1, &texture);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture);
@@ -485,6 +489,26 @@ public:
                         b.s=mat.shininess;
                         b.b=0.0f;
                         b.c=0.0f;
+                        // if(mat.texturePath!=""){
+                        //     GLuint textSphere;
+                        //     glGenTextures(1, &textSphere);
+                        //     glBindTexture(GL_TEXTURE_2D, textSphere);
+                        //     int w,h,c;
+                        //     unsigned char* img=stbi_load(mat.texturePath.c_str(),&w,&h,&c,4);
+                        //     glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
+                        //     glGenerateMipmap(GL_TEXTURE_2D);
+                        //     stbi_image_free(img);
+                        //     GLuint64 text=glGetTextureHandleARB(textSphere);
+                        //     glMakeTextureHandleResidentARB(text);
+                        //     uint32_t lo=uint32_t(text & 0xFFFFFFFFull);
+                        //     uint32_t hi=uint32_t(text >> 32);
+                        //     b.texture[0]=lo;
+                        //     b.texture[1]=hi;
+                        //     b.padding[0]=1;
+                        // }else{
+                        //     b.padding[0]=-1;
+                        // }
+                        if(mat.particularite==1)b.padding[1]=1;
                         sps.push_back(b);
                     }
                     //Squares
@@ -499,30 +523,31 @@ public:
                         // std::cout<<"worldMatrix : "<<model[3][0]<<" worldMatrix : "<<model[3][1]<<" worldMatrix : "<<model[3][2]<<" worldMatrix : "<<model[3][3]<<std::endl;
                         glm::vec3 m_right_vector=rotaScale*M.m_right_vector;
                         glm::vec3 m_up_vector=rotaScale*M.m_up_vector;
+                        glm::vec3 m_bottom_left=t.position-m_right_vector/2.0f-m_up_vector/2.0f;
                         float lengthUV=length(m_up_vector);
                         float lengthRV=length(m_right_vector);
                         m_up_vector=normalize(m_up_vector);
                         m_right_vector=normalize(m_right_vector);
                         // std::cout<<"rv : "<<m_right_vector[0]<<" rv : "<<m_right_vector[1]<<" rv : "<<m_right_vector[2]<<std::endl;
                         // std::cout<<"uv : "<<m_up_vector[0]<<" uv : "<<m_up_vector[1]<<" uv : "<<m_up_vector[2]<<std::endl;
-                        b.blx=t.position[0];
-                        b.bly=t.position[1];
-                        b.blz=t.position[2];
+                        b.blx=m_bottom_left[0];
+                        b.bly=m_bottom_left[1];
+                        b.blz=m_bottom_left[2];
                         b.rx=m_right_vector[0];
                         b.ry=m_right_vector[1];
                         b.rz=m_right_vector[2];
                         b.ux=m_up_vector[0];
                         b.uy=m_up_vector[1];
                         b.uz=m_up_vector[2];
-                        glm::vec3 m_normal=cross(m_right_vector,m_up_vector);
+                        glm::vec3 m_normal=cross(m_up_vector,m_right_vector);
                         m_normal=normalize(m_normal);
                         b.nx=m_normal[0];
                         b.ny=m_normal[1];
                         b.nz=m_normal[2];
                         // std::cout<<"centre x : "<<b.blx<<" centre y : "<<b.bly<<" centre z : "<<b.blz<<std::endl;
-                        // std::cout<<"m_right_vector x : "<<b.rx<<" m_right_vector y : "<<b.ry<<" m_right_vector z : "<<b.rz<<std::endl;
-                        // std::cout<<"m_up_vector x : "<<b.ux<<" m_up_vector y : "<<b.uy<<" m_up_vector z : "<<b.uz<<std::endl;
-                        // std::cout<<"m_normal x : "<<b.nx<<" m_normal y : "<<b.ny<<" m_normal z : "<<b.nz<<std::endl;
+                        std::cout<<"m_right_vector x : "<<b.rx<<" m_right_vector y : "<<b.ry<<" m_right_vector z : "<<b.rz<<std::endl;
+                        std::cout<<"m_up_vector x : "<<b.ux<<" m_up_vector y : "<<b.uy<<" m_up_vector z : "<<b.uz<<std::endl;
+                        std::cout<<"m_normal x : "<<b.nx<<" m_normal y : "<<b.ny<<" m_normal z : "<<b.nz<<std::endl;
                         // std::cout<<"length right : "<<lengthRV<<std::endl;
                         // std::cout<<"length up : "<<lengthUV<<std::endl;
                         b.ra=mat.ambient_material[0];
@@ -545,29 +570,31 @@ public:
                         b.p2=lengthRV;
                         b.p1=length(m_right_vector);
                         b.p4=length(m_up_vector);
-                        // if (GLEW_ARB_bindless_texture) {
-                        //     std::cout << "Bindless active!" << std::endl;
+                        // if(mat.texturePath!=""){
+                        //     GLuint textPlane;
+                        //     glGenTextures(1, &textPlane);
+                        //     glBindTexture(GL_TEXTURE_2D, textPlane);
+                        //     int w,h,c;
+                        //     unsigned char* img=stbi_load(mat.texturePath.c_str(),&w,&h,&c,4);
+                        //     glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
+                        //     glGenerateMipmap(GL_TEXTURE_2D);
+                        //     stbi_image_free(img);
+                        //     GLuint64 text=glGetTextureHandleARB(textPlane);
+                        //     glMakeTextureHandleResidentARB(text);
+                        //     uint32_t lo=uint32_t(text & 0xFFFFFFFFull);
+                        //     uint32_t hi=uint32_t(text >> 32);
+                        //     b.texture[0]=lo;
+                        //     b.texture[1]=hi;
+                        //     b.padding[0]=1;
+                        // }else{
+                        //     b.padding[0]=-1;
                         // }
-                        // GLuint textPlane;
-                        // glGenTextures(1, &textPlane);
-                        // glBindTexture(GL_TEXTURE_2D, textPlane);
-                        // int w,h,c;
-                        // unsigned char* img=stbi_load(mat.texturePath.c_str(),&w,&h,&c,4);
-                        // glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
-                        // glGenerateMipmap(GL_TEXTURE_2D);
-                        // stbi_image_free(img);
-                        // GLuint64 text=glGetTextureHandleARB(textPlane);
-                        // glMakeTextureHandleResidentARB(text);
-                        // uint32_t lo=uint32_t(text & 0xFFFFFFFFull);
-                        // uint32_t hi=uint32_t(text >> 32);
-                        // b.texture[0]=lo;
-                        // b.texture[1]=hi;
+                        if(mat.particularite==1)b.padding[1]=1;
                         // b.texture=text;
                         sqs.push_back(b);
                     }
                     //Meshes
                     if(M.type==PrimitiveType::MESH){
-                        world w;w.modelMat=t.worldMatrix;w.invModelMatrix=inverse(t.worldMatrix);w.normalMat=transpose(inverse(mat3(t.worldMatrix)));worlds.push_back(w);
                         std::vector<bvh> bvhsYep=creerBVH(M.vertices,M.triangles);
                         M.triangles=newTriangles;
                         int nbV=0,nbT=0;
@@ -590,6 +617,17 @@ public:
                             ve.v=M.uvs[j][1];
                             vs.push_back(ve);
                         }
+                        world w;w.modelMat=t.worldMatrix;w.invModelMatrix=inverse(t.worldMatrix);w.normalMat=transpose(inverse(mat3(t.worldMatrix)));
+                        glm::vec3 centre=glm::vec3((maxx+minx)/2.0f,(maxy+miny)/2.0f,(maxz+minz)/2.0f);
+                        glm::vec3 centreModel=glm::vec3(w.modelMat*vec4(centre,1.0));
+                        w.testSphere[0]=centreModel[0];w.testSphere[1]=centreModel[1];w.testSphere[2]=centreModel[2];w.testSphere[3]=distance(centre,glm::vec3(maxx,maxy,maxz))*0.2;
+                        std::cout<<"min : "<<minx<<" min : "<<miny<<" min : "<<minz<<std::endl;
+                        std::cout<<"max : "<<maxx<<" max : "<<maxy<<" max : "<<maxz<<std::endl;
+                        std::cout<<"centre : "<<centre[0]<<" centre : "<<centre[1]<<" centre : "<<centre[2]<<std::endl;
+                        std::cout<<"centreModel : "<<centreModel[0]<<" centreModel : "<<centreModel[1]<<" centreModel : "<<centreModel[2]<<std::endl;
+                        std::cout<<"rayon : "<<w.testSphere[3]<<std::endl;
+                        std::cout<<"distance : "<<distance(centre,glm::vec3(maxx,maxy,maxz))<<std::endl;
+                        worlds.push_back(w);
                         for(unsigned int j=0;j<M.triangles.size();j++){
                             std::vector<unsigned short> triangle=M.triangles[j];
                             tri tr;
@@ -619,6 +657,26 @@ public:
                         mesh.sg=mat.specular_material[1];
                         mesh.sb=mat.specular_material[2];
                         mesh.s=mat.shininess;
+                        if(mat.particularite==1)mesh.padding[1]=1;
+                        // if(mat.texturePath!=""){
+                        //     GLuint textMesh;
+                        //     glGenTextures(1, &textMesh);
+                        //     glBindTexture(GL_TEXTURE_2D, textMesh);
+                        //     int w,h,c;
+                        //     unsigned char* img=stbi_load(mat.texturePath.c_str(),&w,&h,&c,4);
+                        //     glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
+                        //     glGenerateMipmap(GL_TEXTURE_2D);
+                        //     stbi_image_free(img);
+                        //     GLuint64 text=glGetTextureHandleARB(textMesh);
+                        //     glMakeTextureHandleResidentARB(text);
+                        //     uint32_t lo=uint32_t(text & 0xFFFFFFFFull);
+                        //     uint32_t hi=uint32_t(text >> 32);
+                        //     mesh.texture[0]=lo;
+                        //     mesh.texture[1]=hi;
+                        //     mesh.padding[0]=1;
+                        // }else{
+                        //     mesh.padding[0]=-1;
+                        // }
                         ms.push_back(mesh);
                         for(unsigned int j=0;j<bvhsYep.size();j++){
                             if(bvhsYep[j].left!=-1)bvhsYep[j].left+=nbBVH;

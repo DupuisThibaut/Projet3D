@@ -1,4 +1,5 @@
 #version 430 core
+// #extension GL_ARB_bindless_texture : require
 layout(local_size_x = 16, local_size_y = 16) in;
 
 layout(rgba32f, binding = 0) uniform image2D imgOutput;
@@ -11,6 +12,9 @@ uniform int nbSquare;
 uniform int nbLight;
 uniform int nbMesh;
 
+vec2 uvTest;
+vec2 uvFinal;
+
 // struct intersect{
 // 	float t;
 // 	vec3 normal;
@@ -21,6 +25,7 @@ struct World{
 	mat4 modelMat;
 	mat4 invModelMatrix;
 	mat3 normalMat;
+	vec4 testSphere;
 };
 layout(std430,binding=9)buffer Worlds{World worlds[];};
 
@@ -30,6 +35,8 @@ struct Sphere{
 	vec4 ambient;
 	vec4 diffuse;
 	vec4 specular;
+	uvec2 text;
+	uvec2 padding;
 };
 layout(std430,binding=1)buffer Spheres{Sphere spheres[];};
 
@@ -54,7 +61,8 @@ struct Square{
 	vec4 ambient;
 	vec4 diffuse;
 	vec4 specular;
-	// uvec2 text;
+	uvec2 text;
+	uvec2 padding;
 };
 layout(std430,binding=2)buffer Squares{Square squares[];};
 
@@ -66,11 +74,12 @@ float intersectSquare(vec3 ro, vec3 rd, vec3 m_bottom_left, vec3 m_right_vector,
 	if(t<0.0)return -1.0;
 	vec3 p=ro+t*rd;
 	vec3 q=p-m_bottom_left;
-	float proj1=dot(q,m_right_vector);
-	float proj2=dot(q,m_up_vector);
+	float proj1=dot(q,m_right_vector)/lengthRV;
+	float proj2=dot(q,m_up_vector)/lengthUV;
 	// float proj1=dot(q,m_right_vector)/length(m_right_vector);
 	// float proj2=dot(q,m_up_vector)/length(m_up_vector);
-	if((proj1<=lengthRV && proj1>=0.0) && (proj2<=lengthUV && proj2>=0.0)){
+	if((proj1<=1.0 && proj1>=0.0) && (proj2<=1.0 && proj2>=0.0)){
+		uvTest=vec2(proj1,proj2);
 		return t;
 	}
 	return -1.0;
@@ -103,14 +112,14 @@ struct Mesh{
 	vec4 ambient;
 	vec4 diffuse;
 	vec4 specular;
+	uvec2 text;
+	uvec2 padding;
 };
 layout(std430,binding=6)buffer Meshes{Mesh meshes[];};
 
 struct BVH{
-	vec3 minp;
-	int nb;
-	vec3 maxp;
-	int prof;
+	vec4 minp;
+	vec4 maxp;
 	ivec4 info;//0 child, 1 start, 2 count 
 };
 layout(std430,binding=7)buffer BVHS{BVH bvhs[];};
@@ -148,7 +157,7 @@ float intersectTriangle(vec3 ro, vec3 rd, vec3 v0, vec3 v1, vec3 v2){
 	return t;
 }
 
-float intersectBVH(vec3 ro, vec3 rd, vec3 minp, vec3 maxp) {
+float intersectBVH(vec3 ro, vec3 rd, vec3 minp, vec3 maxp){
     vec3 inv=1.0/rd;
     vec3 tmin=(minp-ro)*inv;
     vec3 tmax=(maxp-ro)*inv;
@@ -163,48 +172,56 @@ float intersectBVH(vec3 ro, vec3 rd, vec3 minp, vec3 maxp) {
 }
 
 float intersectMesh(vec3 ro, vec3 rd, int indice){
-	int premierVertex=meshes[indice].info[0];
-	int premierBVH=meshes[indice].info[1];
-	int premierTriangle=meshes[indice].info[2];
-	int nbTriangle=meshes[indice].info[3];
-	int sp=0;
-	int stack[64];
-	stack[sp++]=premierBVH;
-	float tmin=1e20;
-	while(sp>0){
-		int node=stack[--sp];
-		float tbvh=intersectBVH(ro,rd,bvhs[node].minp.xyz,bvhs[node].maxp.xyz);
-		if(tbvh>=0.0){
-			int left=bvhs[node].info[0];
-			int right=bvhs[node].info[1];
-			if(left!=-1){
-				stack[sp++]=left;
-			}
-			if(right!=-1){
-				stack[sp++]=right;
-			}
-			if(left==-1 && right==-1){
-				int start=bvhs[node].info[2];
-				int count=bvhs[node].info[3];
-				for(int i=0;i<count;i++){
-					int numeroTriangle=premierTriangle+start+i;
-					int i0=triangles[numeroTriangle].indices[0]+premierVertex;
-					int i1=triangles[numeroTriangle].indices[1]+premierVertex;
-					int i2=triangles[numeroTriangle].indices[2]+premierVertex;
-					vec3 v0=vertices[i0].position.xyz;
-					vec3 v1=vertices[i1].position.xyz;
-					vec3 v2=vertices[i2].position.xyz;
-					float t=intersectTriangle(ro,rd,v0,v1,v2);
-					if(t>0.0 && t<tmin){
-						tmin=t;
-						normalTriangleFinal=normalize(cross(v1-v0,v2-v0));
-					}
-				}
-			}
-		}
-	}
-	if(tmin==1e20)return -1.0;
-	return tmin;
+    int premierVertex=meshes[indice].info[0];
+    int premierBVH=meshes[indice].info[1];
+    int premierTriangle=meshes[indice].info[2];
+    int stack[64];
+    int sp=0;
+    stack[sp++]=premierBVH;
+    float tmin=1e20;
+    while(sp>0){
+        int node=stack[--sp];
+        float tnode=intersectBVH(ro,rd,bvhs[node].minp.xyz,bvhs[node].maxp.xyz);
+        if(tnode<0.0||tnode>tmin)continue;
+        int left=bvhs[node].info[0];
+        int right=bvhs[node].info[1];
+        if(left==-1 && right==-1) {
+            int start=bvhs[node].info[2];
+            int count=bvhs[node].info[3];
+            for(int i=0;i<count;i++){
+                int tri=premierTriangle+start+i;
+                int i0=triangles[tri].indices[0]+premierVertex;
+                int i1=triangles[tri].indices[1]+premierVertex;
+                int i2=triangles[tri].indices[2]+premierVertex;
+                vec3 v0=vertices[i0].position.xyz;
+                vec3 v1=vertices[i1].position.xyz;
+                vec3 v2=vertices[i2].position.xyz;
+                float t=intersectTriangle(ro,rd,v0,v1,v2);
+                if(t>0 && t<tmin){
+                    tmin=t;
+                    normalTriangleFinal=normalize(cross(v1-v0,v2-v0));
+                }
+            }
+			if(tmin!=1e20)return tmin;
+            continue;
+        }
+        float tLeft=(left!=-1)? intersectBVH(ro,rd,bvhs[left].minp.xyz,bvhs[left].maxp.xyz):-1;
+        float tRight=(right!=-1)? intersectBVH(ro,rd,bvhs[right].minp.xyz,bvhs[right].maxp.xyz):-1;
+        if(tLeft>0 && tRight>0){
+            if(tLeft<tRight){
+                stack[sp++]=right;
+                stack[sp++]=left;
+            }else{
+                stack[sp++]=left;
+                stack[sp++]=right;
+            }
+        }else if(tLeft>0){
+            stack[sp++]=left;
+        }else if(tRight>0){
+            stack[sp++]=right;
+        }
+    }
+    return(tmin==1e20)? -1.0 : tmin;
 }
 
 
@@ -229,13 +246,16 @@ intersection intersectScene(vec3 ro, vec3 rd){
 
     for (int i=0;i<nbSquare;++i) {
         float t=intersectSquare(ro,rd,squares[i].m_bottom_left.xyz,squares[i].m_right_vector.xyz,squares[i].m_up_vector.xyz,squares[i].m_normal.xyz,squares[i].m_up_vector[3],squares[i].m_right_vector[3]);
-        if(t>0.0 && t<res.tmin){res.tmin=t;res.hitIndex=i;res.inter=2;}
+        if(t>0.0 && t<res.tmin){res.tmin=t;res.hitIndex=i;res.inter=2;uvFinal=uvTest;}
     }
 
 	// if(intersectBVH(roLocal,rdLocal,bvhs[0].minp.xyz,bvhs[0].maxp.xyz)>0.0){
 		for(int i=0;i<nbMesh;i++){
 			mat4 model=worlds[i].modelMat;
 			mat4 invModelMatrix=worlds[i].invModelMatrix;
+			// vec3 centre=(model*vec4(worlds[i].testSphere.xyz,1.0)).xyz;
+			// float testS=intersectSphere(ro,rd,worlds[i].testSphere.xyz,worlds[i].testSphere.w);
+			// if(testS<0.0 || testS>res.tmin)continue;
 			vec3 roLocal=(invModelMatrix*vec4(ro,1.0)).xyz;
 			vec3 rdLocal=normalize((invModelMatrix*vec4(rd,0.0)).xyz);
 			float t=intersectMesh(roLocal,rdLocal,i);
@@ -291,18 +311,137 @@ vec3 randomInUnitSphere(vec2 seed, float radius) {
 //     );
 // }
 
+vec3 computeReflection(vec3 ro, vec3 n, vec3 p, ivec2 pix){
+	vec3 v=ro-2*dot(ro,n)*n;
+	v=normalize(v);
+	vec3 vo=p+v*0.01;
+	intersection inter=intersectScene(vo,v);
+	ro=vo;vec3 rd=v;
+	int hitIndex=inter.hitIndex;
+	float tmin=inter.tmin;
+	int interObjet=inter.inter;
+	vec3 l=vec3(0.8,0.8,0.8);
+	vec3 finalColor=vec3(1.0,1.0,1.0);
+    if(interObjet==1){
+		// if(spheres[hitIndex].padding[0]==1){
+		// 	sampler2D tex=sampler2D(spheres[hitIndex].text);
+		// 	finalColor=texture(tex,uvFinal).rgb;
+		// }else{
+		// 	finalColor=vec3(1.0,1.0,1.0);
+		// }
+		vec3 light=lights[0].pos;
+		vec3 p=ro+rd*tmin;
+		vec3 L=light-p;
+		float Ldist=length(L);
+		vec3 n=(p-spheres[hitIndex].centre)/spheres[hitIndex].rayon;
+		vec3 v=ro-p;
+		L=normalize(L);
+		v=normalize(v);
+		float cosT=max(dot(n,L),0.0);
+		vec3 r=reflect(-L,n);
+		r=normalize(r);
+		float cosA=max(dot(r,v),0.0);
+		float shininess=spheres[hitIndex].specular.w;
+		vec3 ambient=spheres[hitIndex].ambient.rgb;
+		vec3 diffuse=spheres[hitIndex].diffuse.rgb;
+		vec3 specular=spheres[hitIndex].specular.rgb;
+		finalColor[0]=l[0]*ambient[0]+l[0]*diffuse[0]*cosT+l[0]*specular[0]*pow(cosA,shininess);
+		finalColor[1]=l[1]*ambient[1]+l[1]*diffuse[1]*cosT+l[1]*specular[1]*pow(cosA,shininess);
+		finalColor[2]=l[2]*ambient[2]+l[2]*diffuse[2]*cosT+l[2]*specular[2]*pow(cosA,shininess);
+		vec3 ro2=p+n*0.01;
+		intersection intersectionLumiere=intersectScene(ro2,L);
+		if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<Ldist){
+			finalColor=finalColor*0.1;
+		}
+    }else if(interObjet==2){		
+		// if(squares[hitIndex].padding[0]==1){
+		// 	sampler2D tex=sampler2D(squares[hitIndex].text);
+		// 	finalColor=texture(tex,uvFinal).rgb;
+		// }else{
+		// 	finalColor=vec3(1.0,1.0,1.0);
+		// }
+		vec3 light=lights[0].pos;
+        vec3 p=ro+rd*tmin;
+		vec3 L=light-p;
+		float Ldist=length(L);
+        vec3 n=squares[hitIndex].m_normal.xyz;
+		vec3 v=ro-p;
+		L=normalize(L);
+		v=normalize(v);
+		float cosT=max(dot(n,L),0.0);
+		vec3 r=reflect(-L,n);
+		r=normalize(r);
+		float cosA=max(dot(r,v),0.0);
+		float shininess=squares[hitIndex].specular.w;
+		vec3 ambient=squares[hitIndex].ambient.rgb;
+		vec3 diffuse=squares[hitIndex].diffuse.rgb;
+		vec3 specular=squares[hitIndex].specular.rgb;
+		finalColor[0]*=l[0]*ambient[0]+l[0]*diffuse[0]*cosT+l[0]*specular[0]*pow(cosA,shininess);
+		finalColor[1]*=l[1]*ambient[1]+l[1]*diffuse[1]*cosT+l[1]*specular[1]*pow(cosA,shininess);
+		finalColor[2]*=l[2]*ambient[2]+l[2]*diffuse[2]*cosT+l[2]*specular[2]*pow(cosA,shininess);
+		vec3 ro2=p+n*0.01;
+		intersection intersectionLumiere=intersectScene(ro2,L);
+		if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<Ldist){
+			finalColor=finalColor*0.1;
+		}
+    }else if(interObjet==3){
+		// if(meshes[hitIndex].padding[0]==1){
+		// 	sampler2D tex=sampler2D(meshes[hitIndex].text);
+		// 	finalColor=texture(tex,uvFinal).rgb;
+		// }else{
+		// 	finalColor=vec3(1.0,1.0,1.0);
+		// }
+		vec3 light=lights[0].pos;
+        vec3 p=ro+rd*tmin;
+		vec3 L=light-p;
+		float Ldist=length(L);
+		vec3 n=normalTriangleFinal;
+		vec3 v=ro-p;
+		L=normalize(L);
+		v=normalize(v);
+		float cosT=max(dot(n,L),0.0);
+		vec3 r=reflect(-L,n);
+		r=normalize(r);
+		float cosA=max(dot(r,v),0.0);
+		float shininess=meshes[hitIndex].specular.w;
+		vec3 ambient=meshes[hitIndex].ambient.rgb;
+		vec3 diffuse=meshes[hitIndex].diffuse.rgb;
+		vec3 specular=meshes[hitIndex].specular.rgb;
+		finalColor[0]=l[0]*ambient[0]+l[0]*diffuse[0]*cosT+l[0]*specular[0]*pow(cosA,shininess);
+		finalColor[1]=l[1]*ambient[1]+l[1]*diffuse[1]*cosT+l[1]*specular[1]*pow(cosA,shininess);
+		finalColor[2]=l[2]*ambient[2]+l[2]*diffuse[2]*cosT+l[2]*specular[2]*pow(cosA,shininess);
+		vec3 ro2=p+n*0.01;
+		intersection intersectionLumiere=intersectScene(ro2,L);
+		if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<Ldist){
+			finalColor=vec3(0.0,0.0,0.0);
+		}
+    }else{
+        finalColor=vec3(0.68,0.85,0.90);
+    }
+	return finalColor;
+}
+
 vec3 couleur(vec3 ro, vec3 rd, intersection inter,ivec2 pix){
 	int hitIndex=inter.hitIndex;
 	float tmin=inter.tmin;
 	int interObjet=inter.inter;
 	vec3 l=vec3(0.8,0.8,0.8);
-	vec3 finalColor=vec3(1.0,0.0,0.0);
+	vec3 finalColor=vec3(1.0,1.0,1.0);
     if(interObjet==1){
+		// if(spheres[hitIndex].padding[0]==1){
+		// 	sampler2D tex=sampler2D(spheres[hitIndex].text);
+		// 	finalColor=texture(tex,uvFinal).rgb;
+		// }else{
+		// 	finalColor=vec3(1.0,1.0,1.0);
+		// }
 		vec3 light=lights[0].pos;
-        vec3 p=ro+rd*tmin;
+		vec3 p=ro+rd*tmin;
 		vec3 L=light-p;
 		float Ldist=length(L);
-        vec3 n=(p-spheres[hitIndex].centre)/spheres[hitIndex].rayon;
+		vec3 n=(p-spheres[hitIndex].centre)/spheres[hitIndex].rayon;
+		if(spheres[hitIndex].padding[1]==1){
+			finalColor*=computeReflection(rd,n,p,pix);
+		}
 		vec3 v=ro-p;
 		L=normalize(L);
 		v=normalize(v);
@@ -315,9 +454,9 @@ vec3 couleur(vec3 ro, vec3 rd, intersection inter,ivec2 pix){
 		vec3 ambient=spheres[hitIndex].ambient.rgb;
 		vec3 diffuse=spheres[hitIndex].diffuse.rgb;
 		vec3 specular=spheres[hitIndex].specular.rgb;
-		finalColor[0]=l[0]*ambient[0]+l[0]*diffuse[0]*cosT+l[0]*specular[0]*pow(cosA,shininess);
-		finalColor[1]=l[1]*ambient[1]+l[1]*diffuse[1]*cosT+l[1]*specular[1]*pow(cosA,shininess);
-		finalColor[2]=l[2]*ambient[2]+l[2]*diffuse[2]*cosT+l[2]*specular[2]*pow(cosA,shininess);
+		finalColor[0]*=l[0]*ambient[0]+l[0]*diffuse[0]*cosT+l[0]*specular[0]*pow(cosA,shininess);
+		finalColor[1]*=l[1]*ambient[1]+l[1]*diffuse[1]*cosT+l[1]*specular[1]*pow(cosA,shininess);
+		finalColor[2]*=l[2]*ambient[2]+l[2]*diffuse[2]*cosT+l[2]*specular[2]*pow(cosA,shininess);
 		// vec3 ro2=p+n*0.00001;
 		// intersection intersectionLumiere=intersectScene(ro2,L);
 		// if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<length(L))finalColor=vec3(0.0,0.0,0.0);
@@ -341,12 +480,21 @@ vec3 couleur(vec3 ro, vec3 rd, intersection inter,ivec2 pix){
 		// }
 		// pourcentageOmbre=nombreRayonOmbreDouce/float(nombreRayon);
 		// finalColor*=(1.0-pourcentageOmbre);
-    }else if(interObjet==2){
+    }else if(interObjet==2){		
+		// if(squares[hitIndex].padding[0]==1){
+		// 	sampler2D tex=sampler2D(squares[hitIndex].text);
+		// 	finalColor=texture(tex,uvFinal).rgb;
+		// }else{
+		// 	finalColor=vec3(1.0,1.0,1.0);
+		// }
 		vec3 light=lights[0].pos;
         vec3 p=ro+rd*tmin;
 		vec3 L=light-p;
 		float Ldist=length(L);
         vec3 n=squares[hitIndex].m_normal.xyz;
+		if(squares[hitIndex].padding[1]==1){
+			finalColor*=computeReflection(rd,n,p,pix);
+		}
 		vec3 v=ro-p;
 		L=normalize(L);
 		v=normalize(v);
@@ -359,9 +507,9 @@ vec3 couleur(vec3 ro, vec3 rd, intersection inter,ivec2 pix){
 		vec3 ambient=squares[hitIndex].ambient.rgb;
 		vec3 diffuse=squares[hitIndex].diffuse.rgb;
 		vec3 specular=squares[hitIndex].specular.rgb;
-		finalColor[0]=l[0]*ambient[0]+l[0]*diffuse[0]*cosT+l[0]*specular[0]*pow(cosA,shininess);
-		finalColor[1]=l[1]*ambient[1]+l[1]*diffuse[1]*cosT+l[1]*specular[1]*pow(cosA,shininess);
-		finalColor[2]=l[2]*ambient[2]+l[2]*diffuse[2]*cosT+l[2]*specular[2]*pow(cosA,shininess);
+		finalColor[0]*=l[0]*ambient[0]+l[0]*diffuse[0]*cosT+l[0]*specular[0]*pow(cosA,shininess);
+		finalColor[1]*=l[1]*ambient[1]+l[1]*diffuse[1]*cosT+l[1]*specular[1]*pow(cosA,shininess);
+		finalColor[2]*=l[2]*ambient[2]+l[2]*diffuse[2]*cosT+l[2]*specular[2]*pow(cosA,shininess);
 		// vec3 ro2=p+n*0.00001;
 		// intersection intersectionLumiere=intersectScene(ro2,L);
 		// if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<length(L))finalColor=vec3(0.0,0.0,0.0);
@@ -370,7 +518,7 @@ vec3 couleur(vec3 ro, vec3 rd, intersection inter,ivec2 pix){
 		if(intersectionLumiere.inter>0 && intersectionLumiere.tmin<Ldist){
 			// finalColor=vec3(0.0,0.0,0.0);
 			finalColor=finalColor*0.1;
-		}		
+		}
 		// float nombreRayonOmbreDouce=0.0;
 		// int nombreRayon=1;
 		// float pourcentageOmbre=0.0;
@@ -386,6 +534,12 @@ vec3 couleur(vec3 ro, vec3 rd, intersection inter,ivec2 pix){
 		// pourcentageOmbre=nombreRayonOmbreDouce/float(nombreRayon);
 		// finalColor*=(1.0-pourcentageOmbre);
     }else if(interObjet==3){
+		// if(meshes[hitIndex].padding[0]==1){
+		// 	sampler2D tex=sampler2D(meshes[hitIndex].text);
+		// 	finalColor=texture(tex,uvFinal).rgb;
+		// }else{
+		// 	finalColor=vec3(1.0,1.0,1.0);
+		// }
 		vec3 light=lights[0].pos;
         vec3 p=ro+rd*tmin;
 		vec3 L=light-p;
