@@ -4,14 +4,14 @@
       "audio": {
         "isPlaying": false,
         "loop": true,
-        "path": "../Jeu/audios/SoundTrack/Super Mario 64 - Main Theme Music - Bob-Omb Battlefield.wav",
+        "path": "./audios/SoundTrack/Super Mario 64 - Main Theme Music - Bob-Omb Battlefield.wav",
         "play_on_start": false,
         "type": "MUSIC",
         "volume": 1.0
       },
       "id": 0,
       "material": {
-        "path": "../Jeu/./texture/grass.png",
+        "path": "./texture/2k_moon.jpg",
         "type": "texture"
       },
       "mesh": {
@@ -35,7 +35,7 @@
           0.0
         ],
         "rotation": [
-          -90.0,
+          0.0,
           0.0,
           0.0
         ],
@@ -55,9 +55,9 @@
           0.0
         ],
         "color": [
-          0.8921005725860596,
-          0.5726369619369507,
-          0.03526243939995766
+          1.0,
+          0.0,
+          0.0
         ],
         "diffuse": [
           1.0,
@@ -73,11 +73,11 @@
         "type": "color"
       },
       "mesh": {
-        "path": "../Jeu/./mesh/suzanne.off",
+        "path": "./mesh/suzanne.off",
         "type": "file"
       },
       "script": {
-        "path": "../Jeu/./Scripts/ChangeColor.lua",
+        "path": "./Scripts/ChangeColor.lua",
         "type": "Lua"
       },
       "transform": {
@@ -107,9 +107,9 @@
         "idCam": 0,
         "near_plane": 0.10000000149011612,
         "target": [
-          -0.06625741720199585,
-          -0.14864540100097656,
-          -0.9866684079170227
+          -0.06621770560741425,
+          -0.46038147807121277,
+          -0.885248064994812
         ],
         "up": [
           0.0,
@@ -122,16 +122,16 @@
       },
       "id": 2,
       "script": {
-        "path": "../Jeu/./Scripts/MoveCam.lua",
+        "path": "./Scripts/MoveCam.lua",
         "type": "Lua"
       },
       "transform": {
         "children": [],
         "parent": 4294967295,
         "position": [
-          -0.2945804297924042,
-          -7.25580358505249,
-          9.46919059753418
+          0.5436760783195496,
+          -2.514817953109741,
+          11.733063697814941
         ],
         "rotation": [
           0.0,
@@ -175,15 +175,15 @@
         "type": "color"
       },
       "script": {
-        "path": "../Jeu/./Scripts/SunCycle.lua",
+        "path": "./Scripts/SunCycle.lua",
         "type": "Lua"
       },
       "transform": {
         "children": [],
         "parent": 4294967295,
         "position": [
-          15.696511268615723,
-          12.394333839416504,
+          0.0,
+          10.0,
           0.0
         ],
         "rotation": [
@@ -252,28 +252,8 @@
     {
       "id": 5,
       "material": {
-        "ambient": [
-          0.25,
-          0.20000000298023224,
-          0.07000000029802322
-        ],
-        "color": [
-          1.0,
-          0.8399999737739563,
-          0.0
-        ],
-        "diffuse": [
-          0.75,
-          0.6100000143051147,
-          0.23000000417232513
-        ],
-        "shininess": 51.20000076293945,
-        "specular": [
-          0.6299999952316284,
-          0.5600000023841858,
-          0.3700000047683716
-        ],
-        "type": "color"
+        "path": "./texture/grass.png",
+        "type": "texture"
       },
       "mesh": {
         "mesh_type": "BOX",

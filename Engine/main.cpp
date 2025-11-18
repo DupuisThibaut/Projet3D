@@ -127,6 +127,8 @@ ControllerSystem input = ControllerSystem(dispatcher);
 RayTracerSystem* gRayTracerSystem = nullptr;
 EditorSystem* gEditorSystem = nullptr;
 
+bool EditorMode = true;
+
 
 void loadScene(){
 std::ifstream sceneFile(scenePath);
@@ -572,8 +574,22 @@ int main( int argc, char* argv[] )
     }
 
     gameFolder = argv[1];
-    if(argc >= 3) mode = argv[2];
-    if(argc >= 4) mode2 = argv[3];
+    std::vector<std::string> args(argv, argv + argc);
+    bool found = (std::find(args.begin(), args.end(), "-e") != args.end());
+    bool foundBench = (std::find(args.begin(), args.end(), "-b") != args.end());
+    bool foundRaytracer = (std::find(args.begin(), args.end(), "-r") != args.end());
+    
+    EditorMode = found;
+    
+    if (foundBench) {
+        mode = "-b";
+        EditorMode = false;
+    }
+    
+    if (foundRaytracer) {
+        mode2 = "-r";
+        EditorMode = false;
+    }
     // scenePath = gameFolder + "/scene.json";
     scenePath = gameFolder + "/scene.json";
 
@@ -779,24 +795,27 @@ int main( int argc, char* argv[] )
             }
         }
         glUseProgram(programID);
-        audioSystem.update();
-        lightSystem.update();
-        scriptSystem.onUpdate(deltaTime);
-        transformSystem.update();
-
-
-        float viewportX, viewportWidth, viewportHeight;
-        unsigned int viewportWidthInt, viewportHeightInt;
-        if(gEditorSystem){
-            gEditorSystem->processFontReload();
+        if(!EditorMode){
+            audioSystem.update();
+            scriptSystem.onUpdate(deltaTime);
         }
-        gEditorSystem->beginFrame();
-        gEditorSystem->renderMenuBar();
-        gEditorSystem->renderHierarchy();
-        gEditorSystem->renderInspector();
-        gEditorSystem->renderStats(deltaTime);
-
-        gEditorSystem->configureViewport(viewportX,viewportWidth,viewportHeight,viewportWidthInt,viewportHeightInt);
+        
+        transformSystem.update();
+        lightSystem.update();
+        if(EditorMode){
+            float viewportX, viewportWidth, viewportHeight;
+            unsigned int viewportWidthInt, viewportHeightInt;
+            if(gEditorSystem){
+                gEditorSystem->processFontReload();
+            }
+            gEditorSystem->beginFrame();
+            gEditorSystem->renderMenuBar();
+            gEditorSystem->renderHierarchy();
+            gEditorSystem->renderInspector();
+            gEditorSystem->renderStats(deltaTime);
+    
+            gEditorSystem->configureViewport(viewportX,viewportWidth,viewportHeight,viewportWidthInt,viewportHeightInt);
+        }
 
 // ════════════════════════════════════════════════════════════════
 //  RENDU DE LA SCÈNE 3D
@@ -810,9 +829,10 @@ if(mode == "-r" || mode2 == "-r"){
     renderSystem.update(entities);
 }
 #endif
-
+    if(EditorMode){
         gEditorSystem->restoreViewport();
         gEditorSystem->endFrame();
+    }
         // Swap buffers
         glfwSwapBuffers(window);
         glfwPollEvents();

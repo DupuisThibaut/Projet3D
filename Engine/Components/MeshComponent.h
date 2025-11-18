@@ -13,6 +13,8 @@ enum class PrimitiveType {
     CUBE,
     SPHERE,
     CYLINDER,
+    CONE,
+    CAPSULE,
     MESH
 };
 struct BoundingSphere {
@@ -145,7 +147,7 @@ struct MeshComponent {
         glBindVertexArray(0);
     }
 
-    void loadPrimitive(const std::string& primitiveType, glm::vec3 right_vector=glm::vec3(1.0,0.0,0.0), glm::vec3 up_vector=glm::vec3(0.0,1.0,0.0), float rayon=1.0f) {
+    void loadPrimitive(const std::string& primitiveType, glm::vec3 right_vector=glm::vec3(0.0,0.0,1.0), glm::vec3 up_vector=glm::vec3(1.0,0.0,0.0), float rayon=1.0f) {
         if (primitiveType == "PLANE"){
             type=PrimitiveType::PLANE;
             centre=glm::vec3(0,0,0);
@@ -162,7 +164,7 @@ struct MeshComponent {
             sphere.build_arrays(subdivisions, subdivisions, vertices, normals, uvs, indices);
         }
         else if (primitiveType == "BOX"){
-            type=PrimitiveType::MESH;
+            type=PrimitiveType::CUBE;
             Box box;
             box.build_arrays(vertices, normals, uvs, indices);
         }
@@ -172,12 +174,12 @@ struct MeshComponent {
             cylinder.build_arrays(vertices, normals, uvs, indices, width, height, subdivisions);
         }
         else if (primitiveType == "CONE"){
-            type=PrimitiveType::MESH;
+            type=PrimitiveType::CONE;
             Cone cone;
             cone.build_arrays(vertices, normals, uvs, indices, width, height, subdivisions);
         }
         else if (primitiveType == "CAPSULE"){
-            type=PrimitiveType::MESH;
+            type=PrimitiveType::CAPSULE;
             Capsule capsule;
             capsule.build_arrays(vertices, normals, uvs, indices, width, height, subdivisions);
         }

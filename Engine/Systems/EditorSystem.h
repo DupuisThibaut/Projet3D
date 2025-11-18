@@ -21,7 +21,7 @@
 
 class EditorSystem {
 public:
-    EditorSystem(EntityManager* entityManager, std::vector<Entity>* entities, const std::string& scenePath= "../Jeu/scene.json")  {
+    EditorSystem(EntityManager* entityManager, std::vector<Entity>* entities, const std::string& ScenePath= "../Jeu/scene.json", const std::string& gameFolder = "../Jeu/")  {
         this->entityManager = entityManager;
         this->entities = entities;
         selectedEntityId = UINT32_MAX;
@@ -34,6 +34,8 @@ public:
         windowWidth = 800.0f;
         windowHeight = 600.0f;
         menuBarHeight = 0.0f;
+        GameFolder = gameFolder;
+        scenePath = ScenePath;
     }
     ~EditorSystem(){}
 
@@ -257,76 +259,79 @@ public:
         }
         float buttonWidth = 120.0f;
         ImGui::SetCursorPosX(ImGui::GetWindowWidth() - buttonWidth - ImGui::GetStyle().FramePadding.x);
-        if(ImGui::Button("Add Component")){
-            ImGui::OpenPopup("AddComponentPopup");
-        }
-        if(ImGui::BeginPopup("AddComponentPopup")){
-            ImGui::Text("Add Component");
-            ImGui::Separator();
-            if(!entityManager->HasComponent<TransformComponent>(selectedEntityId)){
-                if(ImGui::MenuItem("Transform Component")){
-                    TransformComponent transform;
-                    entityManager->AddComponent<TransformComponent>(selectedEntityId, transform);
-                    ImGui::CloseCurrentPopup();
-                }
+        if(selectedEntityId != UINT32_MAX){
+            if(ImGui::Button("Add Component")){
+                ImGui::OpenPopup("AddComponentPopup");
             }
-            if(!entityManager->HasComponent<MeshComponent>(selectedEntityId)){
-                if(ImGui::MenuItem("Mesh Component")){
-                    MeshComponent mesh;
-                    entityManager->AddComponent<MeshComponent>(selectedEntityId, mesh);
-                    ImGui::CloseCurrentPopup();
+            if(ImGui::BeginPopup("AddComponentPopup")){
+                ImGui::Text("Add Component");
+                ImGui::Separator();
+                if(!entityManager->HasComponent<TransformComponent>(selectedEntityId)){
+                    if(ImGui::MenuItem("Transform Component")){
+                        TransformComponent transform;
+                        entityManager->AddComponent<TransformComponent>(selectedEntityId, transform);
+                        ImGui::CloseCurrentPopup();
+                    }
                 }
-            }
-            if(!entityManager->HasComponent<CameraComponent>(selectedEntityId)){
-                if(ImGui::MenuItem("Camera Component")){
-                    CameraComponent camera;
-                    entityManager->AddComponent<CameraComponent>(selectedEntityId, camera);
-                    ImGui::CloseCurrentPopup();
+                if(!entityManager->HasComponent<MeshComponent>(selectedEntityId)){
+                    if(ImGui::MenuItem("Mesh Component")){
+                        MeshComponent mesh;
+                        entityManager->AddComponent<MeshComponent>(selectedEntityId, mesh);
+                        ImGui::CloseCurrentPopup();
+                    }
                 }
-            }
-            if(!entityManager->HasComponent<LightComponent>(selectedEntityId)){
-                if(ImGui::MenuItem("Light Component")){
-                    LightComponent light;
-                    entityManager->AddComponent<LightComponent>(selectedEntityId, light);
-                    ImGui::CloseCurrentPopup();
+                if(!entityManager->HasComponent<CameraComponent>(selectedEntityId)){
+                    if(ImGui::MenuItem("Camera Component")){
+                        CameraComponent camera;
+                        entityManager->AddComponent<CameraComponent>(selectedEntityId, camera);
+                        ImGui::CloseCurrentPopup();
+                    }
                 }
-            }
-            if(!entityManager->HasComponent<MaterialComponent>(selectedEntityId)){
-                if(ImGui::MenuItem("Material Component")){
-                    MaterialComponent material;
-                    entityManager->AddComponent<MaterialComponent>(selectedEntityId, material);
-                    ImGui::CloseCurrentPopup();
+                if(!entityManager->HasComponent<LightComponent>(selectedEntityId)){
+                    if(ImGui::MenuItem("Light Component")){
+                        LightComponent light;
+                        entityManager->AddComponent<LightComponent>(selectedEntityId, light);
+                        ImGui::CloseCurrentPopup();
+                    }
                 }
-            }
-            if(!entityManager->HasComponent<MyAudioComponent>(selectedEntityId)){
-                if(ImGui::MenuItem("Audio Component")){
-                    MyAudioComponent audio;
-                    entityManager->AddComponent<MyAudioComponent>(selectedEntityId, audio);
-                    ImGui::CloseCurrentPopup();
+                if(!entityManager->HasComponent<MaterialComponent>(selectedEntityId)){
+                    if(ImGui::MenuItem("Material Component")){
+                        MaterialComponent material;
+                        entityManager->AddComponent<MaterialComponent>(selectedEntityId, material);
+                        ImGui::CloseCurrentPopup();
+                    }
                 }
-            }
-            if(!entityManager->HasComponent<LuaScriptComponent>(selectedEntityId)){
-                if(ImGui::MenuItem("Script Component")){
-                    LuaScriptComponent script;
-                    entityManager->AddComponent<LuaScriptComponent>(selectedEntityId, script);
-                    ImGui::CloseCurrentPopup();
+                if(!entityManager->HasComponent<MyAudioComponent>(selectedEntityId)){
+                    if(ImGui::MenuItem("Audio Component")){
+                        MyAudioComponent audio;
+                        entityManager->AddComponent<MyAudioComponent>(selectedEntityId, audio);
+                        ImGui::CloseCurrentPopup();
+                    }
                 }
-            }
-            if(!entityManager->HasComponent<TagComponent>(selectedEntityId)){
-                if(ImGui::MenuItem("Tag Component")){
-                    TagComponent tag;
-                    entityManager->AddComponent<TagComponent>(selectedEntityId, tag);
-                    ImGui::CloseCurrentPopup();
+                if(!entityManager->HasComponent<LuaScriptComponent>(selectedEntityId)){
+                    if(ImGui::MenuItem("Script Component")){
+                        LuaScriptComponent script;
+                        entityManager->AddComponent<LuaScriptComponent>(selectedEntityId, script);
+                        ImGui::CloseCurrentPopup();
+                    }
                 }
-            }
-            if(!entityManager->HasComponent<LayerComponent>(selectedEntityId)){
-                if(ImGui::MenuItem("Layer Component")){
-                    LayerComponent layer;
-                    entityManager->AddComponent<LayerComponent>(selectedEntityId, layer);
-                    ImGui::CloseCurrentPopup();
+                if(!entityManager->HasComponent<TagComponent>(selectedEntityId)){
+                    if(ImGui::MenuItem("Tag Component")){
+                        TagComponent tag;
+                        entityManager->AddComponent<TagComponent>(selectedEntityId, tag);
+                        ImGui::CloseCurrentPopup();
+                    }
                 }
+                if(!entityManager->HasComponent<LayerComponent>(selectedEntityId)){
+                    if(ImGui::MenuItem("Layer Component")){
+                        LayerComponent layer;
+                        entityManager->AddComponent<LayerComponent>(selectedEntityId, layer);
+                        ImGui::CloseCurrentPopup();
+                    }
+                }
+                ImGui::EndPopup();
             }
-            ImGui::EndPopup();
+
         }
         ImGui::End();
     }
@@ -411,6 +416,11 @@ public:
                     fontReloadRequested = true;
                     pendingFontPath = currentFontPath.empty() ? "" : currentFontPath;
                     pendingFontSize = currentFontSize;
+                }
+                ImGui::EndMenu();
+            }
+            if(ImGui::BeginMenu("Execute")){
+                if (ImGui::MenuItem("Play Mode")) {
                 }
                 ImGui::EndMenu();
             }
@@ -615,6 +625,8 @@ public:
 private:
     EntityManager* entityManager;
     std::vector<Entity>* entities;
+    std::string GameFolder;
+    std::string scenePath;
     
     // État de l'éditeur
     uint32_t selectedEntityId;
@@ -893,7 +905,7 @@ private:
                 
                 // Input pour le chemin de la texture
                 char texturePathBuffer[256];
-                strncpy(texturePathBuffer, material.texturePath.c_str(), sizeof(texturePathBuffer));
+                strncpy(texturePathBuffer, getRelativePath(material.texturePath,GameFolder).c_str(), sizeof(texturePathBuffer));
                 texturePathBuffer[sizeof(texturePathBuffer) - 1] = '\0';
                 
                 if (ImGui::InputText("Texture Path", texturePathBuffer, sizeof(texturePathBuffer))) {
@@ -903,7 +915,7 @@ private:
                 // Bouton pour charger la texture
                 if (ImGui::Button("Load Texture")) {
                     if (!material.texturePath.empty()) {
-                        material.setTexture(material.texturePath);
+                        material.setTexture(GameFolder + material.texturePath);
                         if (material.loadTexture()) {
                             std::cout << "Loaded texture: " << material.texturePath << std::endl;
                         } else {
@@ -917,8 +929,6 @@ private:
                 // Affiche l'ID de la texture OpenGL
                 if (material.texture != 0) {
                     ImGui::Text("Texture ID: %u", material.texture);
-                    
-                    // ✅ PREVIEW de la texture (optionnel)
                     ImGui::Text("Preview:");
                     ImVec2 previewSize(128, 128);
                     ImGui::Image((void*)(intptr_t)material.texture, previewSize);
@@ -1334,7 +1344,7 @@ private:
                         // Sauvegarde le chemin du fichier OFF/OBJ
                         entityData["mesh"] = {
                             {"type", "file"},
-                            {"path", mesh.meshFilePath}
+                            {"path", getRelativePath(mesh.meshFilePath,GameFolder)}
                         };
                         break;
                 }
@@ -1348,7 +1358,7 @@ private:
                 if (material.type == MaterialComponent::Type::Texture) {
                     entityData["material"] = {
                         {"type", "texture"},
-                        {"path", material.texturePath}
+                        {"path", getRelativePath(material.texturePath,GameFolder)}
                     };
                 } else if (material.type == MaterialComponent::Type::Color) {
                     entityData["material"] = {
@@ -1401,7 +1411,7 @@ private:
                 
                 entityData["audio"] = {
                     {"type", typeStr},
-                    {"path", audio.audioFilePath},
+                    {"path", getRelativePath(audio.audioFilePath,GameFolder)},
                     {"volume", audio.volume},
                     {"loop", audio.loop},
                     {"play_on_start", audio.playOnStart},
@@ -1415,7 +1425,7 @@ private:
                 auto& script = entityManager->GetComponent<LuaScriptComponent>(entity.id);
                 entityData["script"] = {
                     {"type", "Lua"},
-                    {"path", script.luaScriptPath}
+                    {"path", getRelativePath(script.luaScriptPath,GameFolder)}
                 };
             }
             
@@ -1434,7 +1444,6 @@ private:
         // ════════════════════════════════════════════════════════════════
         //  ÉCRITURE DU FICHIER JSON
         // ════════════════════════════════════════════════════════════════
-        std::string scenePath = "../Jeu/scene.json"; // ⚠️ Adapte ce chemin selon ton projet
         std::ofstream sceneFile(scenePath);
         
         if (!sceneFile.is_open()) {
@@ -1449,11 +1458,18 @@ private:
     }
 
 
-
-
-
-
-    int currentTheme = 0; // Ajoute cette variable dans la section private
+    std::string getRelativePath(std::string fullPath, std::string basePath) {
+        if(fullPath.empty()) return "";
+        if(fullPath.find(basePath) != 0) {
+            return fullPath;
+        }
+        std::string relativePath = fullPath.substr(basePath.length());
+        if((relativePath[0] == '/' || relativePath[0] == '\\') && !relativePath.empty()) {
+            relativePath = relativePath.substr(1);
+        }
+        return relativePath;
+    }
+    int currentTheme = 0; 
 
     // ════════════════════════════════════════════════════════════════
     //  THÈMES
