@@ -71,6 +71,8 @@ using json = nlohmann::json;
 #include "Components/ScriptComponent.h"
 #include "Components/TagComponent.h"
 #include "Components/LayerComponent.h"
+#include "Components/RigidBodyComponent.h"
+#include "Components/ColliderComponent.h"
 // Systems
 #include "Systems/EntityManager.h"
 #include "Systems/Dispatcher.h"
@@ -82,6 +84,7 @@ using json = nlohmann::json;
 #include "Systems/ScriptSystem.h"
 #include "Systems/RayTracerSystem.h"
 #include "Systems/EditorSystem.h"
+#include "Systems/PhysicSystem.h"
 
 // Scripts
 #include "Scripts/CameraController.h"
@@ -360,6 +363,11 @@ std::ifstream sceneFile(scenePath);
                 scriptSystem.initScript(entityManager.GetComponent<LuaScriptComponent>(e.id), e.id);
             }
         }
+        if(entityData.contains("rigidbody")){
+            RigidBodyComponent rb;
+            entityManager.AddComponent<RigidBodyComponent>(e.id,rb);
+
+        }
     }
 }
 
@@ -590,8 +598,8 @@ int main( int argc, char* argv[] )
         mode2 = "-r";
         EditorMode = false;
     }
-    // scenePath = gameFolder + "/scene.json";
-    scenePath = gameFolder + "/cornelBox.json";
+    scenePath = gameFolder + "/scene.json";
+    // scenePath = gameFolder + "/cornelBox.json";
 
     // Test Lua integration
     // 1. Créer un nouvel état Lua
@@ -753,6 +761,7 @@ int main( int argc, char* argv[] )
     scriptSystem.registerEntityManager(&entityManager);
     input.setScriptSystem(&scriptSystem);
     input.setRenderSystem(&renderSystem);
+    PhysicSystem physicSystem(&entityManager);
     std::cout << "--- Systems initialized. ---" << std::endl;
 
     do{
@@ -800,6 +809,8 @@ int main( int argc, char* argv[] )
             scriptSystem.onUpdate(deltaTime);
 
         }
+
+        physicSystem.update(deltaTime);
         
         transformSystem.update();
         lightSystem.update();
