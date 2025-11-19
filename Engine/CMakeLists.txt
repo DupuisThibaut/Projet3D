@@ -7,51 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(OpenGL REQUIRED)
 
 # ════════════════════════════════════════════════════════════════
-#  DÉTECTION SIMD
-# ════════════════════════════════════════════════════════════════
-
-include(CheckCXXCompilerFlag)
-
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)")
-    CHECK_CXX_COMPILER_FLAG("-mavx2" COMPILER_SUPPORTS_AVX2)
-    CHECK_CXX_COMPILER_FLAG("-mavx" COMPILER_SUPPORTS_AVX)
-    CHECK_CXX_COMPILER_FLAG("-msse4.1" COMPILER_SUPPORTS_SSE41)
-    
-    if(COMPILER_SUPPORTS_AVX2)
-        set(SIMD_FLAGS "-mavx2 -mfma")
-        add_compile_definitions(GLM_FORCE_SIMD_AVX2)
-        message(STATUS "✅ SIMD: AVX2 + FMA")
-    elseif(COMPILER_SUPPORTS_AVX)
-        set(SIMD_FLAGS "-mavx")
-        add_compile_definitions(GLM_FORCE_SIMD_AVX)
-        message(STATUS "✅ SIMD: AVX")
-    elseif(COMPILER_SUPPORTS_SSE41)
-        set(SIMD_FLAGS "-msse4.1")
-        add_compile_definitions(GLM_FORCE_SIMD_SSE4)
-        message(STATUS "✅ SIMD: SSE4.1")
-    endif()
-    
-    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "arm|ARM|aarch64|AARCH64")
-    # ✅ Apple Silicon détecte automatiquement NEON sans flag explicite
-    if(APPLE)
-        set(SIMD_FLAGS "")  # Pas besoin de -march sur macOS ARM
-        add_compile_definitions(GLM_FORCE_NEON)
-        message(STATUS "✅ SIMD: ARM NEON (Apple Silicon - auto)")
-    else()
-        CHECK_CXX_COMPILER_FLAG("-march=armv8-a+simd" COMPILER_SUPPORTS_NEON)
-        if(COMPILER_SUPPORTS_NEON)
-            set(SIMD_FLAGS "-march=armv8-a+simd")
-            add_compile_definitions(GLM_FORCE_NEON)
-            message(STATUS "✅ SIMD: ARM NEON (Linux ARM)")
-        endif()
-    endif()
-endif()
-
-if(DEFINED SIMD_FLAGS)
-    add_compile_options(${SIMD_FLAGS})
-endif()
-
-# ════════════════════════════════════════════════════════════════
 #  OPTIMISATIONS DE COMPILATION
 # ════════════════════════════════════════════════════════════════
 

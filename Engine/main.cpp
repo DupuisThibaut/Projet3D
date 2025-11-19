@@ -350,7 +350,7 @@ std::ifstream sceneFile(scenePath);
                     controller->camera = &entityManager.GetComponent<CameraComponent>(e.id);
                     input.subscribe(controller);
                 }
-            } else if (scriptType == "Lua") {
+            } else if (scriptType == "Lua" && !EditorMode) {
                 LuaScriptComponent luaScript;
                 luaScript.luaScriptPath = gameFolder + "/" + entityData["script"]["path"].get<std::string>();
                 entityManager.AddComponent<LuaScriptComponent>(e.id, luaScript);
@@ -591,7 +591,7 @@ int main( int argc, char* argv[] )
         EditorMode = false;
     }
     // scenePath = gameFolder + "/scene.json";
-    scenePath = gameFolder + "/scene.json";
+    scenePath = gameFolder + "/cornelBox.json";
 
     // Test Lua integration
     // 1. Créer un nouvel état Lua
@@ -798,6 +798,7 @@ int main( int argc, char* argv[] )
         if(!EditorMode){
             audioSystem.update();
             scriptSystem.onUpdate(deltaTime);
+
         }
         
         transformSystem.update();
