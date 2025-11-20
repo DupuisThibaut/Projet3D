@@ -14,7 +14,7 @@ struct MaterialComponent {
         Texture,
         Color
     };
-    Type type = Type::None;
+    Type type = Type::Color;
     // Pour le cas des textures
     GLuint texture = 0;
     std::string texturePath;
@@ -87,6 +87,38 @@ struct MaterialComponent {
                 glUniform3fv(colorLoc, 1, &zero[0]);
                 GLint texLoc = glGetUniformLocation(shaderProgram, "materialType");
                 if (texLoc >= 0) glUniform1i(texLoc, 1);
+            }
+        }
+    }
+
+    void loadFromFile(const nlohmann::json& entityData, uint32_t entityId, const std::string& gameFolder) {
+        if(entityData["entities"][entityId].contains("material")){
+            if( entityData["entities"][entityId]["material"].contains("type")){
+                if (entityData["entities"][entityId]["material"]["type"] == "texture") {
+                    std::string texturePath = entityData["entities"][entityId]["material"]["path"].get<std::string>();
+                    setTexture(gameFolder + "/" + texturePath);
+                    if (!loadTexture()) {
+                        std::cerr << "Erreur de changement de la texture pour entity ID : " << entityId << std::endl;
+                    }
+                } else if (entityData["entities"][entityId]["material"]["type"] == "color") {
+                    glm::vec3 color = glm::vec3(entityData["entities"][entityId]["material"]["color"][0],
+                                                entityData["entities"][entityId]["material"]["color"][1],
+                                                entityData["entities"][entityId]["material"]["color"][2]);
+                    glm::vec3 ambient=glm::vec3(entityData["entities"][entityId]["material"]["ambient"][0],
+                                                entityData["entities"][entityId]["material"]["ambient"][1],
+                                                entityData["entities"][entityId]["material"]["ambient"][2]);
+                    glm::vec3 diffuse=glm::vec3(entityData["entities"][entityId]["material"]["diffuse"][0],
+                                                entityData["entities"][entityId]["material"]["diffuse"][1],
+                                                entityData["entities"][entityId]["material"]["diffuse"][2]);
+                    glm::vec3 specular=glm::vec3(entityData["entities"][entityId]["material"]["specular"][0],
+                                                 entityData["entities"][entityId]["material"]["specular"][1],
+                                                 entityData["entities"][entityId]["material"]["specular"][2]);
+                    float shininess=entityData["entities"][entityId]["material"]["shininess"];
+                    setColor(color,ambient,diffuse,specular,shininess);
+                } else {
+                    // Default material
+                    setColor(glm::vec3(1.0f, 1.0f, 1.0f),glm::vec3(1.0f, 1.0f, 1.0f),glm::vec3(1.0f, 1.0f, 1.0f),glm::vec3(1.0f, 1.0f, 1.0f),1.0f);
+                }
             }
         }
     }

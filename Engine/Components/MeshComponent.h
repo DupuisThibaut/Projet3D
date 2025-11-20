@@ -52,6 +52,82 @@ struct MeshComponent {
     glm::vec3 m_up_vector;
     float rayon;
 
+
+
+    void loadFromFile(const nlohmann::json& entityData, uint32_t entityId, const std::string& gameFolder, glm::vec3& position) {
+        if(entityData["entities"][entityId].contains("mesh")){
+            if (entityData["entities"][entityId]["mesh"]["type"] == "primitive") {
+                if (entityData["entities"][entityId]["mesh"]["mesh_type"] == "PLANE") {
+                    glm::vec3 normal(0.0f, 1.0f, 0.0f);
+                    if (entityData["entities"][entityId]["mesh"].contains("normal")) {
+                        this->normal = glm::vec3(entityData["entities"][entityId]["mesh"]["normal"][0],
+                                           entityData["entities"][entityId]["mesh"]["normal"][1],
+                                           entityData["entities"][entityId]["mesh"]["normal"][2]);
+                    }
+                    float width = 1.0f;
+                    int subdivisions = 1;
+                    if (entityData["entities"][entityId]["mesh"].contains("subdivisions")) {
+                        this->subdivisions = entityData["entities"][entityId]["mesh"]["subdivisions"];
+                    }
+                    this->loadPrimitive("PLANE");
+                }
+                else if (entityData["entities"][entityId]["mesh"]["mesh_type"] == "SPHERE") {
+                    if(entityData["entities"][entityId]["mesh"].contains("subdivisions")) {
+                        this->subdivisions = entityData["entities"][entityId]["mesh"]["subdivisions"];
+                    }
+                    this->loadPrimitive("SPHERE", position);
+                }
+                else if (entityData["entities"][entityId]["mesh"]["mesh_type"] == "BOX") {
+                    this->loadPrimitive("BOX", position);
+                }
+                else if (entityData["entities"][entityId]["mesh"]["mesh_type"] == "CYLINDER") {
+                    if (entityData["entities"][entityId]["mesh"].contains("subdivisions")) {
+                        this->subdivisions = entityData["entities"][entityId]["mesh"]["subdivisions"];
+                    }
+                    if (entityData["entities"][entityId]["mesh"].contains("width")) {
+                        this->width = entityData["entities"][entityId]["mesh"]["width"];
+                    }
+                    if (entityData["entities"][entityId]["mesh"].contains("height")) {
+                        this->height = entityData["entities"][entityId]["mesh"]["height"];
+                    }
+                    this->loadPrimitive("CYLINDER", position);
+                }
+                else if (entityData["entities"][entityId]["mesh"]["mesh_type"] == "CONE") {
+                    if (entityData["entities"][entityId]["mesh"].contains("subdivisions")) {
+                        this->subdivisions = entityData["entities"][entityId]["mesh"]["subdivisions"];
+                    }
+                    if (entityData["entities"][entityId]["mesh"].contains("width")) {
+                        this->width = entityData["entities"][entityId]["mesh"]["width"];
+                    }
+                    if (entityData["entities"][entityId]["mesh"].contains("height")) {
+                        this->height = entityData["entities"][entityId]["mesh"]["height"];
+                    }
+                    this->loadPrimitive("CONE", position);
+                }
+                else if (entityData["entities"][entityId]["mesh"]["mesh_type"] == "CAPSULE") {
+                    if (entityData["entities"][entityId]["mesh"].contains("subdivisions")) {
+                        this->subdivisions = entityData["entities"][entityId]["mesh"]["subdivisions"];
+                    }
+                    if (entityData["entities"][entityId]["mesh"].contains("width")) {
+                        this->width = entityData["entities"][entityId]["mesh"]["width"];
+                    }
+                    if (entityData["entities"][entityId]["mesh"].contains("height")) {
+                        this->height = entityData["entities"][entityId]["mesh"]["height"];
+                    }
+                    this->loadPrimitive("CAPSULE", position);
+                }
+            } else if (entityData["entities"][entityId]["mesh"]["type"] == "file") {
+                std::string meshPath = gameFolder + "/" + entityData["entities"][entityId]["mesh"]["path"].get<std::string>();
+                this->meshFilePath=meshPath;
+                this->load_OFF(meshPath);
+            }
+        }
+    }
+
+
+
+
+
     void load_OFF(const std::string& filename) {
         type=PrimitiveType::MESH;
 
