@@ -50,6 +50,9 @@ struct MeshComponent {
     glm::vec3 m_bottom_left;
     float rayon;
 
+    bool update=false;
+    int nb=-1;
+
     void load_OFF(const std::string& filename) {
         type=PrimitiveType::MESH;
 

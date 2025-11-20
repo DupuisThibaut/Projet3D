@@ -53,6 +53,7 @@ struct world{
 
 std::vector<std::vector<unsigned short>> newTriangles;
 std::vector<bvh> creerBVH(std::vector<glm::vec3> vertices, std::vector<std::vector<unsigned short>> triangles){
+    newTriangles.clear();
     std::vector<bvh> bvhs;
     float minx=FLT_MAX,miny=FLT_MAX,minz=FLT_MAX,maxx=-FLT_MAX,maxy=-FLT_MAX,maxz=-FLT_MAX;
     for(unsigned int i=0;i<vertices.size();i++){
@@ -90,8 +91,12 @@ std::vector<bvh> creerBVH(std::vector<glm::vec3> vertices, std::vector<std::vect
         if(x>=y && x>=z)axe=0;else if(y>=x && y>=z)axe=1;else axe=2;
         bvh l,r;
         l.count=0;r.count=0;l.start=0;r.start=0;
-        l.minx=current->minx;l.miny=current->miny;l.minz=current->minz;l.maxx=current->maxx;l.maxy=current->maxy;l.maxz=current->maxz;
-        r.minx=current->minx;r.miny=current->miny;r.minz=current->minz;r.maxx=current->maxx;r.maxy=current->maxy;r.maxz=current->maxz;
+        // l.minx=current->minx;l.miny=current->miny;l.minz=current->minz;l.maxx=current->maxx;l.maxy=current->maxy;l.maxz=current->maxz;
+        // r.minx=current->minx;r.miny=current->miny;r.minz=current->minz;r.maxx=current->maxx;r.maxy=current->maxy;r.maxz=current->maxz;
+        l.minx=l.miny=l.minz=FLT_MAX;
+        l.maxx=l.maxy=l.maxz=-FLT_MAX;
+        r.minx=r.miny=r.minz=FLT_MAX;
+        r.maxx=r.maxy=r.maxz=-FLT_MAX;
         int nba=0,nbb=0,nbc=0;
         float milieu;
         if(axe==0){
@@ -111,6 +116,7 @@ std::vector<bvh> creerBVH(std::vector<glm::vec3> vertices, std::vector<std::vect
             r.minz=milieu;
         }
         std::vector<int> lTri;std::vector<int> rTri;std::vector<float>milieux;
+        std::vector<std::pair<float,int>> centres;
         for(unsigned int i=0;i<triangleNode[current->nb].size();i++){
             int ind=triangleNode[current->nb][i];
             std::vector<unsigned short> triangle=triangles[ind];
@@ -119,16 +125,26 @@ std::vector<bvh> creerBVH(std::vector<glm::vec3> vertices, std::vector<std::vect
             glm::vec3 p2=vertices[triangle[2]];
             glm::vec3 centreGravite=(p0+p1+p2)/3.0f;
             milieux.push_back(centreGravite[axe]);
+            centres.emplace_back(centreGravite[axe], ind);
         }
         std::sort(milieux.begin(),milieux.end());
         milieu=milieux[milieux.size()/2];
-        for(unsigned int i=0;i<triangleNode[current->nb].size();i++){
-            int ind=triangleNode[current->nb][i];
-            if(milieux[i]<milieu){
-                lTri.push_back(ind);
-            }else{
-                rTri.push_back(ind);
-            }
+        std::sort(centres.begin(), centres.end(),[](auto &a, auto &b){ return a.first < b.first; });
+        // std::cout<<"milieu : "<<milieu<<std::endl;
+        // for(unsigned int i=0;i<triangleNode[current->nb].size();i++){
+        //     int ind=triangleNode[current->nb][i];
+        //     std::cout<<"ind : "<<ind<<std::endl;
+        //     if(milieux[i]<milieu){
+        //         lTri.push_back(ind);
+        //     }else{
+        //         rTri.push_back(ind);
+        //     }
+        // }
+        for(int i=0;i<centres.size();i++){
+            if(centres[i].first < milieu)
+                lTri.push_back(centres[i].second);
+            else
+                rTri.push_back(centres[i].second);
         }
         if(lTri.size()>0){
             minx=FLT_MAX;miny=FLT_MAX;minz=FLT_MAX;maxx=-FLT_MAX;maxy=-FLT_MAX;maxz=-FLT_MAX;
@@ -208,6 +224,7 @@ std::vector<bvh> creerBVH(std::vector<glm::vec3> vertices, std::vector<std::vect
         if(bv->left==-1 && bv->right==-1 && triangleNode[bv->nb].size()>0){
             bv->count=triangleNode[bv->nb].size();
             bv->start=newTriangles.size();
+            // if(triangleNode[bv->nb].size()>10)std::cout<<newTriangles.size()<<std::endl;
             for(unsigned int j=0;j<triangleNode[bv->nb].size();j++){
                 newTriangles.push_back(triangles[triangleNode[bv->nb][j]]);
             }
@@ -403,6 +420,111 @@ public:
         unsigned int groups_x = (TEXTURE_WIDTH  + LOCAL_X - 1) / LOCAL_X;
         unsigned int groups_y = (TEXTURE_HEIGHT + LOCAL_Y - 1) / LOCAL_Y;
 
+        bool updateSphere=false;
+        bool updateSquare=false;
+        bool updateMesh=false;
+        bool updateLight=false;
+        for(auto& e : entities){
+            if(entityManager->HasComponent<MeshComponent>(e.id)){
+                MeshComponent M = entityManager->GetComponent<MeshComponent>(e.id);
+                // M.update=true;
+                // auto& t = entityManager->GetComponent<TransformComponent>(e.id);
+                // t.position[0]+=0.01;
+                if(M.update){
+                    TransformComponent t = entityManager->GetComponent<TransformComponent>(e.id);
+                    int i=M.nb;
+                    if(M.type==PrimitiveType::SPHERE){
+                        sps[i].x=t.position[0];
+                        sps[i].y=t.position[1];
+                        sps[i].z=t.position[2];
+                        sps[i].rayon=t.scale[0];
+                        updateSphere=true;
+                    }
+                    if(M.type==PrimitiveType::PLANE){
+                        glm::mat4 model=t.worldMatrix;
+                        glm::mat3 rotaScale(model);
+                        glm::vec3 m_right_vector=rotaScale*M.m_right_vector;
+                        glm::vec3 m_up_vector=rotaScale*M.m_up_vector;
+                        glm::vec3 m_bottom_left=t.position-m_right_vector/2.0f-m_up_vector/2.0f;
+                        float lengthUV=length(m_up_vector);
+                        float lengthRV=length(m_right_vector);
+                        m_up_vector=normalize(m_up_vector);
+                        m_right_vector=normalize(m_right_vector);
+                        sqs[i].blx=m_bottom_left[0];
+                        sqs[i].bly=m_bottom_left[1];
+                        sqs[i].blz=m_bottom_left[2];
+                        sqs[i].rx=m_right_vector[0];
+                        sqs[i].ry=m_right_vector[1];
+                        sqs[i].rz=m_right_vector[2];
+                        sqs[i].ux=m_up_vector[0];
+                        sqs[i].uy=m_up_vector[1];
+                        sqs[i].uz=m_up_vector[2];
+                        glm::vec3 m_normal=cross(m_up_vector,m_right_vector);
+                        m_normal=normalize(m_normal);
+                        sqs[i].nx=m_normal[0];
+                        sqs[i].ny=m_normal[1];
+                        sqs[i].nz=m_normal[2];
+                        sqs[i].p3=lengthUV;
+                        sqs[i].p2=lengthRV;
+                        sqs[i].p1=length(m_right_vector);
+                        sqs[i].p4=length(m_up_vector);
+                        updateSquare=true;
+                    }
+                    if(M.type==PrimitiveType::MESH){
+                        worlds[i].modelMat=t.worldMatrix;worlds[i].invModelMatrix=inverse(t.worldMatrix);worlds[i].normalMat=transpose(inverse(mat3(t.worldMatrix)));
+                        updateMesh=true;
+                    }
+                    M.update=false;
+                }
+            }else if(entityManager->HasComponent<LightComponent>(e.id)){
+                auto& light = entityManager->GetComponent<LightComponent>(e.id);
+                auto& t = entityManager->GetComponent<TransformComponent>(e.id);
+                // t.position[0]+=0.01;
+                int i=light.nb;
+                light.update=true;
+                if(light.update){
+                    ls[i].x=t.position[0];
+                    ls[i].y=t.position[1];
+                    ls[i].z=t.position[2];
+                    ls[i].r=t.scale[0];
+                    updateLight=true;
+                }
+                light.update=false;
+            }
+        }
+        if(updateSphere){
+            // glGenBuffers(1, &ssboSpheres);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboSpheres);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, sps.size()*sizeof(sp), sps.data(), GL_STATIC_DRAW);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssboSpheres);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+            updateSphere=false;
+        }
+        if(updateSquare){
+            // glGenBuffers(1,&ssboSquares);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboSquares);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, sqs.size()*sizeof(sq), sqs.data(), GL_STATIC_DRAW);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, ssboSquares);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+            updateSquare=false;
+        }
+        if(updateMesh){
+            // glGenBuffers(1,&ssboWorld);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboWorld);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, worlds.size()*sizeof(world), worlds.data(), GL_STATIC_DRAW);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, ssboWorld);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+            updateMesh=false;
+        }
+        if(updateLight){
+            // glGenBuffers(1,&ssboLights);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboLights);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, ls.size()*sizeof(l), ls.data(), GL_STATIC_DRAW);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, ssboLights);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+            updateLight=false;
+        }
+
         // calculer et uploader les matrices + cam pos depuis la Camera actuelle
         for(auto& camera : entityManager->GetComponents<CameraComponent>()){
             GLfloat mv[16], proj[16];
@@ -469,7 +591,7 @@ public:
                 MaterialComponent mat = entityManager->GetComponent<MaterialComponent>(e.id);
                 TransformComponent t = entityManager->GetComponent<TransformComponent>(e.id);
                 if(entityManager->HasComponent<MeshComponent>(e.id)){
-                    MeshComponent M = entityManager->GetComponent<MeshComponent>(e.id);
+                    auto& M = entityManager->GetComponent<MeshComponent>(e.id);
                     //Spheres
                     if(M.type==PrimitiveType::SPHERE){
                         sp b;
@@ -508,7 +630,8 @@ public:
                         // }else{
                         //     b.padding[0]=-1;
                         // }
-                        if(mat.particularite==1)b.padding[1]=1;
+                        if(mat.particularite==1)b.padding[1]=2;
+                        M.nb=sps.size();
                         sps.push_back(b);
                     }
                     //Squares
@@ -545,9 +668,9 @@ public:
                         b.ny=m_normal[1];
                         b.nz=m_normal[2];
                         // std::cout<<"centre x : "<<b.blx<<" centre y : "<<b.bly<<" centre z : "<<b.blz<<std::endl;
-                        std::cout<<"m_right_vector x : "<<b.rx<<" m_right_vector y : "<<b.ry<<" m_right_vector z : "<<b.rz<<std::endl;
-                        std::cout<<"m_up_vector x : "<<b.ux<<" m_up_vector y : "<<b.uy<<" m_up_vector z : "<<b.uz<<std::endl;
-                        std::cout<<"m_normal x : "<<b.nx<<" m_normal y : "<<b.ny<<" m_normal z : "<<b.nz<<std::endl;
+                        // std::cout<<"m_right_vector x : "<<b.rx<<" m_right_vector y : "<<b.ry<<" m_right_vector z : "<<b.rz<<std::endl;
+                        // std::cout<<"m_up_vector x : "<<b.ux<<" m_up_vector y : "<<b.uy<<" m_up_vector z : "<<b.uz<<std::endl;
+                        // std::cout<<"m_normal x : "<<b.nx<<" m_normal y : "<<b.ny<<" m_normal z : "<<b.nz<<std::endl;
                         // std::cout<<"length right : "<<lengthRV<<std::endl;
                         // std::cout<<"length up : "<<lengthUV<<std::endl;
                         b.ra=mat.ambient_material[0];
@@ -591,6 +714,7 @@ public:
                         // }
                         if(mat.particularite==1)b.padding[1]=1;
                         // b.texture=text;
+                        M.nb=sqs.size();
                         sqs.push_back(b);
                     }
                     //Meshes
@@ -621,12 +745,12 @@ public:
                         glm::vec3 centre=glm::vec3((maxx+minx)/2.0f,(maxy+miny)/2.0f,(maxz+minz)/2.0f);
                         glm::vec3 centreModel=glm::vec3(w.modelMat*vec4(centre,1.0));
                         w.testSphere[0]=centreModel[0];w.testSphere[1]=centreModel[1];w.testSphere[2]=centreModel[2];w.testSphere[3]=distance(centre,glm::vec3(maxx,maxy,maxz))*0.2;
-                        std::cout<<"min : "<<minx<<" min : "<<miny<<" min : "<<minz<<std::endl;
-                        std::cout<<"max : "<<maxx<<" max : "<<maxy<<" max : "<<maxz<<std::endl;
-                        std::cout<<"centre : "<<centre[0]<<" centre : "<<centre[1]<<" centre : "<<centre[2]<<std::endl;
-                        std::cout<<"centreModel : "<<centreModel[0]<<" centreModel : "<<centreModel[1]<<" centreModel : "<<centreModel[2]<<std::endl;
-                        std::cout<<"rayon : "<<w.testSphere[3]<<std::endl;
-                        std::cout<<"distance : "<<distance(centre,glm::vec3(maxx,maxy,maxz))<<std::endl;
+                        // std::cout<<"min : "<<minx<<" min : "<<miny<<" min : "<<minz<<std::endl;
+                        // std::cout<<"max : "<<maxx<<" max : "<<maxy<<" max : "<<maxz<<std::endl;
+                        // std::cout<<"centre : "<<centre[0]<<" centre : "<<centre[1]<<" centre : "<<centre[2]<<std::endl;
+                        // std::cout<<"centreModel : "<<centreModel[0]<<" centreModel : "<<centreModel[1]<<" centreModel : "<<centreModel[2]<<std::endl;
+                        // std::cout<<"rayon : "<<w.testSphere[3]<<std::endl;
+                        // std::cout<<"distance : "<<distance(centre,glm::vec3(maxx,maxy,maxz))<<std::endl;
                         worlds.push_back(w);
                         for(unsigned int j=0;j<M.triangles.size();j++){
                             std::vector<unsigned short> triangle=M.triangles[j];
@@ -677,6 +801,7 @@ public:
                         // }else{
                         //     mesh.padding[0]=-1;
                         // }
+                        M.nb=sps.size();
                         ms.push_back(mesh);
                         for(unsigned int j=0;j<bvhsYep.size();j++){
                             if(bvhsYep[j].left!=-1)bvhsYep[j].left+=nbBVH;
@@ -688,14 +813,15 @@ public:
                 }
                 //Lights
                 if(entityManager->HasComponent<LightComponent>(e.id)){
-                    LightComponent light = entityManager->GetComponent<LightComponent>(e.id);
+                    auto& light = entityManager->GetComponent<LightComponent>(e.id);
                     l b;
                     b.x=t.position[0];
                     b.y=t.position[1];
                     b.z=t.position[2];
                     b.r=t.scale[0];
+                    light.nb=ls.size();
                     ls.push_back(b);
-                    std::cout<<"light x : "<<b.x<<" light y : "<<b.y<<" light z : "<<b.z<<std::endl;
+                    // std::cout<<"light x : "<<b.x<<" light y : "<<b.y<<" light z : "<<b.z<<std::endl;
                 }
             }
         }
@@ -777,6 +903,26 @@ public:
         if(locM>=0)glUniform1i(locM,(GLint)ms.size());
         std::cout<<"nb sphere : "<<sps.size()<<" nb squares : "<<sqs.size()<<" nb lights : "<<ls.size()<<" nb meshes : "<<ms.size()<<std::endl;
         glUseProgram(0);
+    }
+
+    void changeScene(std::vector<Entity> entities){
+        ssboSpheres=0;
+        ssboSquares=0;
+        ssboLights=0;
+        ssboVertices=0;
+        ssboTriangles=0;
+        ssboMeshes=0;
+        ssboBVH=0;
+        ssboWorld=0;
+        sps.clear();        
+        sqs.clear();
+        ls.clear();
+        vs.clear();
+        ts.clear();
+        ms.clear();
+        bvhs.clear();
+        worlds.clear();
+        onCreate(entities);
     }
 };
 

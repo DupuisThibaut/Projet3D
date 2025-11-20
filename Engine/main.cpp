@@ -540,7 +540,9 @@ void processInput(GLFWwindow *window)
 {
     if(glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS && !hotReloadKey){
         hotReloadKey = true;
+        scenePath = gameFolder + "/scene.json";
         hotReload();
+        gRayTracerSystem->changeScene(entities);
     }
     if(glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_RELEASE && hotReloadKey){
         hotReloadKey = false;
@@ -624,7 +626,13 @@ int main( int argc, char* argv[] )
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 
-    const GLFWvidmode* modeVid = glfwGetVideoMode(glfwGetPrimaryMonitor());
+    int count;
+    GLFWmonitor **monitors = glfwGetMonitors(&count);
+    // const GLFWvidmode* modeVid = glfwGetVideoMode(glfwGetPrimaryMonitor());
+    int x, y;
+    glfwGetMonitorPos(monitors[0], &x, &y);
+    std::cout<<"POSITION X : "<<x<<" Y : "<<y<<std::endl;
+    const GLFWvidmode* modeVid = glfwGetVideoMode(monitors[0]);
     if(modeVid){
         SCR_WIDTH = std::max(MIN_WINDOW_WIDTH, static_cast<unsigned int>(modeVid->width * 0.75));
         SCR_HEIGHT = std::max(MIN_WINDOW_HEIGHT, static_cast<unsigned int>(modeVid->height * 0.75));
@@ -642,8 +650,14 @@ int main( int argc, char* argv[] )
         return -1;
     }
     glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
+    glfwShowWindow(window);
+
+    
+
     glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
 
     // Initialize GLEW
     glewExperimental = true; // Needed for core profile
@@ -772,6 +786,8 @@ int main( int argc, char* argv[] )
     input.setScriptSystem(&scriptSystem);
     input.setRenderSystem(&renderSystem);
     std::cout << "--- Systems initialized. ---" << std::endl;
+
+    glfwSetWindowPos(window, x + 100, y + 100);
 
     do{
         lastTime = affiche(window,lastTime);
