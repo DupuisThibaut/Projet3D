@@ -630,7 +630,7 @@ public:
                         // }else{
                         //     b.padding[0]=-1;
                         // }
-                        if(mat.particularite==1)b.padding[1]=2;
+                        if(mat.particularite==1)b.padding[1]=1;
                         M.nb=sps.size();
                         sps.push_back(b);
                     }

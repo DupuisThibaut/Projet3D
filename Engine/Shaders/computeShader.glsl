@@ -517,16 +517,23 @@ vec3 couleurMesh(vec3 ro,vec3 rd,float tmin,int hitIndex,vec2 pix){
 
 vec3 computeRefraction(vec3 ro, vec3 rd, vec3 n, vec3 p, ivec2 pix, float index){
 	vec3 finalColor=vec3(1.0,1.0,1.0);
-	vec3 unit_dir=rd;
+	vec3 unit_dir=normalize(rd);
+	n=normalize(n);
 	float ri;
-	if(dot(unit_dir,n)>=0){
-		ri=index;
+	if(dot(unit_dir,n)<0){
+		ri=1.0/index;
 	}else{
-		ri=1./index;
+		ri=index;
+		n=-n;
 	}
-	float cos_theta=min(dot((unit_dir*-1.0),n),1.0);
-	float sin_theta=sqrt(1.-cos_theta*cos_theta);
+	// ri=3.0;
+	float cos_theta=min(dot(-unit_dir,n),1.0);
+	// float cos_theta=clamp(dot(-unit_dir,n),-1.0,1.0);
+	float sin_theta=sqrt(1.0-cos_theta*cos_theta);
 	bool cannot_refract=(ri*sin_theta)>1.0;
+	float r0=(1-ri)/(1+ri);
+	r0=r0*r0;
+	float reflectance=r0+(1-r0)*pow((1-cos_theta),5);
 	if(cannot_refract){
 		vec3 v=rd-2*dot(rd,n)*n;
 		v=normalize(v);
@@ -545,15 +552,16 @@ vec3 computeRefraction(vec3 ro, vec3 rd, vec3 n, vec3 p, ivec2 pix, float index)
 		}else{
 			finalColor=vec3(0.68,0.85,0.90);
 		}
+		// finalColor=vec3(0.0,0.0,1.0);
 	}else{
-		float cos_theta=min(dot(unit_dir,n),1.0);
+		// float cos_theta=min(dot(unit_dir,n),1.0);
 		vec3 r_out_perp=ri*(unit_dir+cos_theta*n);
 		vec3 r_out_parallel=-sqrt(abs(1.0-dot(r_out_perp,r_out_perp)))*n;
 		vec3 v=r_out_perp+r_out_parallel;
 		v=normalize(v);
 		vec3 vo=p+v*0.01;
 		intersection inter=intersectScene(vo,v);
-		ro=vo;vec3 rd=v;
+		ro=vo;rd=v;
 		int hitIndex=inter.hitIndex;
 		float tmin=inter.tmin;
 		int interObjet=inter.inter;
@@ -565,7 +573,11 @@ vec3 computeRefraction(vec3 ro, vec3 rd, vec3 n, vec3 p, ivec2 pix, float index)
 			finalColor*=couleurMesh(ro,rd,tmin,hitIndex,pix);
 		}else{
 			finalColor=vec3(0.68,0.85,0.90);
-		}finalColor=vec3(0.0,1.0,0.0);
+		}
+		// finalColor=vec3(0.0,0.0,1.0);
+		// if(1.0-dot(r_out_perp,r_out_perp)<1.0){
+		// 	finalColor=vec3(0.0,1.0,0.0);
+		// }
 	}
 	return finalColor;
 }
@@ -592,6 +604,17 @@ vec3 computeReflection(vec3 ro, vec3 n, vec3 p, ivec2 pix){
 	return finalColor;
 }
 
+vec3 computeMetalic(vec3 rd, vec3 n, vec3 p, ivec2 pix, vec3 finalColor){
+	float metallic=1.0;
+	float reflectStrength=metallic;
+	float diffuseStrength=1.0-metallic;
+	vec3 reflectedColor=vec3(0.0,0.0,0.0);
+	if(reflectStrength>0.0) {
+		reflectedColor=computeReflection(rd,n,p,pix);
+	}
+	return diffuseStrength*finalColor+reflectStrength*reflectedColor;
+}
+
 vec3 couleur(vec3 ro, vec3 rd, intersection inter,ivec2 pix){
 	int hitIndex=inter.hitIndex;
 	float tmin=inter.tmin;
@@ -604,7 +627,10 @@ vec3 couleur(vec3 ro, vec3 rd, intersection inter,ivec2 pix){
 			finalColor*=computeReflection(rd,n,p,pix);
 		}
 		if(spheres[hitIndex].padding[1]==2){
-			finalColor*=computeRefraction(ro,rd,n,p,pix,0.8);
+			finalColor*=computeRefraction(ro,rd,n,p,pix,0.75);
+		}
+		if(spheres[hitIndex].padding[1]==3){
+			finalColor*=computeMetalic(rd,n,p,pix,finalColor);
 		}
 		finalColor*=couleurSphere(ro,rd,tmin,hitIndex,pix);
     }else if(interObjet==2){
