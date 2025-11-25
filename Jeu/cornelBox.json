@@ -124,7 +124,8 @@
       "diffuse":[1.0, 1.0, 1.0],
       "specular":[1.0, 1.0, 1.0],
       "shininess":16.0,
-      "reflection":1
+      "reflection":1,
+      "path":"./texture/grass.png"
       }
     },
     {

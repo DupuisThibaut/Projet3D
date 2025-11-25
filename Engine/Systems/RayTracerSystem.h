@@ -292,6 +292,11 @@ public:
     unsigned int groups_x = 1;
     unsigned int groups_y = 1;
 
+    GLint nbTextures;
+    GLuint textures[16];
+    GLfloat infoTextures[64];
+    GLint idTextures[16];
+
 
     RayTracerSystem(EntityManager* em) : entityManager(em){
 
@@ -373,6 +378,16 @@ public:
         GLuint fs=glCreateShader(GL_FRAGMENT_SHADER);
         glShaderSource(fs,1,&fsource,NULL);
         glCompileShader(fs);
+
+        glGetShaderiv(fs, GL_COMPILE_STATUS, &success);
+        if(!success) {
+            GLint maxLength = 0;
+            glGetShaderiv(fs, GL_INFO_LOG_LENGTH, &maxLength);
+            std::vector<GLchar> errorLog(maxLength);
+            glGetShaderInfoLog(fs, maxLength, &maxLength, &errorLog[0]);
+            std::cout << "Erreur de compilation du fragment shader:" << std::endl;
+            std::cout << &errorLog[0] << std::endl;
+        }
 
         quadProg=glCreateProgram();
         glAttachShader(quadProg,vs);
@@ -569,6 +584,16 @@ public:
         glUseProgram(quadProg);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture);
+
+        for (int i=0;i<nbTextures;i++) {
+            glActiveTexture(GL_TEXTURE1+i);
+            glBindTexture(GL_TEXTURE_2D,textures[i]);
+        }
+        glUniform1iv(glGetUniformLocation(quadProg,"textures"),nbTextures,idTextures);
+        glUniform4fv(glGetUniformLocation(quadProg,"info"),nbTextures,infoTextures);
+        glUniform1iv(glGetUniformLocation(quadProg,"id"),nbTextures,idTextures);
+        glUniform1i(glGetUniformLocation(quadProg,"nb"),nbTextures);
+
         renderQuad();
         glUseProgram(0);
         // glutSwapBuffers();
@@ -579,6 +604,8 @@ public:
         // std::unordered_map<glm::uint32_t,LightComponent> lightsCompo = entityManager->GetComponents<LightComponent>();
         // std::unordered_map<glm::uint32_t,MaterialComponent> matCompo = entityManager->GetComponents<MaterialComponent>();
         // std::unordered_map<glm::uint32_t,TransformComponent> tCompo = entityManager->GetComponents<TransformComponent>();
+
+        std::string pt;
 
         // std::cout<<"debut fonction"<<std::endl;
         std::vector<bvh> bvhs;
@@ -611,6 +638,10 @@ public:
                         b.s=mat.shininess;
                         b.b=0.0f;
                         b.c=0.0f;
+                        if(mat.texturePath!=""){
+                            pt=mat.texturePath;
+                            std::cout<<"TEXTURE : "<<pt<<std::endl;
+                        }
                         // if(mat.texturePath!=""){
                         //     GLuint textSphere;
                         //     glGenTextures(1, &textSphere);
@@ -903,6 +934,51 @@ public:
         if(locM>=0)glUniform1i(locM,(GLint)ms.size());
         std::cout<<"nb sphere : "<<sps.size()<<" nb squares : "<<sqs.size()<<" nb lights : "<<ls.size()<<" nb meshes : "<<ms.size()<<std::endl;
         glUseProgram(0);
+
+        //Création HUD (UI)
+        glUseProgram(quadProg);
+        nbTextures=2;
+        infoTextures[0]=0.5f;
+        infoTextures[1]=0.9f;
+        infoTextures[2]=0.1f;
+        infoTextures[3]=0.1f;
+        infoTextures[4]=0.7f;
+        infoTextures[5]=0.4f;
+        infoTextures[6]=0.2f;
+        infoTextures[7]=0.2f;
+        // std::string pt="./texture/grass.png";
+        for(int i=0;i<nbTextures;i++){
+            glGenTextures(1, &textures[i]);
+            glBindTexture(GL_TEXTURE_2D, textures[i]);
+            int w,h,c;
+            unsigned char* img=stbi_load(pt.c_str(),&w,&h,&c,4);
+            if(!img){
+                std::cout<<"Erreur lors du chargement de la texture : "<<pt<<std::endl;
+            }
+            glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
+            glGenerateMipmap(GL_TEXTURE_2D);
+            stbi_image_free(img);
+        }
+        for(int i=0;i<nbTextures;i++){
+            idTextures[i]=1+i;
+        }
+        // glUniform1iv(glGetUniformLocation(quadProg,"textures"),nbTextures,idTextures);
+        // glUniform4fv(glGetUniformLocation(quadProg,"info"),nbTextures,infoTextures);
+        // glUniform1iv(glGetUniformLocation(quadProg,"id"),nbTextures,idTextures);
+        // glUniform1i(glGetUniformLocation(quadProg,"nb"),nbTextures);
+        // glUseProgram(quadProg);
+        // for (int i=0;i<nbTextures;i++) {
+        //     glActiveTexture(GL_TEXTURE1+i);
+        //     glBindTexture(GL_TEXTURE_2D,textures[i]);
+        // }
+        // GLint locTextures=glGetUniformLocation(quadProg,"textures");
+        // for(int i=0;i<nbTextures;i++){
+        //     idTextures[i]=1+i;
+        // }
+        // glUniform1iv(locTextures,nbTextures,idTextures);
+        // glUniform4fv(glGetUniformLocation(quadProg,"info"),nbTextures,infoTextures);
+        // glUniform1iv(glGetUniformLocation(quadProg,"id"),nbTextures,idTextures);
+        // glUniform1i(glGetUniformLocation(quadProg,"nb"),nbTextures);
     }
 
     void changeScene(std::vector<Entity> entities){

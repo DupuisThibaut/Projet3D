@@ -322,6 +322,42 @@ vec3 randomInSphere(vec3 seed) {
                     cos(phi));
 }
 
+// hash 32-bit → float dans [0,1]
+float hash1(uint x)
+{
+    x ^= x >> 16;
+    x *= 0x7feb352du;
+    x ^= x >> 15;
+    x *= 0x846ca68bu;
+    x ^= x >> 16;
+    return float(x) * (1.0 / 4294967296.0); // 1/2^32
+}
+
+// hash 32-bit → vec3 dans [0,1]
+vec3 hash3(uint x)
+{
+    return vec3(
+        hash1(x),
+        hash1(x * 747796405u + 2891336453u),
+        hash1(x * 2777u + 1234567u)
+    );
+}
+
+vec3 randomDirection(uint seed)
+{
+    vec3 r = hash3(seed);   // 3 random floats
+
+    float z = r.x * 2.0 - 1.0;        // [-1,1]
+    float a = r.y * 6.28318530718;   // angle phi 0..2π
+    float w = sqrt(1.0 - z*z);
+
+    return vec3(
+        w * cos(a),
+        w * sin(a),
+        z
+    );
+}
+
 // vec3 randomInUnitSphere(vec2 seed, float radius)
 // {
 //     float u = rand(seed);
@@ -372,7 +408,9 @@ float ombre(vec3 p, vec3 n, vec2 pix, vec3 light){
 	vec3 newRay;
 	vec3 ro=p+n*0.01;
 	for(int i=0;i<nombreRayon;i++){
-		newRay=light+randomInSphere(vec3(pix,i))*lights[0].rayon;
+		// newRay=light+randomInSphere(vec3(pix,i))*lights[0].rayon;
+		uint seed=uint(pix.x)+uint(pix.y)*92837111u+uint(i)*1234567u;
+		newRay=light+randomDirection(seed)*lights[0].rayon;
 		vec3 L=newRay-p;
 		float dist=length(L);			
 		vec3 rd=normalize(L);
