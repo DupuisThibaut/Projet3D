@@ -254,6 +254,9 @@ std::ifstream sceneFile(scenePath);
                     if( entityData["material"].contains("reflection")){
                         mat.particularite=1;
                     }
+                    if( entityData["material"].contains("refraction")){
+                        mat.particularite=2;
+                    }
                 } else {
                 // Default material
                 mat.setColor(glm::vec3(1.0f, 1.0f, 1.0f),glm::vec3(1.0f, 1.0f, 1.0f),glm::vec3(1.0f, 1.0f, 1.0f),glm::vec3(1.0f, 1.0f, 1.0f),1.0f);

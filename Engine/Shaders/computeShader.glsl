@@ -374,10 +374,27 @@ vec3 randomDirection(uint seed)
 //     );
 // }
 
+uint wang_hash(uint seed)
+{
+    seed = (seed ^ 61) ^ (seed >> 16);
+    seed *= 9;
+    seed = seed ^ (seed >> 4);
+    seed *= 0x27d4eb2d;
+    seed = seed ^ (seed >> 15);
+    return seed;
+}
+
+// Generate random float in [0,1)
+float random_float(uint seed)
+{
+    seed = wang_hash(seed);
+    return (seed) / 4294967296.0f;
+}
+
 bool testOmbre(vec3 ro, vec3 rd, float dist){
 	for (int i=0;i<nbSphere;++i) {
 		float t=intersectSphere(ro,rd,spheres[i].centre,spheres[i].rayon);
-		if(t>0.0 && t<dist){return true;}
+		if(t>0.0 && t<dist){if(spheres[i].padding[1]!=2)return true;}
 	}
 	for (int i=0;i<nbSquare;++i) {
 		float t=intersectSquare(ro,rd,squares[i].m_bottom_left.xyz,squares[i].m_right_vector.xyz,squares[i].m_up_vector.xyz,squares[i].m_normal.xyz,squares[i].m_up_vector[3],squares[i].m_right_vector[3]);
@@ -410,7 +427,9 @@ float ombre(vec3 p, vec3 n, vec2 pix, vec3 light){
 	for(int i=0;i<nombreRayon;i++){
 		// newRay=light+randomInSphere(vec3(pix,i))*lights[0].rayon;
 		uint seed=uint(pix.x)+uint(pix.y)*92837111u+uint(i)*1234567u;
-		newRay=light+randomDirection(seed)*lights[0].rayon;
+		newRay=light+vec3(random_float(seed)-0.5,random_float(seed)-0.5,random_float(seed)-0.5)*lights[0].rayon;
+		// newRay=light+randomDirection(seed)*lights[0].rayon;
+		// vec3(random_float(seed)-0.5,random_float(seed)-0.5,random_float(seed)-0.5)
 		vec3 L=newRay-p;
 		float dist=length(L);			
 		vec3 rd=normalize(L);
@@ -486,7 +505,7 @@ vec3 couleurSphere(vec3 ro,vec3 rd,float tmin,int hitIndex,vec2 pix){
 	finalColor[0]*=l[0]*ambient[0]+l[0]*diffuse[0]*cosT+l[0]*specular[0]*pow(cosA,shininess);
 	finalColor[1]*=l[1]*ambient[1]+l[1]*diffuse[1]*cosT+l[1]*specular[1]*pow(cosA,shininess);
 	finalColor[2]*=l[2]*ambient[2]+l[2]*diffuse[2]*cosT+l[2]*specular[2]*pow(cosA,shininess);
-	finalColor*=ombre(p,n,pix,light);
+	// finalColor*=ombre(p,n,pix,light);
 	return finalColor;
 }
 
@@ -517,7 +536,7 @@ vec3 couleurSquare(vec3 ro,vec3 rd,float tmin,int hitIndex,vec2 pix){
 	finalColor[0]*=l[0]*ambient[0]+l[0]*diffuse[0]*cosT+l[0]*specular[0]*pow(cosA,shininess);
 	finalColor[1]*=l[1]*ambient[1]+l[1]*diffuse[1]*cosT+l[1]*specular[1]*pow(cosA,shininess);
 	finalColor[2]*=l[2]*ambient[2]+l[2]*diffuse[2]*cosT+l[2]*specular[2]*pow(cosA,shininess);
-	finalColor*=ombre(p,n,pix,light);
+	// finalColor*=ombre(p,n,pix,light);
 	return finalColor;
 }
 
@@ -549,11 +568,54 @@ vec3 couleurMesh(vec3 ro,vec3 rd,float tmin,int hitIndex,vec2 pix){
 	finalColor[0]=l[0]*ambient[0]+l[0]*diffuse[0]*cosT+l[0]*specular[0]*pow(cosA,shininess);
 	finalColor[1]=l[1]*ambient[1]+l[1]*diffuse[1]*cosT+l[1]*specular[1]*pow(cosA,shininess);
 	finalColor[2]=l[2]*ambient[2]+l[2]*diffuse[2]*cosT+l[2]*specular[2]*pow(cosA,shininess);
-	finalColor*=ombre(p,n,pix,light);
+	// finalColor*=ombre(p,n,pix,light);
 	return finalColor;
 }
 
-vec3 computeRefraction(vec3 ro, vec3 rd, vec3 n, vec3 p, ivec2 pix, float index){
+intersection intersectSceneRefraction(vec3 ro, vec3 rd, int type, int indice){
+	intersection res;
+	res.tmin=1e19;
+	res.hitIndex=-1;
+	res.inter=-1;
+	
+    for (int i=0;i<nbSphere;++i) {
+		if(type!=1 || i!=indice){
+			float t=intersectSphere(ro,rd,spheres[i].centre,spheres[i].rayon);
+			if(t>0.0 && t<res.tmin){res.tmin=t;res.hitIndex=i;res.inter=1;}
+		}
+    }
+
+    for (int i=0;i<nbSquare;++i) {
+		if(type!=2 || i!=indice){
+			float t=intersectSquare(ro,rd,squares[i].m_bottom_left.xyz,squares[i].m_right_vector.xyz,squares[i].m_up_vector.xyz,squares[i].m_normal.xyz,squares[i].m_up_vector[3],squares[i].m_right_vector[3]);
+			if(t>0.0 && t<res.tmin){res.tmin=t;res.hitIndex=i;res.inter=2;uvFinal=uvTest;}
+		}
+    }
+
+	for(int i=0;i<nbMesh;i++){
+		if(type!=3 || i!=indice){
+			mat4 model=worlds[i].modelMat;
+			mat4 invModelMatrix=worlds[i].invModelMatrix;
+			vec3 roLocal=(invModelMatrix*vec4(ro,1.0)).xyz;
+			vec3 rdLocal=normalize((invModelMatrix*vec4(rd,0.0)).xyz);
+			float t=intersectMesh(roLocal,rdLocal,i);
+			if(t>0.0){
+				vec3 pLocal=roLocal+rdLocal*t;
+				vec3 pMonde=(model*vec4(pLocal,1.0)).xyz;
+				float t2=length(pMonde-ro);
+				if(t2<res.tmin){
+					mat3 normalMat=worlds[i].normalMat;
+					normalTriangleFinal=normalize(normalMat*normalTriangleFinal);
+					res.tmin=t2;res.hitIndex=i;res.inter=3;
+				}
+			}
+		}
+	}
+
+	return res;
+}
+
+vec3 computeRefraction(vec3 ro, vec3 rd, vec3 n, vec3 p, ivec2 pix, float index, int type, int indice){
 	vec3 finalColor=vec3(1.0,1.0,1.0);
 	vec3 unit_dir=normalize(rd);
 	n=normalize(n);
@@ -576,7 +638,7 @@ vec3 computeRefraction(vec3 ro, vec3 rd, vec3 n, vec3 p, ivec2 pix, float index)
 		vec3 v=rd-2*dot(rd,n)*n;
 		v=normalize(v);
 		vec3 vo=p+v*0.01;
-		intersection inter=intersectScene(vo,v);
+		intersection inter=intersectSceneRefraction(vo,v,type,indice);
 		ro=vo;vec3 rd=v;
 		int hitIndex=inter.hitIndex;
 		float tmin=inter.tmin;
@@ -598,7 +660,7 @@ vec3 computeRefraction(vec3 ro, vec3 rd, vec3 n, vec3 p, ivec2 pix, float index)
 		vec3 v=r_out_perp+r_out_parallel;
 		v=normalize(v);
 		vec3 vo=p+v*0.01;
-		intersection inter=intersectScene(vo,v);
+		intersection inter=intersectSceneRefraction(vo,v,type,indice);
 		ro=vo;rd=v;
 		int hitIndex=inter.hitIndex;
 		float tmin=inter.tmin;
@@ -643,7 +705,7 @@ vec3 computeReflection(vec3 ro, vec3 n, vec3 p, ivec2 pix){
 }
 
 vec3 computeMetalic(vec3 rd, vec3 n, vec3 p, ivec2 pix, vec3 finalColor){
-	float metallic=1.0;
+	float metallic=0.1;
 	float reflectStrength=metallic;
 	float diffuseStrength=1.0-metallic;
 	vec3 reflectedColor=vec3(0.0,0.0,0.0);
@@ -653,39 +715,60 @@ vec3 computeMetalic(vec3 rd, vec3 n, vec3 p, ivec2 pix, vec3 finalColor){
 	return diffuseStrength*finalColor+reflectStrength*reflectedColor;
 }
 
-vec3 couleur(vec3 ro, vec3 rd, intersection inter,ivec2 pix){
-	int hitIndex=inter.hitIndex;
-	float tmin=inter.tmin;
-	int interObjet=inter.inter;
-	vec3 finalColor=vec3(1.0,1.0,1.0);
-    if(interObjet==1){
-		vec3 p=ro+rd*tmin;
-		vec3 n=(p-spheres[hitIndex].centre)/spheres[hitIndex].rayon;
-		if(spheres[hitIndex].padding[1]==1){
-			finalColor*=computeReflection(rd,n,p,pix);
+vec3 couleur(vec3 ro, vec3 rd,ivec2 pix){
+	vec3 finalColor=vec3(0.0,0.0,0.0);
+	int nbRayons=5;
+	for(int i=0;i<nbRayons;i++){
+		intersection inter=intersectScene(ro,rd);
+		int hitIndex=inter.hitIndex;
+		float tmin=inter.tmin;
+		int interObjet=inter.inter;
+		vec3 testColor=vec3(1.0,1.0,1.0);
+		if(interObjet==1){
+			vec3 p=ro+rd*tmin;
+			vec3 n=(p-spheres[hitIndex].centre)/spheres[hitIndex].rayon;
+			if(spheres[hitIndex].padding[1]==1){
+				testColor*=computeReflection(rd,n,p,pix);
+			}
+			if(spheres[hitIndex].padding[1]==2){
+				testColor*=computeRefraction(ro,rd,n,p,pix,0.75,1,hitIndex);
+			}
+			if(spheres[hitIndex].padding[1]==3){
+				testColor=computeMetalic(rd,n,p,pix,testColor);
+			}
+			testColor*=couleurSphere(ro,rd,tmin,hitIndex,pix);
+		}else if(interObjet==2){
+			vec3 p=ro+rd*tmin;
+			vec3 n=squares[hitIndex].m_normal.xyz;
+			if(squares[hitIndex].padding[1]==1){
+				testColor*=computeReflection(rd,n,p,pix);
+			}
+			if(squares[hitIndex].padding[1]==2){
+				testColor*=computeRefraction(ro,rd,n,p,pix,0.75,2,hitIndex);
+			}
+			if(squares[hitIndex].padding[1]==3){
+				testColor=computeMetalic(rd,n,p,pix,testColor);
+			}
+			testColor*=couleurSquare(ro,rd,tmin,hitIndex,pix);
+		}else if(interObjet==3){
+			vec3 p=ro+rd*tmin;
+			vec3 n=normalTriangleFinal;
+			if(meshes[hitIndex].padding[1]==1){
+				testColor*=computeReflection(rd,n,p,pix);
+			}
+			if(meshes[hitIndex].padding[1]==2){
+				testColor*=computeRefraction(ro,rd,n,p,pix,0.75,2,hitIndex);
+			}
+			if(meshes[hitIndex].padding[1]==3){
+				testColor=computeMetalic(rd,n,p,pix,testColor);
+			}
+			testColor*=couleurMesh(ro,rd,tmin,hitIndex,pix);
+		}else{
+			testColor=vec3(0.68,0.85,0.90);
 		}
-		if(spheres[hitIndex].padding[1]==2){
-			finalColor*=computeRefraction(ro,rd,n,p,pix,0.75);
-		}
-		if(spheres[hitIndex].padding[1]==3){
-			finalColor*=computeMetalic(rd,n,p,pix,finalColor);
-		}
-		finalColor*=couleurSphere(ro,rd,tmin,hitIndex,pix);
-    }else if(interObjet==2){
-		vec3 p=ro+rd*tmin;
-		vec3 n=squares[hitIndex].m_normal.xyz;
-		if(squares[hitIndex].padding[1]==1){
-			finalColor*=computeReflection(rd,n,p,pix);
-		}
-		finalColor*=couleurSquare(ro,rd,tmin,hitIndex,pix);
-    }else if(interObjet==3){
-		vec3 p=ro+rd*tmin;
-		vec3 n=normalTriangleFinal;
-		finalColor*=couleurMesh(ro,rd,tmin,hitIndex,pix);
-    }else{
-        finalColor=vec3(0.68,0.85,0.90);
-    }
-	return finalColor;
+		finalColor+=testColor;
+	}
+	return finalColor/float(nbRayons);
 }
 
 void main(){
@@ -700,8 +783,8 @@ void main(){
     vec3 ro=uCamPos;
     vec3 rd=normalize(world.xyz-ro);
     
-	intersection inter=intersectScene(ro,rd);
-    vec3 finalColor=couleur(ro,rd,inter,pix);
+	
+    vec3 finalColor=couleur(ro,rd,pix);
 
     imageStore(imgOutput,pix,vec4(finalColor,1.0));
 }

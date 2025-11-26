@@ -262,6 +262,34 @@
         "shininess":16.0,
         "path":"./texture/grass.png"
       }
+    },
+    {
+      "id": 10,
+      "transform": {
+        "position": [0.0, 1.0, 0.0],
+        "rotation": [0.0, 0.0, 0.0],
+        "scale": [0.5, 0.5, 0.5],
+        "parent": -1,
+        "children": []
+      },
+      "mesh": {
+        "type": "primitive",
+        "mesh_type": "PLANE",
+        "subdivisions": 100,
+        "normal": [0.0, 1.0, 0.0],
+        "height": 2.0,
+        "width": 0.4
+      },
+      "material":{
+        "type":"color",
+        "color":[1.0, 1.0, 1.0],
+        "ambient":[0.0, 0.0, 0.0],
+        "diffuse":[1.0, 0.0, 1.0],
+        "specular":[1.0, 0.0, 1.0],
+        "shininess":16.0,
+        "refraction":1,
+        "path":"./texture/grass.png"
+      }
     }
   ]
 }

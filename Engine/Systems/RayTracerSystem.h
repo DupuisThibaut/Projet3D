@@ -661,7 +661,7 @@ public:
                         // }else{
                         //     b.padding[0]=-1;
                         // }
-                        if(mat.particularite==1)b.padding[1]=1;
+                        if(mat.particularite==1)b.padding[1]=2;
                         M.nb=sps.size();
                         sps.push_back(b);
                     }
@@ -744,6 +744,7 @@ public:
                         //     b.padding[0]=-1;
                         // }
                         if(mat.particularite==1)b.padding[1]=1;
+                        if(mat.particularite==2)b.padding[1]=2;
                         // b.texture=text;
                         M.nb=sqs.size();
                         sqs.push_back(b);
