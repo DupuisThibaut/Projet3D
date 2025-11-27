@@ -297,6 +297,8 @@ public:
     GLfloat infoTextures[64];
     GLint idTextures[16];
 
+    GLint frameCount=0;
+
 
     RayTracerSystem(EntityManager* em) : entityManager(em){
 
@@ -563,6 +565,9 @@ public:
             GLint locInv = glGetUniformLocation(computeProg, "uInvViewProj");
             if (locInv >= 0) glUniformMatrix4fv(locInv, 1, GL_FALSE, &invVP[0][0]);
         }
+        GLint locFrame = glGetUniformLocation(computeProg, "frameCount");
+        if (locFrame >= 0) glUniform1i(locFrame, frameCount);
+        frameCount++;
 
         
         glDispatchCompute(groups_x, groups_y, 1);

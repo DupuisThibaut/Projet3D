@@ -238,7 +238,7 @@ std::ifstream sceneFile(scenePath);
                     glm::vec3 ambient=glm::vec3(entityData["material"]["ambient"][0],
                                                 entityData["material"]["ambient"][1],
                                                 entityData["material"]["ambient"][2]);
-                    std::cout<<"ambient_material x : "<<ambient[0]<<" ambient_material y : "<<ambient[1]<<" ambient_material z : "<<ambient[2]<<std::endl;
+                    // std::cout<<"ambient_material x : "<<ambient[0]<<" ambient_material y : "<<ambient[1]<<" ambient_material z : "<<ambient[2]<<std::endl;
                     glm::vec3 diffuse=glm::vec3(entityData["material"]["diffuse"][0],
                                                 entityData["material"]["diffuse"][1],
                                                 entityData["material"]["diffuse"][2]);
