@@ -44,6 +44,19 @@
           10.0,
           10.0
         ]
+      },
+      "collider": {
+        "size": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "type": "PLANE",
+        "normal": [
+          0.0,
+          1.0,
+          0.0
+        ]
       }
     },
     {
@@ -77,7 +90,7 @@
         "type": "file"
       },
       "script": {
-        "path": "./Scripts/ChangeColor.lua",
+        "path": "/Scripts/ChangeColor.lua",
         "type": "Lua"
       },
       "transform": {
@@ -85,7 +98,7 @@
         "parent": 4294967295,
         "position": [
           0.0,
-          -9.0,
+          -5.0,
           0.0
         ],
         "rotation": [
@@ -100,6 +113,14 @@
         ]
       },
       "rigidbody": {
+      },
+      "collider": {
+        "type": "AABB",
+        "size": [
+          0.5,
+          0.5,
+          0.5
+        ]
       }
     },
     {
@@ -124,7 +145,7 @@
       },
       "id": 2,
       "script": {
-        "path": "./Scripts/MoveCam.lua",
+        "path": "/Scripts/MoveCam.lua",
         "type": "Lua"
       },
       "transform": {
@@ -177,7 +198,7 @@
         "type": "color"
       },
       "script": {
-        "path": "./Scripts/SunCycle.lua",
+        "path": "/Scripts/SunCycle.lua",
         "type": "Lua"
       },
       "transform": {
@@ -236,7 +257,7 @@
         "parent": 4294967295,
         "position": [
           -2.5,
-          -9.0,
+          -8.0,
           0.0
         ],
         "rotation": [
@@ -257,6 +278,10 @@
           -9.81,
           0.0
         ]
+      },
+      "collider": {
+        "radius": 0.5,
+        "type": "SPHERE"
       }
     },
     {

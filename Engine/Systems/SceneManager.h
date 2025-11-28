@@ -11,7 +11,7 @@
 #include <filesystem>
 #include <cmath>
 
-#include <nlohmann/json.hpp>
+#include <common/json.hpp>
 using json = nlohmann::json;
 
 class ScriptSystem;
@@ -144,6 +144,11 @@ public:
                 LuaScriptComponent luaScript;
                 luaScript.loadFromFile(sceneData, e.id, gameFolder);
                 entityManager->AddComponent<LuaScriptComponent>(e.id, luaScript);
+            }
+            if(entityData.contains("collider")){
+                ColliderComponent collider;
+                collider.loadFromFile(sceneData, e.id);
+                entityManager->AddComponent<ColliderComponent>(e.id, collider);
             }
             
         }

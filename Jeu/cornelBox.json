@@ -51,7 +51,7 @@
       },
       "script": {
         "type": "Lua",
-        "path": "./Scripts/ChangeColor.lua"
+        "path": "/Scripts/ChangeColor.lua"
       }
     },
     {
@@ -76,7 +76,7 @@
       },
       "script": {
         "type": "Lua",
-        "path": "./Scripts/MoveCam.lua"
+        "path": "/Scripts/MoveCam.lua"
       }
     },
     {

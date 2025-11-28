@@ -27,11 +27,11 @@ struct ICollider{
 };
 
 struct SphereCollider : ICollider {
-    glm::vec3 center = glm::vec3(0.0f);
+    glm::vec3 position = glm::vec3(0.0f);
     float radius = 1.0f;
 
     SphereCollider() = default;
-    SphereCollider(const glm::vec3& c, float r) : center(c), radius(r) {}
+    SphereCollider(const glm::vec3& p, float r) : position(p), radius(r) {}
     ColliderType getType() const override {
         return ColliderType::SPHERE;
     }
@@ -40,45 +40,45 @@ struct SphereCollider : ICollider {
     }
 
     bool PointInCollider(const glm::vec3& point) const {
-        float magSq = MagnitudeSq(point - center);
+        float magSq = MagnitudeSq(point - position);
         float radSq = radius * radius;
         return magSq <= radSq;
     }
 
     glm::vec3 ClosestPoint(const glm::vec3& point) const {
-        glm::vec3 dir = glm::normalize(point - center);
+        glm::vec3 dir = glm::normalize(point - position);
         dir *= radius;
-        return dir + center;
+        return dir + position;
     }
 };
 
 struct AABBCollider : ICollider {
-    glm::vec3 origin = glm::vec3(0.0f);
+    glm::vec3 position = glm::vec3(0.0f);
     glm::vec3 size = glm::vec3(1.0f);
 
     AABBCollider() = default;
-    AABBCollider(const glm::vec3& o, const glm::vec3& s) : origin(o), size(s) {}
+    AABBCollider(const glm::vec3& p, const glm::vec3& s) : position(p), size(s) {}
     ColliderType getType() const override {
-        return ColliderType::BOX;
+        return ColliderType::AABB;
     }
     std::unique_ptr<ICollider> clone() const override {
         return std::make_unique<AABBCollider>(*this);
     }
 
     glm::vec3 getMin() const {
-        glm::vec3 p1 = origin + size;
-        glm::vec3 p2 = origin - size;
+        glm::vec3 p1 = position + size;
+        glm::vec3 p2 = position - size;
         return glm::vec3(fminf(p1.x, p2.x),fminf(p1.y, p2.y),fminf(p1.z, p2.z));
     }
 
     glm::vec3 getMax() const {
-        glm::vec3 p1 = origin + size;
-        glm::vec3 p2 = origin - size;
+        glm::vec3 p1 = position + size;
+        glm::vec3 p2 = position - size;
         return glm::vec3(fmaxf(p1.x, p2.x),fmaxf(p1.y, p2.y),fmaxf(p1.z, p2.z));
     }
 
     void FromMinMax(const glm::vec3& min, const glm::vec3& max) {
-        origin = (min + max) * 0.5f;
+        position = (min + max) * 0.5f;
         size = (max - min) * 0.5f;
     }
 
@@ -113,7 +113,7 @@ struct OBBCollider : ICollider {
     OBBCollider(const glm::vec3& p, const glm::vec3& s) : position(p), size(s), orientation(glm::mat3(1.0f)) {}
     OBBCollider(const glm::vec3& c, const glm::vec3& s, const glm::mat3& r) : position(c), size(s), orientation(r) {}
     ColliderType getType() const override {
-        return ColliderType::BOX;
+        return ColliderType::OBB;
     }
     std::unique_ptr<ICollider> clone() const override {
         return std::make_unique<OBBCollider>(*this);
@@ -177,33 +177,34 @@ struct PlaneCollider : ICollider {
     }
 };
 
-struct Line{
-    glm::vec3 start;
-    glm::vec3 end;
-    Line() = default;
-    Line(const glm::vec3& s, const glm::vec3& e) : start(s), end(e) {}
-    float Length() const {
-        return glm::length(end - start);
-    }
-    float LengthSq() const {
-        return MagnitudeSq(start - end);
-    }
+// struct Line{
+//     glm::vec3 start;
+//     glm::vec3 end;
+//     Line() = default;
+//     Line(const glm::vec3& s, const glm::vec3& e) : start(s), end(e) {}
+//     float Length() const {
+//         return glm::length(end - start);
+//     }
+//     float LengthSq() const {
+//         return MagnitudeSq(start - end);
+//     }
 
-    glm::vec3 ClosestPoint(const glm::vec3& point) const {
-        glm::vec3 lVec = end - start;
-        float t = glm::dot(point - start, lVec) / glm::dot(lVec, lVec);
-        t = fmaxf(0.0f, fminf(1.0f, t));
-        return start + t * lVec;
-    }
+//     glm::vec3 ClosestPoint(const glm::vec3& point) const {
+//         glm::vec3 lVec = end - start;
+//         float t = glm::dot(point - start, lVec) / glm::dot(lVec, lVec);
+//         t = fmaxf(0.0f, fminf(1.0f, t));
+//         return start + t * lVec;
+//     }
 
-    bool PointOnLine(const glm::vec3& point) const {
-        float lineLenSq = LengthSq();
-        float d1 = MagnitudeSq(point - start);
-        float d2 = MagnitudeSq(point - end);
-        return fabsf(lineLenSq - (d1 + d2)) < 0.0001f;
-    }
-};
+//     bool PointOnLine(const glm::vec3& point) const {
+//         float lineLenSq = LengthSq();
+//         float d1 = MagnitudeSq(point - start);
+//         float d2 = MagnitudeSq(point - end);
+//         return fabsf(lineLenSq - (d1 + d2)) < 0.0001f;
+//     }
+// };
 
+struct TriangleCollider;
 struct Interval{
     float min;
     float max;
@@ -263,18 +264,7 @@ struct Interval{
         return result;
     }
 
-    Interval GetInterval(const TriangleCollider& tri, const glm::vec3& axis) {
-        glm::vec3 corners[3] = {tri.a, tri.b, tri.c};
-        Interval result;
-        result.min = glm::dot(axis, corners[0]);
-        result.max = result.min;
-        for(int i = 1; i < 3; ++i) {
-            float projection = glm::dot(axis, corners[i]);
-            result.min = fminf(result.min, projection);
-            result.max = fmaxf(result.max, projection);
-        }
-        return result;
-    }
+    Interval GetInterval(const TriangleCollider& tri, const glm::vec3& axis); 
 };
 
 struct TriangleCollider : ICollider {
@@ -301,7 +291,7 @@ struct TriangleCollider : ICollider {
         if (glm::dot(normPBC, normPAB) < 0.0f) return false;
         return true;
     }
-    PlaneCollider FromTriangle(){
+    PlaneCollider FromTriangle() const {
         PlaneCollider plane;
         plane.normal = glm::normalize(glm::cross(b - a, c - a));
         plane.distance = glm::dot(plane.normal, a);
@@ -330,12 +320,12 @@ struct TriangleCollider : ICollider {
     }
 
     bool Intersect(const SphereCollider& sphere) const {
-        glm::vec3 closestPoint = ClosestPoint(sphere.center);
-        float distSq = MagnitudeSq(closestPoint - sphere.center);
+        glm::vec3 closestPoint = ClosestPoint(sphere.position);
+        float distSq = MagnitudeSq(closestPoint - sphere.position);
         return distSq <= (sphere.radius * sphere.radius);
     }
 
-    bool OverlapOnAxis(const AABBCollider& aabb, const glm::vec3& axis) {
+    bool OverlapOnAxis(const AABBCollider& aabb, const glm::vec3& axis) const {
         Interval a = Interval().GetInterval(aabb, axis);
         Interval b = Interval().GetInterval(*this, axis);
         return (b.min <= a.max) && (a.min <= b.max);
@@ -371,7 +361,7 @@ struct TriangleCollider : ICollider {
         return true;
     }
 
-    bool OverlapOnAxis(const OBBCollider& obb, const glm::vec3& axis) {
+    bool OverlapOnAxis(const OBBCollider& obb, const glm::vec3& axis) const {
         Interval a = Interval().GetInterval(obb, axis);
         Interval b = Interval().GetInterval(*this, axis);
         return (b.min <= a.max) && (a.min <= b.max);
@@ -382,9 +372,9 @@ struct TriangleCollider : ICollider {
         glm::vec3 f1 = c - b;
         glm::vec3 f2 = a - c;
         glm::vec3 o[3] = {
-            glm::vec3(obb.orientation[0][0], obb.orientation[1][0], obb.orientation[2][0]),
-            glm::vec3(obb.orientation[0][1], obb.orientation[1][1], obb.orientation[2][1]),
-            glm::vec3(obb.orientation[0][2], obb.orientation[1][2], obb.orientation[2][2])
+            obb.orientation[0],
+            obb.orientation[1],
+            obb.orientation[2]
         };
         glm::vec3 test[13] ={
             o[0],
@@ -420,7 +410,7 @@ struct TriangleCollider : ICollider {
         return true;
     }
 
-    bool OverlapOnAxis(const TriangleCollider& other, const glm::vec3& axis) {
+    bool OverlapOnAxis(const TriangleCollider& other, const glm::vec3& axis) const {
         Interval a = Interval().GetInterval(other, axis);
         Interval b = Interval().GetInterval(*this, axis);
         return (b.min <= a.max) && (a.min <= b.max);
@@ -466,6 +456,18 @@ struct TriangleCollider : ICollider {
 
 
 };
+inline Interval Interval::GetInterval(const TriangleCollider& tri, const glm::vec3& axis) {
+    glm::vec3 corners[3] = {tri.a, tri.b, tri.c};
+    Interval result;
+    result.min = glm::dot(axis, corners[0]);
+    result.max = result.min;
+    for(int i = 1; i < 3; ++i) {
+        float projection = glm::dot(axis, corners[i]);
+        result.min = fminf(result.min, projection);
+        result.max = fmaxf(result.max, projection);
+    }
+    return result;
+}
 
 struct BVHNode {
     AABBCollider bounds;
@@ -510,7 +512,7 @@ struct MeshCollider : ICollider{
             max.z = fmaxf(max.z, v.z);
         }
         accelerator = new BVHNode();
-        accelerator->bounds.origin = min;
+        accelerator->bounds.position = min;
         accelerator->bounds.size = max - min;
         accelerator->numTriangles = numTriangles;
         accelerator->triangles = new int[numTriangles];
@@ -526,7 +528,7 @@ struct MeshCollider : ICollider{
         if(node->children ==0){
             if (node->numTriangles >0) {
                 node->children = new BVHNode[8];
-                glm::vec3 c = node->bounds.origin;
+                glm::vec3 c = node->bounds.position;
                 glm::vec3 e = node->bounds.size * 0.5f;
                 node->children[0].bounds = AABBCollider(c + glm::vec3(-e.x, +e.y, -e.z), e);
                 node->children[1].bounds = AABBCollider(c + glm::vec3(+e.x, +e.y, -e.z), e);
@@ -606,13 +608,81 @@ struct ColliderComponent {
         return *this;
     }
 
-    bool OverlapOnAxis(const AABBCollider& aabb, const OBBCollider& obb, const glm::vec3& axis) {
+    void loadFromFile(const nlohmann::json& entityData, uint32_t& index){
+        if (!entityData.contains("collider")) {
+            std::cerr << "Collider data not found in entity data." << std::endl;
+            return;
+        }
+        std::string colliderType = entityData["collider"][index]["type"];
+        isTrigger = entityData["collider"][index]["isTrigger"];
+        if(colliderType == "SPHERE"){
+            type = ColliderType::SPHERE;
+            glm::vec3 center = glm::vec3(
+                entityData["collider"][index]["position"][0],
+                entityData["collider"][index]["position"][1],
+                entityData["collider"][index]["position"][2]
+            );
+            float radius = entityData["collider"][index]["radius"];
+            collider = std::make_unique<SphereCollider>(center, radius);
+        }
+        else if(colliderType == "AABB"){
+            type = ColliderType::AABB;
+            glm::vec3 origin = glm::vec3(
+                entityData["collider"][index]["position"][0],
+                entityData["collider"][index]["position"][1],
+                entityData["collider"][index]["position"][2]
+            );
+            glm::vec3 size = glm::vec3(
+                entityData["collider"][index]["size"][0],
+                entityData["collider"][index]["size"][1],
+                entityData["collider"][index]["size"][2]
+            );
+            collider = std::make_unique<AABBCollider>(origin, size);
+        }
+        else if(colliderType == "OBB"){
+            type = ColliderType::OBB;
+            glm::vec3 position = glm::vec3(
+                entityData["collider"][index]["position"][0],
+                entityData["collider"][index]["position"][1],
+                entityData["collider"][index]["position"][2]
+            );
+            glm::vec3 size = glm::vec3(
+                entityData["collider"][index]["size"][0],
+                entityData["collider"][index]["size"][1],
+                entityData["collider"][index]["size"][2]
+            );
+            glm::mat3 orientation = glm::mat3(1.0f);
+            for(int i = 0; i < 3; ++i){
+                for(int j = 0; j < 3; ++j){
+                    orientation[i][j] = entityData["collider"][index]["orientation"][i][j];
+                }
+            }
+            collider = std::make_unique<OBBCollider>(position, size, orientation);
+        }
+        else if(colliderType == "PLANE"){
+            type = ColliderType::PLANE;
+            glm::vec3 normal = glm::vec3(
+                entityData["colliders"][index]["normal"][0],
+                entityData["colliders"][index]["normal"][1],
+                entityData["colliders"][index]["normal"][2]
+            );
+            float distance = entityData["colliders"][index]["distance"];
+            collider = std::make_unique<PlaneCollider>(normal, distance);
+        }
+        else if(colliderType == "MESH"){
+            type = ColliderType::MESH;
+            // Mesh loading not implemented
+        }
+        index++;
+    }
+
+    bool OverlapOnAxis(const AABBCollider& aabb, const OBBCollider& obb, const glm::vec3& axis) const {
         Interval a = Interval().GetInterval(aabb, axis);
         Interval b = Interval().GetInterval(obb, axis);
         return (b.min <= a.max) && (a.min <= b.max);
     }
 
-    bool OverlapOnAxis(const OBBCollider& obb1, const OBBCollider& obb2, const glm::vec3& axis) {
+    bool OverlapOnAxis(const OBBCollider& obb1, const OBBCollider& obb2, const glm::vec3& axis) const {
         Interval a = Interval().GetInterval(obb1, axis);
         Interval b = Interval().GetInterval(obb2, axis);
         return (b.min <= a.max) && (a.min <= b.max);
@@ -621,35 +691,34 @@ struct ColliderComponent {
     bool intersectColliders(const SphereCollider& sphere) const {
         if(type == ColliderType::SPHERE) {
             float radiisumSum = static_cast<SphereCollider*>(collider.get())->radius + sphere.radius;
-            float distSq = MagnitudeSq(static_cast<SphereCollider*>(collider.get())->center - sphere.center);
+            float distSq = MagnitudeSq(static_cast<SphereCollider*>(collider.get())->position - sphere.position);
             return distSq <= (radiisumSum * radiisumSum);
         }
         else if(type == ColliderType::AABB){
-            glm::vec3 closestPoint = static_cast<AABBCollider*>(collider.get())->ClosestPoint(sphere.center);
-            float distSq = MagnitudeSq(closestPoint - sphere.center);
+            glm::vec3 closestPoint = static_cast<AABBCollider*>(collider.get())->ClosestPoint(sphere.position);
+            float distSq = MagnitudeSq(closestPoint - sphere.position);
             return distSq <= (sphere.radius * sphere.radius);
         }
         else if(type == ColliderType::OBB){
-            glm::vec3 closestPoint = static_cast<OBBCollider*>(collider.get())->ClosestPoint(sphere.center);
-            float distSq = MagnitudeSq(closestPoint - sphere.center);
+            glm::vec3 closestPoint = static_cast<OBBCollider*>(collider.get())->ClosestPoint(sphere.position);
+            float distSq = MagnitudeSq(closestPoint - sphere.position);
             return distSq <= (sphere.radius * sphere.radius);
         }
         else if(type == ColliderType::PLANE){
-            glm::vec3 closestPoint = sphere.center - static_cast<PlaneCollider*>(collider.get())->ClosestPoint(sphere.center);
-            float distSq = MagnitudeSq(sphere.center - closestPoint);
+            glm::vec3 closestPoint = sphere.position - static_cast<PlaneCollider*>(collider.get())->ClosestPoint(sphere.position);
+            float distSq = MagnitudeSq(sphere.position - closestPoint);
             return distSq <= (sphere.radius * sphere.radius);
         }
         else if (type == ColliderType::MESH) {
-            // Mesh collision detection not implemented
-            return false;
+            
         }
         return false;
     }
     bool intersectColliders(const AABBCollider& aabb) const {
         if(type == ColliderType::SPHERE) {
             SphereCollider sphere = *static_cast<SphereCollider*>(collider.get());
-            glm::vec3 closestPoint = aabb.ClosestPoint(sphere.center);
-            float distSq = MagnitudeSq(closestPoint - sphere.center);
+            glm::vec3 closestPoint = aabb.ClosestPoint(sphere.position);
+            float distSq = MagnitudeSq(closestPoint - sphere.position);
             return distSq <= (sphere.radius * sphere.radius);
         }
         else if(type == ColliderType::AABB){
@@ -663,14 +732,14 @@ struct ColliderComponent {
         }
         else if(type == ColliderType::OBB){
             const OBBCollider& obb = *static_cast<OBBCollider*>(collider.get());
-            glm::mat4 o = obb.orientation;
+            glm::mat3 o = obb.orientation;
             glm::vec3 test[15] = {
                 glm::vec3(1, 0, 0), // AABB axis 1
                 glm::vec3(0, 1, 0), // AABB axis 2
                 glm::vec3(0, 0, 1), // AABB axis 3
-                glm::vec3(o[0], o[1], o[2]), // OBB axis 1
-                glm::vec3(o[3], o[4], o[5]), // OBB axis 2
-                glm::vec3(o[6], o[7], o[8]) // OBB axis 3
+                o[0], // OBB axis 1
+                o[1], // OBB axis 2
+                o[2] // OBB axis 3
             };
             for(int i =0; i<3; i++){
                 test[6 + i * 3 + 0] = glm::cross(test[i], test[0]);
@@ -689,7 +758,7 @@ struct ColliderComponent {
             float pLen = aabb.size.x * fabsf(glm::dot(plane.normal, glm::vec3(1,0,0))) +
                           aabb.size.y * fabsf(glm::dot(plane.normal, glm::vec3(0,1,0))) +
                           aabb.size.z * fabsf(glm::dot(plane.normal, glm::vec3(0,0,1)));
-            float dot = glm::dot(plane.normal, aabb.origin);
+            float dot = glm::dot(plane.normal, aabb.position);
             float dist = dot - plane.distance;
             return fabsf(dist) <= pLen;
         }
@@ -702,20 +771,20 @@ struct ColliderComponent {
     bool intersectColliders(const OBBCollider& obb) const {
         if(type == ColliderType::SPHERE) {
             SphereCollider sphere = *static_cast<SphereCollider*>(collider.get());
-            glm::vec3 closestPoint = obb.ClosestPoint(sphere.center);
-            float distSq = MagnitudeSq(closestPoint - sphere.center);
+            glm::vec3 closestPoint = obb.ClosestPoint(sphere.position);
+            float distSq = MagnitudeSq(closestPoint - sphere.position);
             return distSq <= (sphere.radius * sphere.radius);
         }
         else if(type == ColliderType::AABB){
             const AABBCollider& aabb = *static_cast<AABBCollider*>(collider.get());
-            glm::mat4 o = obb.orientation;
+            glm::mat3 o = obb.orientation;
             glm::vec3 test[15] = {
                 glm::vec3(1, 0, 0), // AABB axis 1
                 glm::vec3(0, 1, 0), // AABB axis 2
                 glm::vec3(0, 0, 1), // AABB axis 3
-                glm::vec3(o[0], o[1], o[2]), // OBB axis 1
-                glm::vec3(o[3], o[4], o[5]), // OBB axis 2
-                glm::vec3(o[6], o[7], o[8]) // OBB axis 3
+                o[0], // OBB axis 1
+                o[1], // OBB axis 2
+                o[2] // OBB axis 3
             };
             for(int i =0; i<3; i++){
                 test[6 + i * 3 + 0] = glm::cross(test[i], test[0]);
@@ -732,15 +801,15 @@ struct ColliderComponent {
         }
         else if(type == ColliderType::OBB){
             const OBBCollider& obb1 = *static_cast<OBBCollider*>(collider.get());
-            glm::mat4 o = obb1.orientation;
-            glm::mat4 o1 = obb.orientation;
+            glm::mat3 o = obb1.orientation;
+            glm::mat3 o1 = obb.orientation;
             glm::vec3 test[15] = {
-                glm::vec3(o1[0], o1[1], o1[2]), // OBB1 axis 1
-                glm::vec3(o1[3], o1[4], o1[5]), // OBB1 axis 2
-                glm::vec3(o1[6], o1[7], o1[8]), // OBB1 axis 3
-                glm::vec3(o[0], o[1], o[2]), // OBB2 axis 1
-                glm::vec3(o[3], o[4], o[5]), // OBB2 axis 2
-                glm::vec3(o[6], o[7], o[8]) // OBB2 axis 3
+                o1[0], // OBB1 axis 1
+                o1[1], // OBB1 axis 2
+                o1[2], // OBB1 axis 3
+                o[0], // OBB2 axis 1
+                o[1], // OBB2 axis 2
+                o[2] // OBB2 axis 3
             };
             for(int i =0; i<3; i++){
                 test[6 + i * 3 + 0] = glm::cross(test[i], test[0]);
@@ -758,9 +827,9 @@ struct ColliderComponent {
             const PlaneCollider& plane = *static_cast<PlaneCollider*>(collider.get());
             const glm::mat3& o = obb.orientation;
             glm::vec3 rot[3] = {
-                glm::vec3(o[0], o[1], o[2]), // OBB axis 1
-                glm::vec3(o[3], o[4], o[5]), // OBB axis 2
-                glm::vec3(o[6], o[7], o[8]) // OBB axis 3
+                o[0], // OBB axis 1
+                o[1], // OBB axis 2
+                o[2] // OBB axis 3
             };
             float pLen = obb.size.x * fabsf(glm::dot(plane.normal, rot[0])) +
                           obb.size.y * fabsf(glm::dot(plane.normal, rot[1])) +
@@ -777,18 +846,22 @@ struct ColliderComponent {
     }
     bool intersectColliders(const PlaneCollider& plane) const {
         if(type == ColliderType::SPHERE) {
+            std::cout<<"Plane-Sphere"<<std::endl;
             SphereCollider sphere = *static_cast<SphereCollider*>(collider.get());
-            glm::vec3 closestPoint = sphere.center - static_cast<PlaneCollider*>(collider.get())->ClosestPoint(sphere.center);
-            float distSq = MagnitudeSq(sphere.center - closestPoint);
+            std::cout<<"Sphere Position: "<<sphere.position.x<<","<<sphere.position.y<<","<<sphere.position.z<<std::endl;
+            glm::vec3 closestPoint = sphere.position - static_cast<PlaneCollider*>(collider.get())->ClosestPoint(sphere.position);
+            float distSq = MagnitudeSq(sphere.position - closestPoint);
             return distSq <= (sphere.radius * sphere.radius);
             
         }
         else if(type == ColliderType::AABB){
+            std::cout<<"Plane-AABB"<<std::endl;
             const AABBCollider& aabb = *static_cast<AABBCollider*>(collider.get());
+            std::cout<<"AABB Position: "<<aabb.position.x<<","<<aabb.position.y<<","<<aabb.position.z<<std::endl;
             float pLen = aabb.size.x * fabsf(glm::dot(plane.normal, glm::vec3(1,0,0))) +
                           aabb.size.y * fabsf(glm::dot(plane.normal, glm::vec3(0,1,0))) +
                           aabb.size.z * fabsf(glm::dot(plane.normal, glm::vec3(0,0,1)));
-            float dot = glm::dot(plane.normal, aabb.origin);
+            float dot = glm::dot(plane.normal, aabb.position);
             float dist = dot - plane.distance;
             return fabsf(dist) <= pLen;
         }
@@ -796,9 +869,9 @@ struct ColliderComponent {
             const OBBCollider& obb = *static_cast<OBBCollider*>(collider.get());
             const glm::mat3& o = obb.orientation;
             glm::vec3 rot[3] = {
-                glm::vec3(o[0], o[1], o[2]), // OBB axis 1
-                glm::vec3(o[3], o[4], o[5]), // OBB axis 2
-                glm::vec3(o[6], o[7], o[8]) // OBB axis 3
+                o[0], // OBB axis 1
+                o[1], // OBB axis 2
+                o[2] // OBB axis 3
             };
             float pLen = obb.size.x * fabsf(glm::dot(plane.normal, rot[0])) +
                           obb.size.y * fabsf(glm::dot(plane.normal, rot[1])) +

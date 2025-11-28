@@ -19,6 +19,13 @@ public:
     glm::vec3 const & origin() const { return m_origin; }
     glm::vec3 & direction() { return m_direction; }
     glm::vec3 const & direction() const { return m_direction; }
+
+    glm::vec3 ClosestPoint(const glm::vec3& point) const {
+        glm::vec3 lVec = m_direction;
+        float t = glm::dot(point - m_origin, lVec) / glm::dot(lVec, lVec);
+        t = fmaxf(0.0f, fminf(1.0f, t));
+        return m_origin + t * lVec;
+    }
     glm::vec3 project( glm::vec3 const & p ) const {
         glm::vec3 result;
         return result;

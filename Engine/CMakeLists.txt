@@ -15,7 +15,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 if(CMAKE_BUILD_TYPE MATCHES Release)
-    message(STATUS "🚀 Release mode: optimizations enabled")
+    message(STATUS "Release mode: optimizations enabled")
     if(NOT MSVC)
         add_compile_options(
             -O3
