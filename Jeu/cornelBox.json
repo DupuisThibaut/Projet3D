@@ -266,8 +266,8 @@
     {
       "id": 10,
       "transform": {
-        "position": [0.0, 1.0, 0.0],
-        "rotation": [0.0, 0.0, 0.0],
+        "position": [0.0, 0.5, -0.999],
+        "rotation": [90.0, 0.0, 0.0],
         "scale": [0.5, 0.5, 0.5],
         "parent": -1,
         "children": []
@@ -284,10 +284,10 @@
         "type":"color",
         "color":[1.0, 1.0, 1.0],
         "ambient":[0.0, 0.0, 0.0],
-        "diffuse":[1.0, 0.0, 1.0],
-        "specular":[1.0, 0.0, 1.0],
+        "diffuse":[0.8, 0.8, 0.8],
+        "specular":[1.0, 1.0, 1.0],
         "shininess":16.0,
-        "refraction":1,
+        "reflection":1,
         "path":"./texture/grass.png"
       }
     }

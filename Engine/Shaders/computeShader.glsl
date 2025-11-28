@@ -421,6 +421,10 @@ float random_float(uint seed)
     return float(seed) * (1.0 / 4294967296.0);
 }
 
+float random01(uint seed){
+	return float(wang_hash(seed) & 0xFFFFFF)/float(0xFFFFFF);
+}
+
 double randomDouble(vec2 seed) {
     float r1 = rand(seed);
     float r2 = rand(seed + 123.456);
@@ -471,8 +475,8 @@ vec3 randomHemisphere(vec3 n, uint seed) {
 vec3 random_hemisphere_direction(vec3 normal, uint seed)
 {
 	// Generate two random numbers
-	float r1 = random_float(seed++);
-	float r2 = random_float(seed++);
+	float r1 = random01(seed++);
+	float r2 = random01(seed++);
 	
 	// Cosine-weighted hemisphere sampling
 	float phi = 2.0 * PI * r1;
@@ -498,73 +502,99 @@ vec3 random_hemisphere_direction(vec3 normal, uint seed)
 	return normalize(direction);
 }
 
-// bool testOmbre(Ray rayon, float dist){
-// 	vec3 ro=rayon.origin;
-// 	vec3 rd=rayon.direction;
+bool testOmbre(Ray rayon, float dist){
+	vec3 ro=rayon.origin;
+	vec3 rd=rayon.direction;
 	
-// 	for (int i=0;i<nbSphere;++i) {
-// 		float t=intersectSphere(rayon,spheres[i].centre,spheres[i].rayon);
-// 		if(t>0.0 && t<dist){if(spheres[i].padding[1]!=2)return true;}
-// 	}
-// 	for (int i=0;i<nbSquare;++i) {
-// 		float t=intersectSquare(rayon,squares[i].m_bottom_left.xyz,squares[i].m_right_vector.xyz,squares[i].m_up_vector.xyz,squares[i].m_normal.xyz,squares[i].m_up_vector[3],squares[i].m_right_vector[3]);
-// 		if(t>0.0 && t<dist){return true;}
-// 	}
-// 	for(int i=0;i<nbMesh;i++){
-// 		mat4 model=worlds[i].modelMat;
-// 		mat4 invModelMatrix=worlds[i].invModelMatrix;
-// 		vec3 roLocal=(invModelMatrix*vec4(ro,1.0)).xyz;
-// 		vec3 rdLocal=normalize((invModelMatrix*vec4(rd,0.0)).xyz);
-// 		Ray rayonLocal;rayonLocal.origin=roLocal;rayonLocal.direction=rdLocal;
-// 		float t=intersectMesh(rayonLocal,i);
-// 		if(t>0.0){
-// 			vec3 pLocal=roLocal+rdLocal*t;
-// 			vec3 pMonde=(model*vec4(pLocal,1.0)).xyz;
-// 			float t2=length(pMonde-ro);
-// 			if(t2<dist){
-// 				return true;
-// 			}
-// 		}
-// 	}
-// 	return false;
-// }
+	for (int i=0;i<nbSphere;++i) {
+		float t=intersectSphere(rayon,spheres[i].centre,spheres[i].rayon);
+		if(t>0.0 && t<dist){
+			// if(spheres[i].padding[1]!=2)
+			return true;}
+	}
+	for (int i=0;i<nbSquare;++i) {
+		float t=intersectSquare(rayon,squares[i].m_bottom_left.xyz,squares[i].m_right_vector.xyz,squares[i].m_up_vector.xyz,squares[i].m_normal.xyz,squares[i].m_up_vector[3],squares[i].m_right_vector[3]);
+		if(t>0.0 && t<dist){return true;}
+	}
+	for(int i=0;i<nbMesh;i++){
+		mat4 model=worlds[i].modelMat;
+		mat4 invModelMatrix=worlds[i].invModelMatrix;
+		vec3 roLocal=(invModelMatrix*vec4(ro,1.0)).xyz;
+		vec3 rdLocal=normalize((invModelMatrix*vec4(rd,0.0)).xyz);
+		Ray rayonLocal;rayonLocal.origin=roLocal;rayonLocal.direction=rdLocal;
+		float t=intersectMesh(rayonLocal,i);
+		if(t>0.0){
+			vec3 pLocal=roLocal+rdLocal*t;
+			vec3 pMonde=(model*vec4(pLocal,1.0)).xyz;
+			float t2=length(pMonde-ro);
+			if(t2<dist){
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+float ombre(vec3 p, vec3 n, vec2 pix, vec3 light){
+	float nombreRayonOmbreDouce=0.0;
+	int nombreRayon=5;
+	float pourcentageOmbre=0.0;
+	vec3 newRay;
+	vec3 ro=p+n*0.01;
+	for(int i=0;i<nombreRayon;i++){
+		// newRay=light+randomInSphere(vec3(pix,i))*lights[0].rayon;
+		uint seed=uint(pix.x)+uint(pix.y)*92837111u+uint(i)*1234567u;
+		newRay=light+vec3(random_float(seed++)-0.5,random_float(seed++)-0.5,random_float(seed++)-0.5)*lights[0].rayon;
+		// newRay=light+randomDirection(seed)*lights[0].rayon;
+		// vec3(random_float(seed)-0.5,random_float(seed)-0.5,random_float(seed)-0.5)
+		vec3 L=newRay-p;
+		float dist=length(L);			
+		vec3 rd=normalize(L);
+		Ray rayon;rayon.origin=ro;rayon.direction=rd;
+		if(testOmbre(rayon,dist))nombreRayonOmbreDouce++;
+	}
+	pourcentageOmbre=nombreRayonOmbreDouce/float(nombreRayon);
+	return 1.0-pourcentageOmbre;
+}
 
 // float ombre(vec3 p, vec3 n, vec2 pix, vec3 light){
 // 	float nombreRayonOmbreDouce=0.0;
-// 	int nombreRayon=5;
+// 	float nombreRayon=1.0;
 // 	float pourcentageOmbre=0.0;
 // 	vec3 newRay;
 // 	vec3 ro=p+n*0.01;
-// 	for(int i=0;i<nombreRayon;i++){
-// 		// newRay=light+randomInSphere(vec3(pix,i))*lights[0].rayon;
-// 		uint seed=uint(pix.x)+uint(pix.y)*92837111u+uint(i)*1234567u;
-// 		newRay=light+vec3(random_float(seed)-0.5,random_float(seed)-0.5,random_float(seed)-0.5)*lights[0].rayon;
-// 		// newRay=light+randomDirection(seed)*lights[0].rayon;
-// 		// vec3(random_float(seed)-0.5,random_float(seed)-0.5,random_float(seed)-0.5)
-// 		vec3 L=newRay-p;
-// 		float dist=length(L);			
-// 		vec3 rd=normalize(L);
-// 		if(testOmbre(ro,rd,dist))nombreRayonOmbreDouce++;
-// 	}
-// 	pourcentageOmbre=nombreRayonOmbreDouce/float(nombreRayon);
-// 	return 1.0-pourcentageOmbre;
-// }
-
-// float ombre(vec3 p, vec3 n, vec2 pix, vec3 light){
-// 	float nombreRayonOmbreDouce=0.0;
-// 	int nombreRayon=5;
-// 	float pourcentageOmbre=0.0;
-// 	vec3 newRay;
-// 	vec3 ro=p+n*0.01;
-// 	// uint seed=uint(pix.x)+uint(pix.y)*92837111u+uint(i)*1234567u;
-// 	// newRay=light+vec3(random_float(seed)-0.5,random_float(seed)-0.5,random_float(seed)-0.5)*lights[0].rayon;
 // 	newRay=light;
 // 	vec3 L=newRay-p;
 // 	float dist=length(L);			
 // 	vec3 rd=normalize(L);
 // 	Ray rayon;rayon.origin=ro;rayon.direction=rd;
-// 	if(testOmbre(rayon,dist))return 0.0;
-// 	return 1.0;
+// 	if(testOmbre(rayon,dist))nombreRayonOmbreDouce++;
+// 	// newRay=light+vec3(0.2,0.0,0.2);
+// 	// L=newRay-p;
+// 	// dist=length(L);			
+// 	// rd=normalize(L);
+// 	// rayon.origin=ro;rayon.direction=rd;
+// 	// if(testOmbre(rayon,dist))nombreRayonOmbreDouce++;
+// 	// newRay=light+vec3(-0.2,0.0,-0.2);
+// 	// L=newRay-p;
+// 	// dist=length(L);			
+// 	// rd=normalize(L);
+// 	// rayon.origin=ro;rayon.direction=rd;
+// 	// if(testOmbre(rayon,dist))nombreRayonOmbreDouce++;
+// 	// newRay=light+vec3(0.0,0.3,0.0);
+// 	// L=newRay-p;
+// 	// dist=length(L);			
+// 	// rd=normalize(L);
+// 	// rayon.origin=ro;rayon.direction=rd;
+// 	// if(testOmbre(rayon,dist))nombreRayonOmbreDouce++;
+// 	// newRay=light+vec3(0.0,-0.3,0.0);
+// 	// L=newRay-p;
+// 	// dist=length(L);			
+// 	// rd=normalize(L);
+// 	// rayon.origin=ro;rayon.direction=rd;
+// 	// if(testOmbre(rayon,dist))nombreRayonOmbreDouce++;
+// 	pourcentageOmbre=nombreRayonOmbreDouce/nombreRayon;
+// 	return 1.0-pourcentageOmbre;
 // }
 
 // Vec3 reflect(const Vec3& v, const Vec3& n){
@@ -865,7 +895,7 @@ Ray computeRefraction(Ray rayon, vec3 n, vec3 p, ivec2 pix, float index, int typ
 
 vec3 couleur(Ray rayon,ivec2 pix,uint seed){
 	vec3 finalColor=vec3(1.0,1.0,1.0);
-	int nbRayons=2;
+	int nbRayons=3;
 	Ray testRayon=rayon;
 	for(int i=0;i<nbRayons;i++){
 		intersection inter=intersectScene(testRayon);
