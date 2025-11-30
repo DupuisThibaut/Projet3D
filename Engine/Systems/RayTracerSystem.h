@@ -11,6 +11,8 @@
 #include <iostream>
 #include <string_view>
 
+#include <common/stb_truetype.h>
+
 
 struct sp{
     float x,y,z,rayon,ra,ga,ba,b,rd,gd,bd,c,rs,gs,bs,s;
@@ -292,10 +294,12 @@ public:
     unsigned int groups_x = 1;
     unsigned int groups_y = 1;
 
-    GLint nbTextures;
+    GLint nbTextures=0;
     GLuint textures[16];
     GLfloat infoTextures[64];
     GLint idTextures[16];
+    GLuint accumTex=0;
+    GLuint imageCountTex=0;
 
     GLint frameCount=0;
 
@@ -315,6 +319,17 @@ public:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA,GL_FLOAT, NULL);
         glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+
+        glGenTextures(1, &accumTex);
+        glBindTexture(GL_TEXTURE_2D, accumTex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA, GL_FLOAT, nullptr);
+        glBindImageTexture(10, accumTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+
+        glGenTextures(1, &imageCountTex);
+        glBindTexture(GL_TEXTURE_2D, imageCountTex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, nullptr);
+        glBindImageTexture(11, imageCountTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+        glBindTexture(GL_TEXTURE_2D, 0);
 
         const char* path="Shaders/computeShader.glsl";
         std::ifstream sfile;
@@ -441,6 +456,7 @@ public:
         bool updateSquare=false;
         bool updateMesh=false;
         bool updateLight=false;
+        bool reset=false;
         for(auto& e : entities){
             if(entityManager->HasComponent<MeshComponent>(e.id)){
                 MeshComponent M = entityManager->GetComponent<MeshComponent>(e.id);
@@ -498,7 +514,7 @@ public:
                 auto& t = entityManager->GetComponent<TransformComponent>(e.id);
                 // t.position[0]+=0.01;
                 int i=light.nb;
-                light.update=true;
+                // light.update=true;
                 if(light.update){
                     ls[i].x=t.position[0];
                     ls[i].y=t.position[1];
@@ -506,7 +522,7 @@ public:
                     ls[i].r=t.scale[0];
                     updateLight=true;
                 }
-                light.update=false;
+                // light.update=false;
             }
         }
         if(updateSphere){
@@ -516,6 +532,7 @@ public:
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssboSpheres);
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
             updateSphere=false;
+            reset=true;
         }
         if(updateSquare){
             // glGenBuffers(1,&ssboSquares);
@@ -524,6 +541,7 @@ public:
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, ssboSquares);
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
             updateSquare=false;
+            reset=true;
         }
         if(updateMesh){
             // glGenBuffers(1,&ssboWorld);
@@ -532,6 +550,7 @@ public:
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, ssboWorld);
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
             updateMesh=false;
+            reset=true;
         }
         if(updateLight){
             // glGenBuffers(1,&ssboLights);
@@ -540,6 +559,7 @@ public:
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, ssboLights);
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
             updateLight=false;
+            reset=true;
         }
 
         // calculer et uploader les matrices + cam pos depuis la Camera actuelle
@@ -564,10 +584,20 @@ public:
             if (locCam >= 0) glUniform3f(locCam, camPosGLM.x, camPosGLM.y, camPosGLM.z);
             GLint locInv = glGetUniformLocation(computeProg, "uInvViewProj");
             if (locInv >= 0) glUniformMatrix4fv(locInv, 1, GL_FALSE, &invVP[0][0]);
+            auto& cam = entityManager->GetComponent<CameraComponent>(camera.first);
+            std::cout<<"camera update : "<<camera.second.update<<std::endl;
+            std::cout<<"camera texte : "<<camera.second.texte<<std::endl;
+            if(cam.update){
+                reset=true;
+                cam.update=false;
+            }
         }
         GLint locFrame = glGetUniformLocation(computeProg, "frameCount");
         if (locFrame >= 0) glUniform1i(locFrame, frameCount);
         frameCount++;
+
+        glUniform1i(glGetUniformLocation(computeProg, "resetAccum"), (int)reset);
+        reset=false;
 
         
         glDispatchCompute(groups_x, groups_y, 1);
@@ -604,6 +634,124 @@ public:
         // glutSwapBuffers();
     }
 
+    std::vector<unsigned char> LoadBinaryFile(const std::string& path)
+    {
+        std::ifstream file(path, std::ios::binary | std::ios::ate);
+        if (!file)
+            return {};
+
+        std::streamsize size = file.tellg();
+        file.seekg(0, std::ios::beg);
+
+        std::vector<unsigned char> buffer(size);
+        if (file.read(reinterpret_cast<char*>(buffer.data()), size))
+            return buffer;
+
+        return {};
+    }
+
+    unsigned char* RenderTextToBitmap(
+        stbtt_fontinfo* font,
+        const std::string& text,
+        float fontSize,
+        int& outWidth,
+        int& outHeight
+    )
+    {
+        float scale = stbtt_ScaleForPixelHeight(font, fontSize);
+
+        // Mesure du texte total
+        int width = 0;
+        int height = 0;
+
+        int ascent, descent, lineGap;
+        stbtt_GetFontVMetrics(font, &ascent, &descent, &lineGap);
+
+        int baseline = (int)(ascent * scale);
+
+        // Mesurer la largeur du texte
+        int x = 0;
+        for (char c : text)
+        {
+            int ax, lsb;
+            stbtt_GetCodepointHMetrics(font, c, &ax, &lsb);
+
+            int c_x1, c_y1, c_x2, c_y2;
+            stbtt_GetCodepointBitmapBox(font, c, scale, scale, &c_x1, &c_y1, &c_x2, &c_y2);
+
+            int charWidth  = (int)(ax * scale);
+            int charHeight = (c_y2 - c_y1);
+
+            width += charWidth;
+            if (charHeight > height) height = charHeight;
+        }
+
+        // Ajouter un minimum
+        if (width < 1) width = 1;
+        if (height < 1) height = (int)(fontSize);
+
+        outWidth = width;
+        outHeight = height;
+
+        // Créer le buffer RGBA
+        unsigned char* pixels = new unsigned char[width * height * 4];
+        std::fill(pixels, pixels + width * height * 4, 0);
+
+        // Dessin du texte
+        x = 0;
+        for (char c : text)
+        {
+            int ax, lsb;
+            stbtt_GetCodepointHMetrics(font, c, &ax, &lsb);
+
+            int c_x1, c_y1, c_x2, c_y2;
+            stbtt_GetCodepointBitmapBox(font, c, scale, scale, &c_x1, &c_y1, &c_x2, &c_y2);
+
+            int glyphW = c_x2 - c_x1;
+            int glyphH = c_y2 - c_y1;
+
+            if (glyphW > 0 && glyphH > 0)
+            {
+                int gw, gh, gxoff, gyoff;
+
+                unsigned char* bitmap = stbtt_GetCodepointBitmap(
+                    font,
+                    scale, scale,   // scale_x, scale_y
+                    c,              // codepoint
+                    &gw, &gh,       // width, height
+                    &gxoff, &gyoff  // offsets
+                );
+
+                for (int gy = 0; gy < glyphH; gy++)
+                {
+                    for (int gx = 0; gx < glyphW; gx++)
+                    {
+                        int dstX = x + gx + lsb * scale;
+                        int dstY = baseline + c_y1 + gy;
+
+                        if (dstX < 0 || dstX >= width) continue;
+                        if (dstY < 0 || dstY >= height) continue;
+
+                        unsigned char col = bitmap[gy * glyphW + gx];
+
+                        // Écriture dans RGBA
+                        int idx = (dstY * width + dstX) * 4;
+                        pixels[idx + 0] = 255;   // R
+                        pixels[idx + 1] = 255;   // G
+                        pixels[idx + 2] = 255;   // B
+                        pixels[idx + 3] = col;   // A=bitmap
+                    }
+                }
+
+                stbtt_FreeBitmap(bitmap, nullptr);
+            }
+
+            x += (int)(ax * scale); // avancer
+        }
+
+        return pixels;
+    }
+
     void onCreate(std::vector<Entity> entities){
         // std::unordered_map<glm::uint32_t,MeshComponents> meshesCompo = entityManager->GetComponents<MeshComponent>();
         // std::unordered_map<glm::uint32_t,LightComponent> lightsCompo = entityManager->GetComponents<LightComponent>();
@@ -619,7 +767,40 @@ public:
         float minx=FLT_MAX,miny=FLT_MAX,minz=FLT_MAX,maxx=-FLT_MAX,maxy=-FLT_MAX,maxz=-FLT_MAX;
         for(auto& e : entities){
             // std::cout<<"debut de la boucle"<<std::endl;
-            if(!entityManager->HasComponent<CameraComponent>(e.id)){
+            if(entityManager->HasComponent<TextureComponent>(e.id)){
+                auto& text = entityManager->GetComponent<TextureComponent>(e.id);
+                glUseProgram(quadProg);
+                infoTextures[nbTextures*4]=text.positionX;
+                infoTextures[nbTextures*4+1]=text.positionY;
+                infoTextures[nbTextures*4+2]=text.width;
+                infoTextures[nbTextures*4+3]=text.height;
+                if(text.isTexture){
+                    glGenTextures(1, &textures[nbTextures]);
+                    glBindTexture(GL_TEXTURE_2D, textures[nbTextures]);
+                    int w,h,c;
+                    unsigned char* img=stbi_load(text.path.c_str(),&w,&h,&c,4);
+                    glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
+                    glGenerateMipmap(GL_TEXTURE_2D);
+                    stbi_image_free(img);
+                }else{
+                    stbtt_fontinfo font;
+                    auto ttfBuffer=LoadBinaryFile(text.police);
+                    stbtt_InitFont(&font, ttfBuffer.data(), 0);
+                    std::string texte=text.texte;
+                    int taille=text.taille;
+                    int width=0;
+                    int height=0;
+                    unsigned char* bitmap=RenderTextToBitmap(&font,texte,taille,width,height);
+                    glGenTextures(1, &textures[nbTextures]);
+                    glBindTexture(GL_TEXTURE_2D, textures[nbTextures]);
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0,GL_RGBA, GL_UNSIGNED_BYTE, bitmap);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                }
+                idTextures[nbTextures]=1+nbTextures;
+                nbTextures++;
+            }
+            else if(!entityManager->HasComponent<CameraComponent>(e.id)){
                 MaterialComponent mat = entityManager->GetComponent<MaterialComponent>(e.id);
                 TransformComponent t = entityManager->GetComponent<TransformComponent>(e.id);
                 if(entityManager->HasComponent<MeshComponent>(e.id)){
@@ -643,10 +824,10 @@ public:
                         b.s=mat.shininess;
                         b.b=0.0f;
                         b.c=0.0f;
-                        if(mat.texturePath!=""){
-                            pt=mat.texturePath;
-                            std::cout<<"TEXTURE : "<<pt<<std::endl;
-                        }
+                        // if(mat.texturePath!=""){
+                        //     pt=mat.texturePath;
+                        //     std::cout<<"TEXTURE : "<<pt<<std::endl;
+                        // }
                         // if(mat.texturePath!=""){
                         //     GLuint textSphere;
                         //     glGenTextures(1, &textSphere);
@@ -942,32 +1123,7 @@ public:
         glUseProgram(0);
 
         //Création HUD (UI)
-        glUseProgram(quadProg);
-        nbTextures=2;
-        infoTextures[0]=0.5f;
-        infoTextures[1]=0.9f;
-        infoTextures[2]=0.1f;
-        infoTextures[3]=0.1f;
-        infoTextures[4]=0.7f;
-        infoTextures[5]=0.4f;
-        infoTextures[6]=0.2f;
-        infoTextures[7]=0.2f;
-        // std::string pt="./texture/grass.png";
-        for(int i=0;i<nbTextures;i++){
-            glGenTextures(1, &textures[i]);
-            glBindTexture(GL_TEXTURE_2D, textures[i]);
-            int w,h,c;
-            unsigned char* img=stbi_load(pt.c_str(),&w,&h,&c,4);
-            if(!img){
-                std::cout<<"Erreur lors du chargement de la texture : "<<pt<<std::endl;
-            }
-            glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
-            glGenerateMipmap(GL_TEXTURE_2D);
-            stbi_image_free(img);
-        }
-        for(int i=0;i<nbTextures;i++){
-            idTextures[i]=1+i;
-        }
+        
         // glUniform1iv(glGetUniformLocation(quadProg,"textures"),nbTextures,idTextures);
         // glUniform4fv(glGetUniformLocation(quadProg,"info"),nbTextures,infoTextures);
         // glUniform1iv(glGetUniformLocation(quadProg,"id"),nbTextures,idTextures);

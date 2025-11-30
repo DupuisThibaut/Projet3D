@@ -1,8 +1,9 @@
-#version 330 core
+#version 430 core
 
 in vec2 TexCoords;
 in vec3 Normal;
 in vec3 FragPos;
+in vec2 ecran;
 
 uniform sampler2D textureSampler;
 uniform int materialType;
@@ -12,6 +13,12 @@ uniform vec3 lightPos;
 uniform vec3 lightDir;
 uniform vec3 lightColor;
 uniform float lightIntensity;
+
+uniform sampler2D textures[16];
+
+uniform int nb;
+uniform vec4 info[16];
+uniform int id[16];
 
 out vec4 FragColor;
 
@@ -42,5 +49,19 @@ vec3 albedo;
 
     vec3 result = ambient + diffuse + specular;
 
-    FragColor = vec4(result, 1.0);
+    vec4 texCol=vec4(result,1.0);
+
+    for(int i=0;i<nb;i++){
+        vec2 pos=info[i].xy;
+        vec2 taille=info[i].zw;
+        if(ecran.x>=pos.x && ecran.x<=pos.x+taille.x && ecran.y>=pos.y && ecran.y<=pos.y+taille.y){
+            vec2 uv=(ecran-pos)/taille;
+            vec4 col=texture(textures[i],uv);
+            // texCol=mix(texCol,col,col.a);
+            texCol=col;
+            // texCol=col;
+        }
+    } 
+
+    FragColor = texCol;
 }

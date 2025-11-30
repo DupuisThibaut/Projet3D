@@ -61,6 +61,7 @@ using namespace glm;
 #include "Components/ControllerComponent.h"
 #include "Components/MyAudioComponent.h"
 #include "Components/ScriptComponent.h"
+#include "Components/TextureComponent.h"
 // Systems
 #include "Systems/EntityManager.h"
 #include "Systems/Dispatcher.h"
@@ -95,6 +96,7 @@ json sceneData;
 #define STB_IMAGE_IMPLEMENTATION
 // #include "stb_image.h"
 #include <common/stb_image.h>
+#include <common/stb_truetype.h>
 #include <unordered_map>
 #endif
 
@@ -356,6 +358,47 @@ std::ifstream sceneFile(scenePath);
                 scriptSystem.registerEntityManager(&entityManager);
                 scriptSystem.initScript(entityManager.GetComponent<LuaScriptComponent>(e.id), e.id);
             }
+        }
+        if(entityData.contains("texture")){
+            TextureComponent texture;
+            if( entityData["texture"].contains("path")){
+                std::string texturePath = gameFolder + "/" + entityData["texture"]["path"].get<std::string>();
+                texture.path=texturePath;
+                texture.isTexture=true;
+            }else{
+                texture.texte=entityData["texture"]["texte"];
+                texture.isTexture=false;
+            }
+            if( entityData["texture"].contains("numero")){
+                texture.numero=entityData["texture"]["numero"];
+                // std::cout<<"posx : "<<texture.numero<<std::endl;
+            }
+            if( entityData["texture"].contains("positionX")){
+                texture.positionX=entityData["texture"]["positionX"];
+                // std::cout<<"posx : "<<texture.positionX<<std::endl;
+            }
+            if( entityData["texture"].contains("positionY")){
+                texture.positionY=entityData["texture"]["positionY"];
+                // std::cout<<"posx : "<<texture.numero<<std::endl;
+            }
+            if( entityData["texture"].contains("width")){
+                texture.width=entityData["texture"]["width"];
+                // std::cout<<"posx : "<<texture.numero<<std::endl;
+            }
+            if( entityData["texture"].contains("height")){
+                texture.height=entityData["texture"]["height"];
+                // std::cout<<"posx : "<<texture.numero<<std::endl;
+            }
+            if( entityData["texture"].contains("taille")){
+                texture.taille=entityData["texture"]["taille"];
+                // std::cout<<"posx : "<<texture.numero<<std::endl;
+            }
+            if( entityData["texture"].contains("police")){
+                std::string policePath = gameFolder + "/" + entityData["texture"]["police"].get<std::string>();
+                texture.police=policePath;
+                // std::cout<<"posx : "<<texture.numero<<std::endl;
+            }
+            entityManager.AddComponent<TextureComponent>(e.id,texture);
         }
     }
 }
@@ -771,7 +814,7 @@ int main( int argc, char* argv[] )
         entityManager.GetComponent<CameraComponent>(camEntityId).isActive = true;
     }
     std::cout << "--- Initialization... ---" << std::endl;
-    RenderSystem renderSystem(&entityManager, programID, &dispatcher);
+    RenderSystem renderSystem(&entityManager, programID, &dispatcher, entities);
     scriptSystem.registerDispatcher(&dispatcher);
     scriptSystem.registerEntities(&entities);
     LightSystem lightSystem(&entityManager, programID);

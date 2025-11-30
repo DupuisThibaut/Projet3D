@@ -3,6 +3,8 @@
 layout(local_size_x = 16, local_size_y = 16) in;
 
 layout(rgba32f, binding = 0) uniform image2D imgOutput;
+layout(rgba32f, binding = 10) uniform image2D imgAccum;
+layout(r32ui, binding = 11) uniform uimage2D imgSampleCount;
 
 uniform vec3 uCamPos;
 uniform mat4 uInvViewProj;
@@ -12,6 +14,7 @@ uniform int nbSphere;
 uniform int nbSquare;
 uniform int nbLight;
 uniform int nbMesh;
+uniform int resetAccum;
 
 #define PI 3.1415926538
 
@@ -422,7 +425,7 @@ float random_float(uint seed)
 }
 
 float random01(uint seed){
-	return float(wang_hash(seed) & 0xFFFFFF)/float(0xFFFFFF);
+	return float(wang_hash(seed) & uint(0xFFFFFF))/float(0xFFFFFF);
 }
 
 double randomDouble(vec2 seed) {
@@ -509,7 +512,7 @@ bool testOmbre(Ray rayon, float dist){
 	for (int i=0;i<nbSphere;++i) {
 		float t=intersectSphere(rayon,spheres[i].centre,spheres[i].rayon);
 		if(t>0.0 && t<dist){
-			// if(spheres[i].padding[1]!=2)
+			if(spheres[i].padding[1]!=2)
 			return true;}
 	}
 	for (int i=0;i<nbSquare;++i) {
@@ -544,7 +547,7 @@ float ombre(vec3 p, vec3 n, vec2 pix, vec3 light){
 	for(int i=0;i<nombreRayon;i++){
 		// newRay=light+randomInSphere(vec3(pix,i))*lights[0].rayon;
 		uint seed=uint(pix.x)+uint(pix.y)*92837111u+uint(i)*1234567u;
-		newRay=light+vec3(random_float(seed++)-0.5,random_float(seed++)-0.5,random_float(seed++)-0.5)*lights[0].rayon;
+		newRay=light+vec3(random_float(seed)-0.5,random_float(seed)-0.5,random_float(seed)-0.5)*lights[0].rayon;
 		// newRay=light+randomDirection(seed)*lights[0].rayon;
 		// vec3(random_float(seed)-0.5,random_float(seed)-0.5,random_float(seed)-0.5)
 		vec3 L=newRay-p;
@@ -1010,5 +1013,24 @@ void main(){
 	
     vec3 finalColor=couleur(rayon,pix,seed);
 
-    imageStore(imgOutput,pix,vec4(finalColor,1.0));
+    // imageStore(imgOutput,pix,vec4(finalColor,1.0));
+	if(bool(resetAccum) || frameCount == 0){
+        imageStore(imgAccum, pix, vec4(finalColor, 1.0));
+        imageStore(imgOutput, pix, vec4(finalColor, 1.0));
+        imageStore(imgSampleCount, pix, uvec4(1));
+    } else {
+        uvec4 sc = imageLoad(imgSampleCount, pix);
+        uint N = sc.r;
+        // limiter le nombre d’échantillons accumulés pour éviter overflow / vieux biais
+        const uint MAX_SAMPLES = 256u;
+        uint newN = min(N + 1u, MAX_SAMPLES);
+
+        vec4 prev = imageLoad(imgAccum, pix);
+        vec3 prevAvg = prev.rgb;
+        vec3 avg = (prevAvg * float(N) + finalColor) / float(newN);
+
+        imageStore(imgAccum, pix, vec4(avg, 1.0));
+        imageStore(imgOutput, pix, vec4(avg, 1.0));
+        imageStore(imgSampleCount, pix, uvec4(newN));
+    }
 }

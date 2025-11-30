@@ -19,6 +19,7 @@ void main()
         vec2 taille=info[i].zw;
         if(TexCoords.x>=pos.x && TexCoords.x<=pos.x+taille.x && TexCoords.y>=pos.y && TexCoords.y<=pos.y+taille.y){
             vec2 uv=(TexCoords-pos)/taille;
+            uv.y=1.0-uv.y;
             vec4 col=texture(textures[i],uv);
             texCol=mix(texCol,col,col.a);
             // texCol=col;

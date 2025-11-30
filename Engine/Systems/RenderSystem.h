@@ -64,11 +64,34 @@ public:
     EntityManager* entityManager;
     GLuint shaderProgram;
     Dispatcher* dispatcher;
-    RenderSystem(EntityManager* em, GLuint shaderProg, Dispatcher* disp) : entityManager(em), shaderProgram(shaderProg), dispatcher(disp) {
+    GLint nbTextures=0;
+    GLuint textures[16];
+    GLfloat infoTextures[64];
+    GLint idTextures[16];
+    RenderSystem(EntityManager* em, GLuint shaderProg, Dispatcher* disp, const std::vector<Entity>& entities) : entityManager(em), shaderProgram(shaderProg), dispatcher(disp) {
         dispatcher->subscribe([this](const InputEvent& event) {
             this->onInput(event);
             return false; // Ne pas arrêter la propagation
         });
+        for(auto& e : entities){
+            if(entityManager->HasComponent<TextureComponent>(e.id)){
+                auto& text = entityManager->GetComponent<TextureComponent>(e.id);
+                glUseProgram(shaderProgram);
+                infoTextures[nbTextures*4]=text.positionX;
+                infoTextures[nbTextures*4+1]=text.positionY;
+                infoTextures[nbTextures*4+2]=text.width;
+                infoTextures[nbTextures*4+3]=text.height;
+                glGenTextures(1, &textures[nbTextures]);
+                glBindTexture(GL_TEXTURE_2D, textures[nbTextures]);
+                int w,h,c;
+                unsigned char* img=stbi_load(text.path.c_str(),&w,&h,&c,4);
+                glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
+                glGenerateMipmap(GL_TEXTURE_2D);
+                stbi_image_free(img);
+                idTextures[nbTextures]=nbTextures;
+                nbTextures++;
+            }
+        }
     }
 
     void debugPrintScene() {
@@ -130,6 +153,16 @@ public:
 
             }
         }
+        
+        glUseProgram(shaderProgram);
+        for (int i=0;i<nbTextures;i++) {
+            glActiveTexture(GL_TEXTURE0+i);
+            glBindTexture(GL_TEXTURE_2D,textures[i]);
+        }
+        glUniform1iv(glGetUniformLocation(shaderProgram,"textures"),nbTextures,idTextures);
+        glUniform4fv(glGetUniformLocation(shaderProgram,"info"),nbTextures,infoTextures);
+        glUniform1iv(glGetUniformLocation(shaderProgram,"id"),nbTextures,idTextures);
+        glUniform1i(glGetUniformLocation(shaderProgram,"nb"),nbTextures);
     }
 
     bool isSphereInFrustum(const Frustum& frustum, const glm::vec3& center, float radius) {

@@ -111,6 +111,8 @@ add_executable(Engine
     common/vboindexer.cpp
     common/vboindexer.hpp
     common/stb_image.h
+    common/stb_truetype.h
+    common/stb_truetype.cpp
     common/Mesh.h
     common/Mesh.cpp
     Shaders/vertex_shader.glsl

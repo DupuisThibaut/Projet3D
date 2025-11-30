@@ -17,6 +17,8 @@ struct CameraComponent {
     float yaw = -90.0f;
     float pitch = 0.0f;
     bool isActive = false;
+    bool update=false;
+    std::string texte="";
 
     glm::mat4 getViewMatrix(const glm::vec3& position) const {
         return glm::lookAt(position,position + target, up);
@@ -33,6 +35,7 @@ struct CameraComponent {
         target.y = sin(p);
         target.z = sin(y) * cos(p);
         target = glm::normalize(target);
+        std::cout<<"changement"<<std::endl;
     }
 };
 

@@ -42,6 +42,7 @@ end
 
 function onUpdate(dt)
     -- on utilise 'this.camera' et 'this.transform' directement
+    this.camera.update=true
 end
 
 function onInput(event)
@@ -55,6 +56,7 @@ function onInput(event)
     local forward = normalize(cam.target)
     local right = normalize(cross(forward, {0,1,0}))
     local scrollY = event.scroll
+    this.camera.update=true
 
     for _, btn in ipairs(event.buttons) do
         if btn == "Forward" then 
@@ -67,6 +69,8 @@ function onInput(event)
             sensitivity = sensitivity + scrollY * 0.01
             scrollY = 0
         end
+        cam.update=true
+        cam.texte="caca"
     end
 
     if event.mouseMoved then
@@ -81,6 +85,10 @@ function onInput(event)
             math.sin(math.rad(cam.yaw)) * math.cos(math.rad(cam.pitch))
         }
         cam.target = normalize(dir)
+        cam.update=true
+        cam.texte="caca"
+        cam.yaw=cam.yaw   + event.mouseDeltaX * sensitivity
+        cam.pzaj="a"
     end
 
     if scrollY ~= 0 then
