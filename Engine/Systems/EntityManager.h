@@ -71,9 +71,26 @@ public:
         freeIds.push(e);
     }
 
-    template<typename T>
-    void AddComponent(EntityID e, T component) {
-        getStore<T>()[e] = component;
+    template <typename T>
+    void AddComponent(uint32_t e, const T& component) {
+        auto& store = getStore<T>();
+        auto it = store.find(e);
+        if (it != store.end()) {
+            it->second = component; // copy-assign
+        } else {
+            store.emplace(e, component); // copy-construct
+        }
+    }
+    
+    template <typename T>
+    void AddComponent(uint32_t e, T&& component) {
+        auto& store = getStore<std::decay_t<T>>();
+        auto it = store.find(e);
+        if (it != store.end()) {
+            it->second = std::forward<T>(component); // move-assign si dispo
+        } else {
+            store.emplace(e, std::forward<T>(component)); // move-construct
+        }
     }
     template<typename T>
     void RemoveComponent(EntityID e) {

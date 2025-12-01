@@ -23,24 +23,26 @@ public:
             if(t.type == ColliderType::AABB) {
                 auto& collider = static_cast<AABBCollider&>(*t.collider);
                 auto& transform = entityManager->GetComponent<TransformComponent>(id);
-                collider.FromMinMax(transform.position - transform.scale * 0.5f,
-                                    transform.position + transform.scale * 0.5f);
+                collider.origin = transform.position;
             } else if(t.type == ColliderType::SPHERE) {
-                auto& collider = static_cast<SphereCollider&>(*t.collider);
+                auto& collider = dynamic_cast<SphereCollider&>(*t.collider);
                 auto& transform = entityManager->GetComponent<TransformComponent>(id);
                 collider.position = transform.position;
+                collider.radius = std::max({transform.scale.x, transform.scale.y, transform.scale.z}) * 0.5f;
             } else if(t.type == ColliderType::OBB) {
                 auto& collider = static_cast<OBBCollider&>(*t.collider);
                 auto& transform = entityManager->GetComponent<TransformComponent>(id);
                 collider.position = transform.position;
-                collider.orientation = glm::mat3(glm::quat(glm::radians(transform.rotation)));
+                collider.oritentation = glm::mat3(glm::quat(glm::radians(transform.rotation)));
             } else if(t.type == ColliderType::PLANE) {
                 auto& collider = static_cast<PlaneCollider&>(*t.collider);
                 auto& transform = entityManager->GetComponent<TransformComponent>(id);
                 collider.normal = glm::normalize(glm::mat3(glm::quat(glm::radians(transform.rotation))) * glm::vec3(0.0f, 1.0f, 0.0f));
                 collider.distance = glm::dot(collider.normal, transform.position);
             } else if(t.type == ColliderType::MESH) {
-                // Mesh collider update not implemented
+                auto& collider = static_cast<MeshCollider&>(*t.collider);
+                auto& transform = entityManager->GetComponent<TransformComponent>(id);
+                //UpdateMeshTransform(collider, transform.worldMatrix);
             }
         }
     }

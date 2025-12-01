@@ -176,6 +176,7 @@ void StartSystems(GLuint programID){
             std::cerr << "Script component for entity " << id << " has empty path, skipping\n";
             continue;
         }
+        std::cout << "Loading script for entity " << id << ": " << comp.luaScriptPath << std::endl;
         if (!std::filesystem::exists(comp.luaScriptPath)) {
             std::cerr << "Script introuvable (skip): " << comp.luaScriptPath << std::endl;
             continue;
@@ -183,16 +184,22 @@ void StartSystems(GLuint programID){
         scriptSystem.registerLuaScript(id, &comp);
         scriptSystem.initScript(comp, id);
     }
+    std::cout<< "--- Scripts loaded. ---" <<std::endl;
     scriptSystem.registerDispatcher(&dispatcher);
     scriptSystem.registerEntities(&entities);
+    std::cout<< "--- Script system initialized. ---" <<std::endl;
 
     // Système de lumière
+    std::cout << "--- Initializing Light System... ---" << std::endl;
     lightSystem = new LightSystem(&entityManager, programID);
     lightSystem->update();
+    std::cout << "--- Light System initialized. ---" << std::endl;
 
     // Système de transformation
+    std::cout<< "--- Initializing Transform System... ---" <<std::endl;
     transformSystem = new TransformSystem(&entityManager);
     transformSystem->update();
+    std::cout<< "--- Transform System initialized. ---" <<std::endl;
 #if defined (__APPLE__) || defined(MACOSX)
 #else
     // Système de Ray Tracing -> pointeur global
@@ -405,6 +412,8 @@ int main( int argc, char* argv[] )
         entityManager.GetComponent<CameraComponent>(camEntityId).isActive = true;
     }
     //StartSystems(programID);
+
+    std::cout<<"ALL SYSTEMS LOADED"<<std::endl;
 
     do{
         lastTime = affiche(window,lastTime);

@@ -99,6 +99,7 @@ public:
                 MeshComponent m;
                 m.loadFromFile(sceneData, e.id, gameFolder, entityManager->GetComponent<TransformComponent>(e.id).position);
                 entityManager->AddComponent<MeshComponent>(e.id, m);
+                std::cout << "Entity " << e.id << " mesh vertices after load: " << m.vertices.size() << std::endl;
             }
             if(entityData.contains("material")){
                 MaterialComponent mat;
@@ -147,8 +148,10 @@ public:
             }
             if(entityData.contains("collider")){
                 ColliderComponent collider;
-                collider.loadFromFile(sceneData, e.id);
-                entityManager->AddComponent<ColliderComponent>(e.id, collider);
+                collider.loadFromFile(entityData, e.id, entityManager);
+                entityManager->AddComponent<ColliderComponent>(e.id, std::move(collider));
+                std::cout << "Collider pointer for entity " << e.id << " : "
+                          << (entityManager->GetComponent<ColliderComponent>(e.id).collider != nullptr) << std::endl;
             }
             
         }

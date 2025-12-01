@@ -40,50 +40,155 @@ public:
         transform.position = transform.position + rigid.velocity*dt;
     }
 
-    bool isColliding(uint32_t e1){
-        std::cout<<"Checking collision for entity "<<e1<<std::endl;
-        auto& colliders = entityManager->GetComponents<ColliderComponent>();
-        if(entityManager->HasComponent<ColliderComponent>(e1) == false) return false;
-        for(const auto& collider : colliders){
-            if(collider.first == e1) continue;
-            if(entityManager->HasComponent<ColliderComponent>(collider.first)){
-                auto& collider1 = entityManager->GetComponent<ColliderComponent>(e1);
-                auto& collider2 = entityManager->GetComponent<ColliderComponent>(collider.first);
-                switch(collider2.type) {
-                    case ColliderType::SPHERE: {
-                        SphereCollider col = *static_cast<SphereCollider*>(collider2.collider.get());
-                        if(collider1.intersectColliders(col)){
-                                return true;
-                                std::cout<<"position e1: "<< col.position.x<<" "<< col.position.y<<" "<< col.position.z<<std::endl;
-
-                            }
+    void detectCollisions(std::vector<std::pair<uint32_t, uint32_t>>& collidingPairs) {
+        const auto& colliders = entityManager->GetComponents<ColliderComponent>();
+        //std::cout<<"Detecting collisions among "<<colliders.size()<<" colliders."<<std::endl;
+        for (auto itA = colliders.begin(); itA != colliders.end(); itA++) {
+            for (auto itB = std::next(itA); itB != colliders.end(); itB++) {
+                //std::cout<<" Checking collider of entity "<<itA->first<<std::endl;
+                uint32_t idA = itA->first;
+                uint32_t idB = itB->first;
+                auto& colliderA = entityManager->GetComponent<ColliderComponent>(idA);
+                auto& colliderB = entityManager->GetComponent<ColliderComponent>(idB);
+                if (!colliderA.collider) {
+                    std::cerr << "Null collider pointer for entities " << idA << std::endl;
+                    continue;
+                } else if (!colliderB.collider) {
+                    std::cerr << "Null collider pointer for entities " << idB << std::endl;
+                    continue;
+                }
+                // Appelle la bonne fonction selon les types
+                bool collision = false;
+                switch (colliderA.type) {
+                    case ColliderType::SPHERE:
+                        switch (colliderB.type) {
+                            case ColliderType::SPHERE:
+                                collision = SphereSphere(
+                                    *static_cast<SphereCollider*>(colliderA.collider.get()),
+                                    *static_cast<SphereCollider*>(colliderB.collider.get()));
+                                break;
+                            case ColliderType::AABB:
+                                collision = SphereAABB(
+                                    *static_cast<SphereCollider*>(colliderA.collider.get()),
+                                    *static_cast<AABBCollider*>(colliderB.collider.get()));
+                                break;
+                            case ColliderType::OBB:
+                                collision = SphereOBB(
+                                    *static_cast<SphereCollider*>(colliderA.collider.get()),
+                                    *static_cast<OBBCollider*>(colliderB.collider.get()));
+                                break;
+                            case ColliderType::PLANE:
+                                collision = SpherePlane(
+                                    *static_cast<SphereCollider*>(colliderA.collider.get()),
+                                    *static_cast<PlaneCollider*>(colliderB.collider.get()));
+                                break;
+                            case ColliderType::MESH:
+                                collision = SphereMesh(
+                                    *static_cast<SphereCollider*>(colliderA.collider.get()),
+                                    *static_cast<MeshCollider*>(colliderB.collider.get()));
+                                break;
+                            default: break;
+                        }
                         break;
-                    }
-                    case ColliderType::AABB: 
-                        if(collider1.intersectColliders(
-                            *static_cast<AABBCollider*>(collider2.collider.get()))){
-                                return true;
-                            }
+                    case ColliderType::AABB:
+                        switch (colliderB.type) {
+                            case ColliderType::SPHERE:
+                                collision = SphereAABB(
+                                    *static_cast<SphereCollider*>(colliderB.collider.get()),
+                                    *static_cast<AABBCollider*>(colliderA.collider.get()));
+                                break;
+                            case ColliderType::AABB:
+                                collision = AABBAABB(
+                                    *static_cast<AABBCollider*>(colliderA.collider.get()),
+                                    *static_cast<AABBCollider*>(colliderB.collider.get()));
+                                break;
+                            case ColliderType::OBB:
+                                collision = AABBOBB(
+                                    *static_cast<AABBCollider*>(colliderA.collider.get()),
+                                    *static_cast<OBBCollider*>(colliderB.collider.get()));
+                                break;
+                            case ColliderType::PLANE:
+                                collision = AABBPlane(
+                                    *static_cast<AABBCollider*>(colliderA.collider.get()),
+                                    *static_cast<PlaneCollider*>(colliderB.collider.get()));
+                                break;
+                            case ColliderType::MESH:
+                                collision = MeshAABB(
+                                    *static_cast<MeshCollider*>(colliderB.collider.get()),
+                                    *static_cast<AABBCollider*>(colliderA.collider.get()));
+                                break;
+                            default: break;
+                        }
                         break;
                     case ColliderType::OBB:
-                        if(collider1.intersectColliders(
-                            *static_cast<OBBCollider*>(collider2.collider.get()))){
-                                return true;
-                            }
+                        switch (colliderB.type) {
+                            case ColliderType::SPHERE:
+                                collision = SphereOBB(
+                                    *static_cast<SphereCollider*>(colliderB.collider.get()),
+                                    *static_cast<OBBCollider*>(colliderA.collider.get()));
+                                break;
+                            case ColliderType::AABB:
+                                collision = AABBOBB(
+                                    *static_cast<AABBCollider*>(colliderB.collider.get()),
+                                    *static_cast<OBBCollider*>(colliderA.collider.get()));
+                                break;
+                            case ColliderType::OBB:
+                                collision = OBBOBB(
+                                    *static_cast<OBBCollider*>(colliderA.collider.get()),
+                                    *static_cast<OBBCollider*>(colliderB.collider.get()));
+                                break;
+                            case ColliderType::PLANE:
+                                collision = OBBPlane(
+                                    *static_cast<OBBCollider*>(colliderA.collider.get()),
+                                    *static_cast<PlaneCollider*>(colliderB.collider.get()));
+                                break;
+                            case ColliderType::MESH:
+                                collision = MeshOBB(
+                                    *static_cast<MeshCollider*>(colliderB.collider.get()),
+                                    *static_cast<OBBCollider*>(colliderA.collider.get()));
+                                break;
+                            default: break;
+                        }
                         break;
-                    case ColliderType::PLANE: {
-                        if(collider1.intersectColliders(
-                            *static_cast<PlaneCollider*>(collider2.collider.get()))){
-                                return true;
-                            }
+                    case ColliderType::MESH: 
+                        switch (colliderB.type) {
+                            case ColliderType::SPHERE:
+                                collision = SphereMesh(
+                                    *static_cast<SphereCollider*>(colliderB.collider.get()),
+                                    *static_cast<MeshCollider*>(colliderA.collider.get()));
+                                break;
+                            case ColliderType::AABB:
+                                collision = MeshAABB(
+                                    *static_cast<MeshCollider*>(colliderA.collider.get()),
+                                    *static_cast<AABBCollider*>(colliderB.collider.get()));
+                                break;
+                            case ColliderType::OBB:
+                                collision = MeshOBB(
+                                    *static_cast<MeshCollider*>(colliderA.collider.get()),
+                                    *static_cast<OBBCollider*>(colliderB.collider.get()));
+                                break;
+                            case ColliderType::PLANE:
+                                collision = MeshPlane(
+                                    *static_cast<MeshCollider*>(colliderA.collider.get()),
+                                    *static_cast<PlaneCollider*>(colliderB.collider.get()));
+                                break;
+                            case ColliderType::MESH:
+                                collision = MeshMesh(
+                                    *static_cast<MeshCollider*>(colliderA.collider.get()),
+                                    *static_cast<MeshCollider*>(colliderB.collider.get()));
+                                break;
+                            default: break;
+                        }
                         break;
-                    }
-                    default:
-                        break;
+                    default: break;
+                }
+    
+                if (collision) {
+                    std::cout<<"Collision detected between entities "<<idA<<" and "<<idB<<std::endl;
+                    collidingPairs.push_back({idA, idB});
                 }
             }
         }
-        return false;
     }
 
     void update(float deltaTime) {
@@ -96,21 +201,21 @@ public:
             const auto& rigidBodies = entityManager->GetComponents<RigidBodyComponent>();
             const auto& colliders = entityManager->GetComponents<ColliderComponent>();
             if(rigidBodies.empty() && colliders.empty()) return;
-            std::vector<uint32_t> collidingEntities;
-            for(const auto& collider : colliders){
-                if(isColliding(collider.first) && entityManager->HasComponent<RigidBodyComponent>(collider.first)){
-                    std::cout<<"Collision detected for entity "<<collider.first<<std::endl;
-                    entityManager->GetComponent<RigidBodyComponent>(collider.first).velocity = glm::vec3(0.0f);
-                    entityManager->GetComponent<RigidBodyComponent>(collider.first).gravity = glm::vec3(0.0f);
-                    collidingEntities.push_back(collider.first);
+            std::vector<std::pair<uint32_t, uint32_t>> collidingPairs;
+            detectCollisions(collidingPairs);                
+            for(const auto& pair : collidingPairs){
+                if(entityManager->HasComponent<RigidBodyComponent>(pair.first)){
+                    auto& rigidA = entityManager->GetComponent<RigidBodyComponent>(pair.first);
+                    rigidA.gravity = glm::vec3(0.0f);
+                }
+                if(entityManager->HasComponent<RigidBodyComponent>(pair.second)){
+                    auto& rigidB = entityManager->GetComponent<RigidBodyComponent>(pair.second);
+                    rigidB.gravity = glm::vec3(0.0f);
                 }
             }
+        
             for(const auto& rb : rigidBodies){
-                if(std::find(collidingEntities.begin(), collidingEntities.end(), rb.first) != collidingEntities.end()){
-                    continue; // Skip velocity computation for colliding entities
-                }
                 computeVelocity(rb.first, fixedDeltaTime);
-    
             }
             accumulator -= FIXED_DELTA_TIME;
         }
