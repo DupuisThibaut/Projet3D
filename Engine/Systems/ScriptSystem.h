@@ -248,7 +248,7 @@ private:
             lua_setfield(L, -2, "__newindex");
         } else { lua_pop(L,1); }
 
-        // CameraMetaTable
+        //CameraMetaTable
         if (luaL_newmetatable(L, "CameraMetaTable")) {
             lua_pushcfunction(L, [](lua_State* s)->int {
                 CameraComponent* c = *(CameraComponent**)lua_touserdata(s,1);
@@ -256,14 +256,17 @@ private:
                 if (strcmp(k,"target")==0) { ScriptSystem::pushVec3AsTable(s, c->target); return 1; }
                 if (strcmp(k,"yaw")==0) { lua_pushnumber(s, c->yaw); return 1; }
                 if (strcmp(k,"pitch")==0) { lua_pushnumber(s, c->pitch); return 1; }
+                if (strcmp(k,"update")==0) { lua_pushboolean(s, c->update); return 1; } // <-- AJOUT
                 lua_pushnil(s); return 1;
             }); lua_setfield(L,-2,"__index");
+
             lua_pushcfunction(L, [](lua_State* s)->int {
                 CameraComponent* c = *(CameraComponent**)lua_touserdata(s,1);
                 const char* k = luaL_checkstring(s,2);
                 if (strcmp(k,"target")==0 && lua_istable(s,3)) c->target = ScriptSystem::tableToVec3(s,3);
                 else if (strcmp(k,"yaw")==0) c->yaw = (float)luaL_checknumber(s,3);
                 else if (strcmp(k,"pitch")==0) c->pitch = (float)luaL_checknumber(s,3);
+                else if (strcmp(k,"update")==0) c->update = lua_toboolean(s,3); // <-- AJOUT
                 return 0;
             }); lua_setfield(L,-2,"__newindex");
         } else { lua_pop(L,1); }

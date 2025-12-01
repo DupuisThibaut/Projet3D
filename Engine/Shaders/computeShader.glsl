@@ -3,8 +3,7 @@
 layout(local_size_x = 16, local_size_y = 16) in;
 
 layout(rgba32f, binding = 0) uniform image2D imgOutput;
-layout(rgba32f, binding = 10) uniform image2D imgAccum;
-layout(r32ui, binding = 11) uniform uimage2D imgSampleCount;
+layout(rgba32f, binding = 1) uniform image2D imgAccum;
 
 uniform vec3 uCamPos;
 uniform mat4 uInvViewProj;
@@ -15,6 +14,7 @@ uniform int nbSquare;
 uniform int nbLight;
 uniform int nbMesh;
 uniform int resetAccum;
+uniform uint accum;
 
 #define PI 3.1415926538
 
@@ -38,7 +38,7 @@ struct World{
 	mat3 normalMat;
 	vec4 testSphere;
 };
-layout(std430,binding=9)buffer Worlds{World worlds[];};
+layout(std430,binding=8)buffer Worlds{World worlds[];};
 
 struct Sphere{
 	vec3 centre; 
@@ -49,7 +49,7 @@ struct Sphere{
 	uvec2 text;
 	uvec2 padding;
 };
-layout(std430,binding=1)buffer Spheres{Sphere spheres[];};
+layout(std430,binding=9)buffer Spheres{Sphere spheres[];};
 
 float secondeIntersection;
 
@@ -90,7 +90,7 @@ struct Square{
 	uvec2 text;
 	uvec2 padding;
 };
-layout(std430,binding=2)buffer Squares{Square squares[];};
+layout(std430,binding=10)buffer Squares{Square squares[];};
 
 float intersectSquare(Ray rayon, vec3 m_bottom_left, vec3 m_right_vector, vec3 m_up_vector, vec3 m_normal, float lengthUV, float lengthRV){
 	vec3 ro=rayon.origin;
@@ -151,10 +151,6 @@ struct BVH{
 	ivec4 info;//0 child, 1 start, 2 count 
 };
 layout(std430,binding=7)buffer BVHS{BVH bvhs[];};
-
-layout(std430, binding = 8) buffer DebugBuffer {
-    float debugValues[];
-};
 
 vec3 normalTriangleTest;
 vec3 normalTriangleFinal;
@@ -258,8 +254,6 @@ float intersectMesh(Ray rayon, int indice){
     return(tmin==1e20)? -1.0 : tmin;
 }
 
-
-
 struct intersection{
 	int hitIndex;
 	float tmin;
@@ -315,6 +309,8 @@ intersection intersectScene(Ray rayon){
 
 	return res;
 }
+
+// LES FONCTIONS RANDOMS ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 //Creer un vec3 random
@@ -505,6 +501,10 @@ vec3 random_hemisphere_direction(vec3 normal, uint seed)
 	return normalize(direction);
 }
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 bool testOmbre(Ray rayon, float dist){
 	vec3 ro=rayon.origin;
 	vec3 rd=rayon.direction;
@@ -559,83 +559,6 @@ float ombre(vec3 p, vec3 n, vec2 pix, vec3 light){
 	pourcentageOmbre=nombreRayonOmbreDouce/float(nombreRayon);
 	return 1.0-pourcentageOmbre;
 }
-
-// float ombre(vec3 p, vec3 n, vec2 pix, vec3 light){
-// 	float nombreRayonOmbreDouce=0.0;
-// 	float nombreRayon=1.0;
-// 	float pourcentageOmbre=0.0;
-// 	vec3 newRay;
-// 	vec3 ro=p+n*0.01;
-// 	newRay=light;
-// 	vec3 L=newRay-p;
-// 	float dist=length(L);			
-// 	vec3 rd=normalize(L);
-// 	Ray rayon;rayon.origin=ro;rayon.direction=rd;
-// 	if(testOmbre(rayon,dist))nombreRayonOmbreDouce++;
-// 	// newRay=light+vec3(0.2,0.0,0.2);
-// 	// L=newRay-p;
-// 	// dist=length(L);			
-// 	// rd=normalize(L);
-// 	// rayon.origin=ro;rayon.direction=rd;
-// 	// if(testOmbre(rayon,dist))nombreRayonOmbreDouce++;
-// 	// newRay=light+vec3(-0.2,0.0,-0.2);
-// 	// L=newRay-p;
-// 	// dist=length(L);			
-// 	// rd=normalize(L);
-// 	// rayon.origin=ro;rayon.direction=rd;
-// 	// if(testOmbre(rayon,dist))nombreRayonOmbreDouce++;
-// 	// newRay=light+vec3(0.0,0.3,0.0);
-// 	// L=newRay-p;
-// 	// dist=length(L);			
-// 	// rd=normalize(L);
-// 	// rayon.origin=ro;rayon.direction=rd;
-// 	// if(testOmbre(rayon,dist))nombreRayonOmbreDouce++;
-// 	// newRay=light+vec3(0.0,-0.3,0.0);
-// 	// L=newRay-p;
-// 	// dist=length(L);			
-// 	// rd=normalize(L);
-// 	// rayon.origin=ro;rayon.direction=rd;
-// 	// if(testOmbre(rayon,dist))nombreRayonOmbreDouce++;
-// 	pourcentageOmbre=nombreRayonOmbreDouce/nombreRayon;
-// 	return 1.0-pourcentageOmbre;
-// }
-
-// Vec3 reflect(const Vec3& v, const Vec3& n){
-// 	return v - 2*Vec3::dot(v,n)*n;
-// }
-
-// Vec3 refract(const Vec3& uv,const Vec3& n, float etai_over_etat) {
-// 	float cos_theta = min(Vec3::dot(uv, n),1.0);
-// 	Vec3 r_out_perp =   etai_over_etat*(uv + cos_theta*n) ;
-// 	Vec3 r_out_parallel = -std::sqrt(std::fabs(1.0 - r_out_perp.squareLength())) * n;
-// 	return (r_out_perp + r_out_parallel);
-// }
-
-// Vec3 ComputeRefraction(Ray ray, int NRemainingBounces, Vec3 N, Vec3 intersection, Material material) {
-// 	Vec3 unit_dir = ray.direction(); unit_dir.normalize();
-// 	Vec3 normal = N;normal.normalize();
-// 	float ri;
-// 	if (Vec3::dot(unit_dir, normal) >= 0) {
-// 		ri = material.index_medium;
-// 	} else {
-// 		ri = 1./material.index_medium;
-// 	}
-// 	float cos_theta = min(Vec3::dot((unit_dir*-1.0), normal),1.0);
-// 	float sin_theta = std::sqrt(1. - cos_theta * cos_theta);
-// 	bool cannot_refract = (ri * sin_theta) > 1.6f;
-// 	if (cannot_refract ) {
-// 		Vec3 R = reflect(unit_dir,normal);R.normalize();
-// 		Ray reflectedRay(intersection + R*0.01f,R);
-// 		Vec3 reflectedColor = rayTraceRecursive(reflectedRay,NRemainingBounces-1);
-// 		return reflectedColor;
-// 	} else {
-// 		Vec3 direction = refract(unit_dir, normal, ri);
-// 		direction.normalize();
-// 		Ray refractedRay(intersection+direction*0.01f, direction);
-// 		Vec3 refractedColor = rayTraceRecursive(refractedRay, NRemainingBounces - 1);
-// 		return refractedColor;
-// 	}
-// }
 
 vec3 l=vec3(0.8,0.8,0.8);
 
@@ -723,7 +646,6 @@ vec3 couleurMesh(Ray rayon,float tmin,int hitIndex,vec2 pix){
 	vec3 v=ro-p;
 	L=normalize(L);
 	v=normalize(v);
-	// n=normalize(n);
 	float cosT=max(dot(n,L),0.0);
 	vec3 r=reflect(-L,n);
 	r=normalize(r);
@@ -743,71 +665,11 @@ Ray computeReflection(vec3 ro, vec3 n, vec3 p, ivec2 pix){
 	vec3 v=ro-2*dot(ro,n)*n;
 	v=normalize(v);
 	vec3 vo=p+v*0.01;
-	// intersection inter=intersectScene(vo,v);
 	Ray result;
 	result.origin=vo;
 	result.direction=v;
-	// ro=vo;vec3 rd=v;
-	// int hitIndex=inter.hitIndex;
-	// float tmin=inter.tmin;
-	// int interObjet=inter.inter;
-	// vec3 finalColor=vec3(1.0,1.0,1.0);
-    // if(interObjet==1){
-	// 	finalColor*=couleurSphere(ro,rd,tmin,hitIndex,pix);
-    // }else if(interObjet==2){	
-	// 	finalColor*=couleurSquare(ro,rd,tmin,hitIndex,pix);
-    // }else if(interObjet==3){
-	// 	finalColor*=couleurMesh(ro,rd,tmin,hitIndex,pix);
-    // }else{
-    //     finalColor=vec3(0.68,0.85,0.90);
-    // }
 	return result;
 }
-
-// intersection intersectSceneRefraction(Ray rayon, int type, int indice){
-// 	vec3 ro=rayon.origin;
-// 	vec3 rd=rayon.direction;
-// 	intersection res;
-// 	res.tmin=1e19;
-// 	res.hitIndex=-1;
-// 	res.inter=-1;
-	
-//     for (int i=0;i<nbSphere;++i) {
-// 		if(type!=1 || i!=indice){
-// 			float t=intersectSphere(ro,rd,spheres[i].centre,spheres[i].rayon);
-// 			if(t>0.0 && t<res.tmin){res.tmin=t;res.hitIndex=i;res.inter=1;}
-// 		}
-//     }
-
-//     for (int i=0;i<nbSquare;++i) {
-// 		if(type!=2 || i!=indice){
-// 			float t=intersectSquare(ro,rd,squares[i].m_bottom_left.xyz,squares[i].m_right_vector.xyz,squares[i].m_up_vector.xyz,squares[i].m_normal.xyz,squares[i].m_up_vector[3],squares[i].m_right_vector[3]);
-// 			if(t>0.0 && t<res.tmin){res.tmin=t;res.hitIndex=i;res.inter=2;uvFinal=uvTest;}
-// 		}
-//     }
-
-// 	for(int i=0;i<nbMesh;i++){
-// 		if(type!=3 || i!=indice){
-// 			mat4 model=worlds[i].modelMat;
-// 			mat4 invModelMatrix=worlds[i].invModelMatrix;
-// 			vec3 roLocal=(invModelMatrix*vec4(ro,1.0)).xyz;
-// 			vec3 rdLocal=normalize((invModelMatrix*vec4(rd,0.0)).xyz);
-// 			float t=intersectMesh(roLocal,rdLocal,i);
-// 			if(t>0.0){
-// 				vec3 pLocal=roLocal+rdLocal*t;
-// 				vec3 pMonde=(model*vec4(pLocal,1.0)).xyz;
-// 				float t2=length(pMonde-ro);
-// 				if(t2<res.tmin){
-// 					mat3 normalMat=worlds[i].normalMat;
-// 					normalTriangleFinal=normalize(normalMat*normalTriangleFinal);
-// 					res.tmin=t2;res.hitIndex=i;res.inter=3;
-// 				}
-// 			}
-// 		}
-// 	}
-
-// 	return res;
-// }
 
 Ray computeRefraction(Ray rayon, vec3 n, vec3 p, ivec2 pix, float index, int type, int indice){
 	vec3 ro=rayon.origin;
@@ -822,9 +684,7 @@ Ray computeRefraction(Ray rayon, vec3 n, vec3 p, ivec2 pix, float index, int typ
 		ri=index;
 		n=-n;
 	}
-	// ri=3.0;
 	float cos_theta=min(dot(-unit_dir,n),1.0);
-	// float cos_theta=clamp(dot(-unit_dir,n),-1.0,1.0);
 	float sin_theta=sqrt(1.0-cos_theta*cos_theta);
 	bool cannot_refract=(ri*sin_theta)>1.0;
 	float r0=(1-ri)/(1+ri);
@@ -832,27 +692,8 @@ Ray computeRefraction(Ray rayon, vec3 n, vec3 p, ivec2 pix, float index, int typ
 	float reflectance=r0+(1-r0)*pow((1-cos_theta),5);
 	//  || reflectance>randomDouble(vec2(uint(pix.x),uint(pix.y)*92837111u))
 	if(cannot_refract){
-		// vec3 v=rd-2*dot(rd,n)*n;
-		// v=normalize(v);
-		// vec3 vo=p+v*0.01;
-		// intersection inter=intersectSceneRefraction(vo,v,type,indice);
-		// ro=vo;vec3 rd=v;
-		// int hitIndex=inter.hitIndex;
-		// float tmin=inter.tmin;
-		// int interObjet=inter.inter;
-		// if(interObjet==1){
-		// 	finalColor*=couleurSphere(ro,rd,tmin,hitIndex,pix);
-		// }else if(interObjet==2){	
-		// 	finalColor*=couleurSquare(ro,rd,tmin,hitIndex,pix);
-		// }else if(interObjet==3){
-		// 	finalColor*=couleurMesh(ro,rd,tmin,hitIndex,pix);
-		// }else{
-		// 	finalColor=vec3(0.68,0.85,0.90);
-		// }
-		// finalColor=vec3(0.0,0.0,1.0);
 		return computeReflection(rd,n,p,pix);
 	}else{
-		// float cos_theta=min(dot(unit_dir,n),1.0);
 		vec3 r_out_perp=ri*(unit_dir+cos_theta*n);
 		vec3 r_out_parallel=-sqrt(abs(1.0-dot(r_out_perp,r_out_perp)))*n;
 		vec3 v=r_out_perp+r_out_parallel;
@@ -862,26 +703,7 @@ Ray computeRefraction(Ray rayon, vec3 n, vec3 p, ivec2 pix, float index, int typ
 		result.origin=vo;
 		result.direction=v;
 		return result;
-		// intersection inter=intersectSceneRefraction(vo,v,type,indice);
-		// ro=vo;rd=v;
-		// int hitIndex=inter.hitIndex;
-		// float tmin=inter.tmin;
-		// int interObjet=inter.inter;
-		// if(interObjet==1){
-		// 	finalColor*=couleurSphere(ro,rd,tmin,hitIndex,pix);
-		// }else if(interObjet==2){	
-		// 	finalColor*=couleurSquare(ro,rd,tmin,hitIndex,pix);
-		// }else if(interObjet==3){
-		// 	finalColor*=couleurMesh(ro,rd,tmin,hitIndex,pix);
-		// }else{
-		// 	finalColor=vec3(0.68,0.85,0.90);
-		// }
-		// finalColor=vec3(0.0,0.0,1.0);
-		// if(1.0-dot(r_out_perp,r_out_perp)<1.0){
-		// 	finalColor=vec3(0.0,1.0,0.0);
-		// }
 	}
-	// return finalColor;
 }
 
 // vec3 computeMetalic(vec3 rd, vec3 n, vec3 p, ivec2 pix, vec3 finalColor){
@@ -911,15 +733,6 @@ vec3 couleur(Ray rayon,ivec2 pix,uint seed){
 		if(interObjet==1){
 			vec3 p=ro+rd*tmin;
 			vec3 n=(p-spheres[hitIndex].centre)/spheres[hitIndex].rayon;
-			// if(spheres[hitIndex].padding[1]==1){
-			// 	testColor*=computeReflection(rd,n,p,pix);
-			// }
-			// if(spheres[hitIndex].padding[1]==2){
-			// 	testColor*=computeRefraction(ro,rd,n,p,pix,0.75,1,hitIndex);
-			// }
-			// if(spheres[hitIndex].padding[1]==3){
-			// 	testColor=computeMetalic(rd,n,p,pix,testColor);
-			// }
 			testColor*=couleurSphere(testRayon,tmin,hitIndex,pix);
 			if(spheres[hitIndex].padding[1]==1){
 				testRayon=computeReflection(rd,n,p,pix);
@@ -940,7 +753,6 @@ vec3 couleur(Ray rayon,ivec2 pix,uint seed){
 				// 	return mix(f0, vec3(1.), u * u * u * u * u);
 				// }
 			}else{
-				// testRayon=
 				testRayon.origin=p+n*0.001;
 				testRayon.direction=random_hemisphere_direction(n,seed);
 				// finalColor*=testColor;
@@ -995,7 +807,6 @@ vec3 couleur(Ray rayon,ivec2 pix,uint seed){
 void main(){
 	//Création du rayon
     ivec2 pix=ivec2(gl_GlobalInvocationID.xy);
-	// debugValues[pix.x*uResolution.x+pix.y] = 12.5;
     if(pix.x>=uResolution.x||pix.y>=uResolution.y)return;
 	init_rng(uvec2(pix),uint(uResolution.x),uint(frameCount));
     vec2 ndc=(vec2(pix)+0.5)/vec2(uResolution)*2.0-1.0;
@@ -1008,29 +819,28 @@ void main(){
 
 	uint seed=(pix.x * 1973u + pix.y * 9277u + frameCount * 26699u) | 1u;
 
-
-    
-	
     vec3 finalColor=couleur(rayon,pix,seed);
 
+	//sans accumulation temporelle
     // imageStore(imgOutput,pix,vec4(finalColor,1.0));
+
+	//avec accumulation temporelle
 	if(bool(resetAccum) || frameCount == 0){
         imageStore(imgAccum, pix, vec4(finalColor, 1.0));
         imageStore(imgOutput, pix, vec4(finalColor, 1.0));
-        imageStore(imgSampleCount, pix, uvec4(1));
     } else {
-        uvec4 sc = imageLoad(imgSampleCount, pix);
-        uint N = sc.r;
-        // limiter le nombre d’échantillons accumulés pour éviter overflow / vieux biais
-        const uint MAX_SAMPLES = 256u;
-        uint newN = min(N + 1u, MAX_SAMPLES);
-
-        vec4 prev = imageLoad(imgAccum, pix);
-        vec3 prevAvg = prev.rgb;
-        vec3 avg = (prevAvg * float(N) + finalColor) / float(newN);
-
-        imageStore(imgAccum, pix, vec4(avg, 1.0));
-        imageStore(imgOutput, pix, vec4(avg, 1.0));
-        imageStore(imgSampleCount, pix, uvec4(newN));
+        vec3 prev = imageLoad(imgAccum, pix).rgb;
+		float t=float(accum)/float(accum+1);
+		vec3 acc=prev*t+finalColor*(1.0-t);
+        imageStore(imgAccum, pix, vec4(acc, 1.0));
+		vec3 color=clamp(acc,0.0,1.0);
+        imageStore(imgOutput, pix, vec4(color, 1.0));
     }
 }
+
+
+
+
+//Si accumulation temporelle -> il faut enlever le break est calcul finalColor dans couleur, il faut enlever le calcul des ombres
+//sans accumulation temporelle -> il faut laisser les ombres + le break + enlever le dernier paragraphe dans main
+//sans texture blindness -> enlever le calcul des textures dans les couleurs des primitives + mesh + enlever la deuxieme ligne du programme

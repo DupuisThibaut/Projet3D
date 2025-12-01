@@ -300,6 +300,7 @@ public:
     GLint idTextures[16];
     GLuint accumTex=0;
     GLuint imageCountTex=0;
+    GLuint accum=0;
 
     GLint frameCount=0;
 
@@ -321,15 +322,20 @@ public:
         glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 
         glGenTextures(1, &accumTex);
+        glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, accumTex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA, GL_FLOAT, nullptr);
-        glBindImageTexture(10, accumTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+        glBindImageTexture(1, accumTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 
-        glGenTextures(1, &imageCountTex);
-        glBindTexture(GL_TEXTURE_2D, imageCountTex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, nullptr);
-        glBindImageTexture(11, imageCountTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
-        glBindTexture(GL_TEXTURE_2D, 0);
+        // glGenTextures(1, &imageCountTex);
+        // glBindTexture(GL_TEXTURE_2D, imageCountTex);
+        // glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, nullptr);
+        // glBindImageTexture(2, imageCountTex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+        // glBindTexture(GL_TEXTURE_2D, 0);
 
         const char* path="Shaders/computeShader.glsl";
         std::ifstream sfile;
@@ -529,7 +535,7 @@ public:
             // glGenBuffers(1, &ssboSpheres);
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboSpheres);
             glBufferData(GL_SHADER_STORAGE_BUFFER, sps.size()*sizeof(sp), sps.data(), GL_STATIC_DRAW);
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssboSpheres);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, ssboSpheres);
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
             updateSphere=false;
             reset=true;
@@ -538,7 +544,7 @@ public:
             // glGenBuffers(1,&ssboSquares);
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboSquares);
             glBufferData(GL_SHADER_STORAGE_BUFFER, sqs.size()*sizeof(sq), sqs.data(), GL_STATIC_DRAW);
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, ssboSquares);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 10, ssboSquares);
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
             updateSquare=false;
             reset=true;
@@ -547,7 +553,7 @@ public:
             // glGenBuffers(1,&ssboWorld);
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboWorld);
             glBufferData(GL_SHADER_STORAGE_BUFFER, worlds.size()*sizeof(world), worlds.data(), GL_STATIC_DRAW);
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, ssboWorld);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, ssboWorld);
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
             updateMesh=false;
             reset=true;
@@ -585,8 +591,8 @@ public:
             GLint locInv = glGetUniformLocation(computeProg, "uInvViewProj");
             if (locInv >= 0) glUniformMatrix4fv(locInv, 1, GL_FALSE, &invVP[0][0]);
             auto& cam = entityManager->GetComponent<CameraComponent>(camera.first);
-            std::cout<<"camera update : "<<camera.second.update<<std::endl;
-            std::cout<<"camera texte : "<<camera.second.texte<<std::endl;
+            // std::cout<<"camera update : "<<camera.second.update<<std::endl;
+            // std::cout<<"camera texte : "<<camera.second.texte<<std::endl;
             if(cam.update){
                 reset=true;
                 cam.update=false;
@@ -597,6 +603,13 @@ public:
         frameCount++;
 
         glUniform1i(glGetUniformLocation(computeProg, "resetAccum"), (int)reset);
+        if(reset){
+            accum=0;
+        }else{
+            // if(accum<256)
+            accum++;
+        }
+        glUniform1ui(glGetUniformLocation(computeProg, "accum"), accum);
         reset=false;
 
         
@@ -1054,14 +1067,14 @@ public:
         glGenBuffers(1, &ssboSpheres);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboSpheres);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sps.size()*sizeof(sp), sps.data(), GL_STATIC_DRAW);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssboSpheres);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, ssboSpheres);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
         //Squares
         glGenBuffers(1,&ssboSquares);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboSquares);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sqs.size()*sizeof(sq), sqs.data(), GL_STATIC_DRAW);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, ssboSquares);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 10, ssboSquares);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
         //Lights
@@ -1099,7 +1112,7 @@ public:
         glGenBuffers(1,&ssboWorld);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboWorld);
         glBufferData(GL_SHADER_STORAGE_BUFFER, worlds.size()*sizeof(world), worlds.data(), GL_STATIC_DRAW);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, ssboWorld);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, ssboWorld);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 
