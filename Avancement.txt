@@ -1,9 +1,3 @@
-Les avancements sur le moteur de jeux : 
-x Base ECS : fait.
-x Modèle data-driven : fait avec hot reload, mais pas très pratique.
-= raytracing : en cours.
-
-
 Composants : 
 - AudioComponent : Pour les systèmes audio -> Base de code, à améliorer et compléter.
 - CameraComponent : Pour les paramètres et calcul de matrices -> Intégration d'effets de caméra dans les systèmes.
@@ -30,20 +24,24 @@ systèmes :
 - ScriptSystem : Pour la gestion des scripts Lua -> A finir.
 - TransformSystem : Pour le calcul des transformations entre parents et enfants.
 
+
+
+Les avancements sur le moteur de jeux : 
+x Base ECS : fait.
+x Modèle data-driven : fait avec hot reload, mais pas très pratique.
+= raytracing : en cours.
+
 A venir : 
-x Revoir le système de dispatch pour les contrôles avec un Dispatcher pour tous les sytèmes.
-x Terminer le scripting en ajoutant tous les components dans lua et lier les entités (A peut modifier B).
-- Moteur physique avec collisions et physique avancée.
+X Revoir le système de dispatch pour les contrôles avec un Dispatcher pour tous les sytèmes.
+X Terminer le scripting en ajoutant tous les components dans lua et lier les entités (A peut modifier B).
+~ Moteur physique avec collisions et physique avancée.
 - Moteur d'animations.
-- Système UI.
-- CaméraSystem pour une meilleure gestion des caméra.
+X Système UI.
 = Intégration avec le raytracing (optimisations à voir -> structure d'accélération)
-- Terminer Audio
+X Terminer Audio
 - Revoir les lumières (avec raytracing)
-- SceneManager : pour le chargement des scènes du jeu
-- GameManager : Pour la gestion des mécaniques de jeu
+X SceneManager : pour le chargement des scènes du jeu
+~ EditorSystem : Ajouter les derniers composants
 
-
-En vrai : 
-- Un éditeur...
-- Un mode jeu et éditeur
+A revoir : 
+- Les plans

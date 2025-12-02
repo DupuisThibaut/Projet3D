@@ -25,7 +25,7 @@ function onInit()
     --        this.material.color = { 1.0 - t, t, 0.0 }
     --    end
     this.material.color = {1.0, 1.0, 1.0}
-        print("[Lua] Applied initial color with life =", life)
+        --print("[Lua] Applied initial color with life =", life)
     --end
 end
 

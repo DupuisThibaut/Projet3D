@@ -9,7 +9,7 @@ using InputEventCallback = std::function<bool(const InputEvent&)>;
 
 using SubscribersID = unsigned int;
 
-struct Dispatcher
+class Dispatcher
 {
     public:
         struct Subscriber

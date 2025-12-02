@@ -27,10 +27,10 @@
         "path":"./texture/grass.png"
       },
       "audio": {
-        "type": "MUSIC",
+        "type": "SPATIAL",
         "path": "audios/SoundTrack/Super Mario 64 - Main Theme Music - Bob-Omb Battlefield.wav",
         "volume": 1.0,
-        "play_on_start": false,
+        "play_on_start": true,
         "loop": true,
         "isPlaying": true
       }

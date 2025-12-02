@@ -14,6 +14,16 @@ struct ControllerComponent {
 
     TransformComponent* transform = nullptr;
     CameraComponent* camera = nullptr;
+
+
+    void loadFromFile(const nlohmann::json& entityData, const uint32_t entityId) {
+        if(entityData["entities"][entityId].contains("controller")){
+            if (entityData["entities"][entityId]["controller"].contains("speed")) this->moveSpeed = entityData["entities"][entityId]["controller"]["speed"];
+            if (entityData["entities"][entityId]["controller"].contains("zoom_speed")) this->zoomSpeed = entityData["entities"][entityId]["controller"]["zoom_speed"];
+            if (entityData["entities"][entityId]["controller"].contains("sensitivity")) this->sensitivity = entityData["entities"][entityId]["controller"]["sensitivity"];
+        }
+        
+    }
 };
 
 

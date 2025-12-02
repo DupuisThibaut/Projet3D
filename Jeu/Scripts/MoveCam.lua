@@ -51,31 +51,43 @@ function onInput(event)
 
     local speed = 5.0
     local sensitivity = 0.1
-    -- forward est un tableau {x,y,z} retourné par la métatable camera.target
     local forward = normalize(cam.target)
     local right = normalize(cross(forward, {0,1,0}))
     local scrollY = event.scroll
 
+    -- Vérifier si le bouton droit est enfoncé
+    local rightMousePressed = false
+    for _, btn in ipairs(event.buttons) do
+        if btn == "RightMouse" then
+            rightMousePressed = true
+            break
+        end
+    end
+
+    -- Déplacement WASD (toujours actif)
     for _, btn in ipairs(event.buttons) do
         if btn == "Forward" then 
             tr.position = add(tr.position, scale(forward, speed * event.dt))
-        elseif btn == "Backward" then tr.position = subtract(tr.position, scale(forward, speed * event.dt))
-        elseif btn == "Right" then tr.position = add(tr.position, scale(right, speed * event.dt))
-        elseif btn == "Left" then tr.position = subtract(tr.position, scale(right, speed * event.dt)) end
-
-        if scrollY ~= 0 and btn == "RightMouse" then
-            sensitivity = sensitivity + scrollY * 0.01
-            scrollY = 0
+        elseif btn == "Backward" then 
+            tr.position = subtract(tr.position, scale(forward, speed * event.dt))
+        elseif btn == "Right" then 
+            tr.position = add(tr.position, scale(right, speed * event.dt))
+        elseif btn == "Left" then 
+            tr.position = subtract(tr.position, scale(right, speed * event.dt))
         end
         cam.update=true
     end
 
-    if event.mouseMoved then
+    -- Rotation caméra : UNIQUEMENT si clic droit + mouvement souris
+    if rightMousePressed and event.mouseMoved then
         cam.yaw   = cam.yaw   + event.mouseDeltaX * sensitivity
         cam.pitch = cam.pitch + event.mouseDeltaY * sensitivity
+        
+        -- Clamp pitch
         if cam.pitch > 89.0 then cam.pitch = 89.0 end
         if cam.pitch < -89.0 then cam.pitch = -89.0 end
 
+        -- Recalculer la direction
         local dir = {
             math.cos(math.rad(cam.yaw)) * math.cos(math.rad(cam.pitch)),
             math.sin(math.rad(cam.pitch)),
@@ -85,7 +97,13 @@ function onInput(event)
         cam.update=true
     end
 
+    -- Scroll : zoom (déplacement sur Z)
     if scrollY ~= 0 then
-        tr.position = add(tr.position, {0,0,-scrollY*0.5})
+        tr.position = add(tr.position, scale(forward, -scrollY * 0.5))
+    end
+
+    -- Modifier sensibilité avec scroll + clic droit (optionnel)
+    if rightMousePressed and scrollY ~= 0 then
+        sensitivity = sensitivity + scrollY * 0.01
     end
 end

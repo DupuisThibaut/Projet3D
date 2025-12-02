@@ -8,11 +8,12 @@
 #include "../Components/LightComponent.h"
 #include "../Components/ControllerComponent.h"
 #include "../Components/MyAudioComponent.h"
-#include "../Components/TagConponent.h"
+#include "../Components/TagComponent.h"
 #include "../Components/LayerComponent.h"
 #include "../Components/InputEvent.h"
 #include "../Systems/EntityManager.h"
 #include "../Systems/Dispatcher.h"
+#include "../Systems/SceneManager.h"
 
 #include <iostream>
 #include <filesystem>
@@ -26,8 +27,10 @@ extern "C" {
 #include "lualib.h"
 }
 
-struct ScriptSystem {
+class ScriptSystem {
+public:
     EntityManager* entityManager = nullptr;
+    SceneManager* sceneManager = nullptr;
     std::unordered_map<uint32_t, LuaScriptComponent*> luaScripts;
     Dispatcher* dispatcher = nullptr;
     std::vector<Entity>* entities = nullptr;
@@ -131,6 +134,25 @@ struct ScriptSystem {
 
     void registerEntityManager(EntityManager* em) {
         entityManager = em;
+    }
+
+    void registerSceneManager(SceneManager* sm) {
+        sceneManager = sm;
+    }
+
+    // Shutdown all scripts known to the ScriptSystem and clear registry
+    void onSceneReset() {
+        for (auto &kv : luaScripts) {
+            LuaScriptComponent* s = kv.second;
+            if (s) {
+                if (s->L) {
+                    lua_close(s->L);
+                    s->L = nullptr;
+                }
+                s->initialized = false;
+            }
+        }
+        luaScripts.clear();
     }
 
     // Helper: push a vec3 as a Lua table with [1],[2],[3] indices
@@ -248,7 +270,7 @@ private:
             lua_setfield(L, -2, "__newindex");
         } else { lua_pop(L,1); }
 
-        //CameraMetaTable
+        // CameraMetaTable
         if (luaL_newmetatable(L, "CameraMetaTable")) {
             lua_pushcfunction(L, [](lua_State* s)->int {
                 CameraComponent* c = *(CameraComponent**)lua_touserdata(s,1);
@@ -596,6 +618,18 @@ private:
         return 1;
     }
 
+    static int lua_change_scene(lua_State* L) {
+        lua_getfield(L, LUA_REGISTRYINDEX, REGISTRY_SCRIPTSYS_KEY);
+        ScriptSystem* sys = (ScriptSystem*)lua_touserdata(L, -1);
+        lua_pop(L, 1);
+        if (!sys || !sys->sceneManager) return 0;
+        const char* path = luaL_checkstring(L, 1);
+        if (!path) return 0;
+        std::string fullPath = path;
+        sys->sceneManager->requestChangeScene(fullPath);
+        return 0;
+    }
+
 public:
     void initScript(LuaScriptComponent& script, uint32_t entityId) {
         script.L = luaL_newstate(); luaL_openlibs(script.L);
@@ -605,11 +639,6 @@ public:
 
         // ensure metatables exist before running the script
         ensureComponentMetatables(script.L);
-
-        if (luaL_dofile(script.L, script.luaScriptPath.c_str()) != LUA_OK) { std::cerr << "Erreur Lua : " << lua_tostring(script.L, -1) << std::endl; return; }
-
-        // Build 'this' table for the script's entity
-        pushEntityTable(script.L, this, entityId); lua_setglobal(script.L, "this");
 
         // Register utility globals
         lua_pushcfunction(script.L, lua_get_entity); lua_setglobal(script.L, "get_entity");
@@ -621,6 +650,12 @@ public:
         lua_pushcfunction(script.L, lua_add_component); lua_setglobal(script.L, "add_component");
         lua_pushcfunction(script.L, lua_set_global); lua_setglobal(script.L, "set_global");
         lua_pushcfunction(script.L, lua_get_global); lua_setglobal(script.L, "get_global");
+        lua_pushcfunction(script.L, lua_change_scene); lua_setglobal(script.L, "change_scene");
+        if (luaL_dofile(script.L, script.luaScriptPath.c_str()) != LUA_OK) { std::cerr << "Erreur Lua : " << lua_tostring(script.L, -1) << std::endl; return; }
+
+        // Build 'this' table for the script's entity
+        pushEntityTable(script.L, this, entityId); lua_setglobal(script.L, "this");
+
 
         // Call onInit if present
         lua_getglobal(script.L, "onInit");

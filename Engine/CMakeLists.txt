@@ -6,15 +6,43 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(OpenGL REQUIRED)
 
+# ════════════════════════════════════════════════════════════════
+#  OPTIMISATIONS DE COMPILATION
+# ════════════════════════════════════════════════════════════════
+
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
+if(CMAKE_BUILD_TYPE MATCHES Release)
+    message(STATUS "Release mode: optimizations enabled")
+    if(NOT MSVC)
+        add_compile_options(
+            -O3
+            -ffast-math
+            -march=native
+            -mtune=native
+            -funroll-loops
+        )
+    endif()
+endif()
+
+# ════════════════════════════════════════════════════════════════
+#  GLM OPTIMIZATIONS
+# ════════════════════════════════════════════════════════════════
+
+add_compile_definitions(
+    GLM_FORCE_INLINE
+    GLM_FORCE_INTRINSICS
+    GLM_FORCE_ALIGNED_GENTYPES
+    GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
+)
 # Vérifications de sécurité
 if(CMAKE_BINARY_DIR STREQUAL CMAKE_SOURCE_DIR)
     message(FATAL_ERROR "Veuillez choisir un répertoire de build séparé (par ex : build/)")
 endif()
 if(CMAKE_SOURCE_DIR MATCHES " ")
     message(WARNING "Votre répertoire source contient des espaces. Cela peut poser problème lors de la compilation.")
-endif()
-if(CMAKE_BINARY_DIR MATCHES " ")
-    message(WARNING "Votre répertoire de build contient des espaces. Cela peut poser problème lors de la compilation.")
 endif()
 
 include(FetchContent)
@@ -27,6 +55,69 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(lua)
 
+# --- IMGUI ---
+FetchContent_Declare(
+    imgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG v1.89.9
+)
+FetchContent_MakeAvailable(imgui)
+# ImGui n'a pas de CMakeLists.txt, donc on crée une bibliothèque manuellement
+set(IMGUI_DIR ${imgui_SOURCE_DIR})
+
+add_library(imgui STATIC
+    # Core ImGui
+    ${IMGUI_DIR}/imgui.cpp
+    ${IMGUI_DIR}/imgui_draw.cpp
+    ${IMGUI_DIR}/imgui_tables.cpp
+    ${IMGUI_DIR}/imgui_widgets.cpp
+    ${IMGUI_DIR}/imgui_demo.cpp
+    
+    # Backends GLFW + OpenGL3
+    ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
+    ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
+)
+
+target_include_directories(imgui PUBLIC
+    ${IMGUI_DIR}
+    ${IMGUI_DIR}/backends
+)
+
+# ✅ Force l'utilisation de GLFW 3.1.2 locale
+target_include_directories(imgui PRIVATE
+    ${CMAKE_SOURCE_DIR}/external/glfw-3.1.2/include
+)
+
+target_link_libraries(imgui PUBLIC
+    glfw
+    ${OPENGL_LIBRARY}
+)
+
+# ✅ AJOUT : Définitions pour ImGui + macOS
+target_compile_definitions(imgui PUBLIC
+    IMGUI_IMPL_OPENGL_LOADER_GLEW
+)
+
+# ✅ Définit la plateforme automatiquement
+if(APPLE)
+    target_compile_definitions(imgui PRIVATE
+        GLFW_EXPOSE_NATIVE_COCOA
+        GLFW_EXPOSE_NATIVE_NSGL
+    )
+elseif(WIN32)
+    target_compile_definitions(imgui PRIVATE
+        GLFW_EXPOSE_NATIVE_WIN32
+        GLFW_EXPOSE_NATIVE_WGL
+    )
+elseif(UNIX)
+    target_compile_definitions(imgui PRIVATE
+        GLFW_EXPOSE_NATIVE_X11
+        GLFW_EXPOSE_NATIVE_GLX
+    )
+endif()
+
+message(STATUS "✅ ImGui will be downloaded and built automatically")
+
 # --- Dépendances externes ---
 add_subdirectory(external)
 
@@ -35,6 +126,8 @@ include_directories(
     external/glm-0.9.7.1/
     external/glew-1.13.0/include/
     ${lua_SOURCE_DIR}
+    ${IMGUI_DIR}
+    ${IMGUI_DIR}/backends
     .
 )
 
@@ -43,6 +136,7 @@ set(ALL_LIBS
     ${OPENGL_LIBRARY}
     glfw
     GLEW_1130
+    imgui
 )
 
 # Définitions globales
@@ -111,10 +205,10 @@ add_executable(Engine
     common/vboindexer.cpp
     common/vboindexer.hpp
     common/stb_image.h
-    common/stb_truetype.h
-    common/stb_truetype.cpp
     common/Mesh.h
     common/Mesh.cpp
+    common/stb_truetype.h
+    common/stb_truetype.cpp
     Shaders/vertex_shader.glsl
     Shaders/fragment_shader.glsl
     Shaders/vertex.glsl
