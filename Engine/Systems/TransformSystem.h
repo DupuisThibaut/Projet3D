@@ -40,9 +40,7 @@ public:
                 collider.normal = glm::normalize(glm::mat3(glm::quat(glm::radians(transform.rotation))) * glm::vec3(0.0f, 1.0f, 0.0f));
                 collider.distance = glm::dot(collider.normal, transform.position);
             } else if(t.type == ColliderType::MESH) {
-                auto& collider = static_cast<MeshCollider&>(*t.collider);
-                auto& transform = entityManager->GetComponent<TransformComponent>(id);
-                //UpdateMeshTransform(collider, transform.worldMatrix);
+                
             }
         }
     }

@@ -214,8 +214,16 @@ void StartSystems(GLuint programID){
     input.setScriptSystem(&scriptSystem);
     input.setRenderSystem(renderSystem);
     physicSystem = new PhysicSystem(&entityManager);
+    // Système audio
+     std::cout << "--- Initializing Audio System... ---" << std::endl;
+    for(const auto& [id, audioComp] : entityManager.GetComponents<MyAudioComponent>()){
+        MyAudioComponent& comp = entityManager.GetComponent<MyAudioComponent>(id);
+        audioSystem.addAudio(id, comp);
+        std::cout << "Audio component loaded for entity " << id << std::endl;
+    }
+    std::cout << "--- Audio System initialized. ---" << std::endl;
+    
     std::cout << "--- Systems initialized. ---" << std::endl;
-
 }
 
 void loadScene(){
@@ -369,7 +377,7 @@ int main( int argc, char* argv[] )
     glfwSetCursorPos(window, SCR_WIDTH/2, SCR_HEIGHT/2);
 
     // Dark blue background
-    glClearColor(0.8f, 0.8f, 0.8f, 0.0f);
+    //glClearColor(0.8f, 0.8f, 0.8f, 0.0f);
 
     // Enable depth test
     glEnable(GL_DEPTH_TEST);
@@ -463,6 +471,12 @@ int main( int argc, char* argv[] )
         if(mode == "-b" || mode2 == "-b"){
             sceneManager.updateBenchmark(deltaTime);
         }
+
+        if(EditorMode){
+            glClearColor(0.15f, 0.15f, 0.15f, 1.0f);
+        } else {
+            glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
+        }
         
         // Clear the screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -514,19 +528,20 @@ int main( int argc, char* argv[] )
 // ════════════════════════════════════════════════════════════════
 //  RENDU DE LA SCÈNE 3D
 // ════════════════════════════════════════════════════════════════
-#if defined(__APPLE__) || defined(MACOSX)
-renderSystem->update(entities);
-#else
-if(mode == "-r" || mode2 == "-r"){
-    rayTracerSystem->update(entities);
-} else {
-    renderSystem->update(entities);
-}
-#endif
-    if(EditorMode){
-        editorSystem->restoreViewport();
-        editorSystem->endFrame();
-    }
+        #if defined(__APPLE__) || defined(MACOSX)
+        renderSystem->update(entities);
+        #else
+        if(mode == "-r" || mode2 == "-r"){
+            rayTracerSystem->update(entities);
+        } else {
+            renderSystem->update(entities);
+        }
+        #endif
+        // ════════════════════════════════════════════════════════════════
+        if(EditorMode){
+            editorSystem->restoreViewport();
+            editorSystem->endFrame();
+        }
         // Swap buffers
         glfwSwapBuffers(window);
         glfwPollEvents();

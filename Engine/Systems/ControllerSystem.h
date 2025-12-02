@@ -41,38 +41,57 @@ public:
         event.mouseDeltaX = 0.0;
         event.mouseDeltaY = 0.0;
         event.mouseMoved = false;
-        // scrollY n’est pas remis à zéro ici, pour que le callback puisse l’ajouter avant lecture
 
-        // Touches
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) event.buttons.push_back("Forward");
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) event.buttons.push_back("Backward");
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) event.buttons.push_back("Left");
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) event.buttons.push_back("Right");
-        if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) event.buttons.push_back("C");
-        if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) event.buttons.push_back("R");
-        if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) event.buttons.push_back("F");
-        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) event.buttons.push_back("LeftMouse");
-
-        // Souris clic droit + mouvement
-        if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS){
-            double xpos, ypos;
-            glfwGetCursorPos(window, &xpos, &ypos);
-            if(!rightMouseDown){
-                rightMouseDown = true;
-                lastMouseX = xpos;
-                lastMouseY = ypos;
-            }
-            event.mouseDeltaX = xpos - lastMouseX;
-            event.mouseDeltaY = lastMouseY - ypos;
-            event.mouseMoved = (event.mouseDeltaX != 0.0 || event.mouseDeltaY != 0.0);
-
-            lastMouseX = xpos;
-            lastMouseY = ypos;
-
-            event.buttons.push_back("RightMouse");
-        } else {
-            rightMouseDown = false;
+        // --- Touches principales (WASD, etc.) ---
+        const std::vector<std::pair<int, std::string>> keyMap = {
+            {GLFW_KEY_W, "Forward"}, {GLFW_KEY_S, "Backward"},
+            {GLFW_KEY_A, "Left"},    {GLFW_KEY_D, "Right"},
+            {GLFW_KEY_C, "C"},       {GLFW_KEY_R, "R"},
+            {GLFW_KEY_F, "F"},       {GLFW_KEY_E, "E"},
+            {GLFW_KEY_Q, "Q"},       {GLFW_KEY_SPACE, "Space"},
+            {GLFW_KEY_LEFT_SHIFT, "Shift"}, {GLFW_KEY_RIGHT_SHIFT, "Shift"},
+            {GLFW_KEY_LEFT_CONTROL, "Ctrl"}, {GLFW_KEY_RIGHT_CONTROL, "Ctrl"},
+            {GLFW_KEY_LEFT_ALT, "Alt"}, {GLFW_KEY_RIGHT_ALT, "Alt"},
+            {GLFW_KEY_TAB, "Tab"},   {GLFW_KEY_ESCAPE, "Escape"},
+            {GLFW_KEY_UP, "Up"},     {GLFW_KEY_DOWN, "Down"},
+            {GLFW_KEY_LEFT, "ArrowLeft"}, {GLFW_KEY_RIGHT, "ArrowRight"}
+        };
+        for(const auto& [key, name] : keyMap){
+            if(glfwGetKey(window, key) == GLFW_PRESS)
+                event.buttons.push_back(name);
         }
+
+        // --- Toutes les touches alphanumériques (A-Z, 0-9) ---
+        for(int k = GLFW_KEY_0; k <= GLFW_KEY_9; ++k)
+            if(glfwGetKey(window, k) == GLFW_PRESS)
+                event.buttons.push_back(std::string(1, '0' + (k - GLFW_KEY_0)));
+        for(int k = GLFW_KEY_A; k <= GLFW_KEY_Z; ++k)
+            if(glfwGetKey(window, k) == GLFW_PRESS)
+                event.buttons.push_back(std::string(1, 'A' + (k - GLFW_KEY_A)));
+
+        // --- Souris boutons ---
+        const std::vector<std::pair<int, std::string>> mouseMap = {
+            {GLFW_MOUSE_BUTTON_LEFT, "LeftMouse"},
+            {GLFW_MOUSE_BUTTON_RIGHT, "RightMouse"},
+            {GLFW_MOUSE_BUTTON_MIDDLE, "MiddleMouse"}
+        };
+        for(const auto& [btn, name] : mouseMap){
+            if(glfwGetMouseButton(window, btn) == GLFW_PRESS)
+                event.buttons.push_back(name);
+        }
+
+        // --- Mouvement souris (toujours détecté, même sans clic) ---
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        event.mouseDeltaX = xpos - lastMouseX;
+        event.mouseDeltaY = lastMouseY - ypos;
+        event.mouseMoved = (event.mouseDeltaX != 0.0 || event.mouseDeltaY != 0.0);
+        lastMouseX = xpos;
+        lastMouseY = ypos;
+
+        // --- Scroll (déjà géré via callback) ---
+
+        // --- Dispatch à tous les scripts abonnés ---
         dispatcher.dispatch(event);
         event.scroll = 0.0; // reset scroll after reading
     }

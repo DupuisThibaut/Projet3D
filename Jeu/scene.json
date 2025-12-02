@@ -2,11 +2,11 @@
   "entities": [
     {
       "audio": {
-        "isPlaying": false,
+        "isPlaying": true,
         "loop": true,
         "path": "./audios/SoundTrack/Super Mario 64 - Main Theme Music - Bob-Omb Battlefield.wav",
-        "play_on_start": false,
-        "type": "MUSIC",
+        "play_on_start": true,
+        "type": "SPATIAL",
         "volume": 1.0
       },
       "id": 0,
@@ -110,7 +110,7 @@
       "rigidbody": {
       },
       "collider": {
-        "type": "AABB",
+        "type": "MESH",
         "size": [
           0.5,
           0.5,

@@ -41,6 +41,21 @@ RayCollider FromPoints(const PointCollider& from, const PointCollider& to){
     return RayCollider(from, Normalized(to - from));
 }
 
+// Raycast Result Structure
+typedef struct RaycastResult{
+    vec3 point;
+    vec3 normal;
+    float t;
+    bool hit;
+} RaycastResult;
+
+void ResetRaycastResult(RaycastResult& result){
+    result.point = vec3(0.0f);
+    result.normal = vec3(0.0f);
+    result.t = -1.0f;
+    result.hit = false;
+}
+
 // -------- Shapes --------
 // -------- Sphere --------
 typedef struct SphereCollider : BaseCollider {
@@ -95,15 +110,9 @@ float PlaneEquation(const PointCollider& point, const PlaneCollider& plane){
 
 // -------- Triangle --------
 typedef struct Triangle{
-    union {
-        struct {
-            PointCollider a;
-            PointCollider b;
-            PointCollider c;
-        };
-        PointCollider points[3];
-        float values[9];
-    };
+    PointCollider a;
+    PointCollider b;
+    PointCollider c;
     inline Triangle() {}
     inline Triangle(const PointCollider& p1, const PointCollider& p2, const PointCollider& p3) : a(p1), b(p2), c(p3) {}
 } Triangle;
@@ -476,6 +485,133 @@ float Raycast(const PlaneCollider& plane, const RayCollider& ray){
     return (t >= 0.0f) ? t : -1.0f;
 }
 
+bool Raycast(const SphereCollider& sphere, const RayCollider& ray, RaycastResult* result){
+    ResetRaycastResult(*result);
+    vec3 e = sphere.position - ray.origin;
+    float rSq = sphere.radius * sphere.radius;
+    float eSq = MagnitudeSq(e);
+    float a = glm::dot(e, ray.direction);
+    float bSq = eSq - a * a;
+    float f = sqrt(rSq - bSq);
+    float t = a - f;
+    if(rSq  - (eSq - a * a) < 0.0f){
+        return false;
+    } else if(eSq < rSq){
+        t = a + f;
+    }
+    if(result != nullptr){
+        result->point = ray.origin + ray.direction * t;
+        result->normal = Normalized(result->point - sphere.position);
+        result->t = t;
+        result->hit = true;
+    }
+    return true;
+}
+
+bool Raycast(const AABBCollider& aabb, const RayCollider& ray, RaycastResult* result){
+    ResetRaycastResult(*result);
+    vec3 min = GetMin(aabb);
+    vec3 max = GetMax(aabb);
+    float t[] = { 0, 0, 0, 0, 0, 0 };
+    // Use CMP function to avoid division by 0!
+    t[0] = (min.x - ray.origin.x) / ray.direction.x;
+    t[1] = (max.x - ray.origin.x) / ray.direction.x;
+    t[2] = (min.y - ray.origin.y) / ray.direction.y;
+    t[3] = (max.y - ray.origin.y) / ray.direction.y;
+    t[4] = (min.z - ray.origin.z) / ray.direction.z;
+    t[5] = (max.z - ray.origin.z) / ray.direction.z;
+    float tmin = fmaxf(fmaxf(fminf(t[0], t[1]), fminf(t[2], t[3])), fminf(t[4], t[5]));
+    float tmax = fminf(fminf(fmaxf(t[0], t[1]), fmaxf(t[2], t[3])), fmaxf(t[4], t[5]));
+    if(tmax < 0.0f || tmin > tmax){
+        return false;
+    }
+    float t_result = (tmin < 0.0f) ? tmax : tmin;
+    if(result != nullptr){
+        result->t = t_result;
+        result->point = ray.origin + ray.direction * t_result;
+        result->hit = true;
+        vec3 normals[] = {
+            vec3(-1, 0, 0), vec3(1, 0, 0),
+            vec3(0, -1, 0), vec3(0, 1, 0),
+            vec3(0, 0, -1), vec3(0, 0, 1)
+        };
+        for(int i = 0; i <6; i++){
+            if(CMP(t[i], t_result)){
+                result->normal = normals[i];
+                break;
+            }
+        }
+    }
+    return true;
+}
+
+bool Raycast(const OBBCollider& obb, const RayCollider& ray, RaycastResult* result){
+    ResetRaycastResult(*result);
+    vec3 X = vec3(obb.oritentation[0][0], obb.oritentation[1][0], obb.oritentation[2][0]);
+    vec3 Y = vec3(obb.oritentation[0][1], obb.oritentation[1][1], obb.oritentation[2][1]);
+    vec3 Z = vec3(obb.oritentation[0][2], obb.oritentation[1][2], obb.oritentation[2][2]);
+    vec3 p = obb.position - ray.origin;
+    vec3 f = vec3(glm::dot(X, ray.direction), glm::dot(Y, ray.direction), glm::dot(Z, ray.direction));
+    vec3 e = vec3(glm::dot(X, p), glm::dot(Y, p), glm::dot(Z, p));
+    float t[6] = {0, 0, 0, 0, 0, 0};
+    for(int i = 0; i < 3; i++){
+        if(CMP(f[i], 0.0f)){
+            if(-e[i] - obb.size[i] > 0.0f || -e[i] + obb.size[i] < 0.0f){
+                return false;
+            }
+            f[i] = 0.00001f; // Avoid division by zero
+        }
+        t[i * 2 + 0] = ( e[i] + obb.size[i]) / f[i]; // t1
+        t[i * 2 + 1] = ( e[i] - obb.size[i]) / f[i]; // t2
+    }
+    float tmin = fmaxf(fmaxf(fminf(t[0], t[1]), fminf(t[2], t[3])), fminf(t[4], t[5]));
+    float tmax = fminf(fminf(fmaxf(t[0], t[1]), fmaxf(t[2], t[3])), fmaxf(t[4], t[5]));
+    if(tmax < 0.0f || tmin > tmax){
+        return false;
+    }
+    float t_result = (tmin < 0.0f) ? tmax : tmin;
+    if(result != nullptr){
+        result->t = t_result;
+        result->point = ray.origin + ray.direction * t_result;
+        result->hit = true;
+        vec3 normals[] = {
+            vec3(-1, 0, 0), vec3(1, 0, 0),
+            vec3(0, -1, 0), vec3(0, 1, 0),
+            vec3(0, 0, -1), vec3(0, 0, 1)
+        };
+        for(int i = 0; i <6; i++){
+            if(CMP(t[i], t_result)){
+                result->normal = normals[i];
+                break;
+            }
+        }
+    }
+    return true;
+}
+
+
+
+
+
+bool Raycast(const PlaneCollider& plane, const RayCollider& ray, RaycastResult* result){
+    ResetRaycastResult(*result);
+    float nd = glm::dot(ray.direction, plane.normal);
+    float pn = glm::dot(ray.origin, plane.normal);
+    if (nd >= 0.0f) { return false; }
+    float t = (plane.distance - pn) / nd;
+    if(t < 0.0f){
+        return false;
+    }
+    if(result != nullptr){
+        result->point = ray.origin + ray.direction * t;
+        result->normal = plane.normal;
+        result->t = t;
+        result->hit = true;
+    }
+    return true;
+}
+
+
 // -- Line tests --
 //Sphere
 bool Linetest(const SphereCollider& sphere, const LineCollider& line){
@@ -488,16 +624,24 @@ bool Linetest(const SphereCollider& sphere, const LineCollider& line){
 bool Linetest(const AABBCollider& aabb, const LineCollider& line){
     RayCollider ray(line.start, line.end - line.start);
     ray.NormalizedDirection();
-    float t = Raycast(aabb, ray);
-    return (t >= 0.0f && t * t <= LengthSq(line));
+    RaycastResult raycast;
+    if (!Raycast(aabb, ray, &raycast)) {
+        return false;
+    }
+    float t = raycast.t;
+    return t >= 0 && t * t <= LengthSq(line);
 }
 
 // OBB
 bool Linetest(const OBBCollider& obb, const LineCollider& line){
     RayCollider ray(line.start, line.end - line.start);
     ray.NormalizedDirection();
-    float t = Raycast(obb, ray);
-    return (t >= 0.0f && t * t <= LengthSq(line));
+    RaycastResult raycast;
+    if (!Raycast(obb, ray, &raycast)) {
+        return false;
+    }
+    float t = raycast.t;
+    return t >= 0 && t * t <= LengthSq(line);
 }
 
 // Plane
@@ -556,9 +700,10 @@ bool TriangleSphere(const Triangle& t, const SphereCollider& sphere){
 // Triangle-AABB
 Interval GetInterval(const Triangle& tri, const vec3& axis){
     Interval result;
-    result.min = result.max = glm::dot(axis, tri.points[0]);
+    result.min = result.max = glm::dot(axis, tri.a);
+    std::vector<PointCollider> points = {tri.a, tri.b, tri.c};
     for(int i = 1; i < 3; i++){
-        float projection = glm::dot(axis, tri.points[i]);
+        float projection = glm::dot(axis, points[i]);
         result.min = (projection<result.min)?projection :result.min;
         result.max = (projection>result.max)?projection :result.max;
     }   
@@ -696,11 +841,38 @@ float Raycast(const Triangle& triangle, const RayCollider& ray){
     }
     return -1.0f;
 }
+bool Raycast(const Triangle& triangle, const RayCollider& ray, RaycastResult* result){
+    ResetRaycastResult(*result);
+    PlaneCollider plane = FromTriangle(triangle);
+    RaycastResult planeResult;
+    if(!Raycast(plane, ray, &planeResult)){
+        return false;
+    }
+    float t = planeResult.t;
+    PointCollider p = ray.origin + ray.direction * t;
+    vec3 barycentric = Barycentric(p, triangle);
+    if(barycentric.x >= 0.0f && barycentric.y >= 0.0f && barycentric.z >= 0.0f &&
+       barycentric.x <= 1.0f && barycentric.y <= 1.0f && barycentric.z <= 1.0f){
+        if(result != nullptr){
+            result->point = p;
+            result->normal = plane.normal;
+            result->t = t;
+            result->hit = true;
+        }
+        return true;
+    }
+    return false;
+}
 //Linetest Triangle
 bool Linetest(const Triangle& triangle, const LineCollider& line){
-    RayCollider ray(line.start, Normalized(line.end - line.start));
-    float t = Raycast(triangle, ray);
-    return (t >= 0.0f && t * t <= LengthSq(line));
+    RayCollider ray(line.start, line.end - line.start);
+    ray.NormalizedDirection();
+    RaycastResult raycast;
+    if (!Raycast(triangle, ray, &raycast)) {
+        return false;
+    }
+    float t = raycast.t;
+    return t >= 0 && t * t <= LengthSq(line);
 }
 //BVH
 typedef struct BVHNode {
@@ -824,10 +996,11 @@ void UpdateMeshTransform(MeshCollider& mesh, const glm::mat4& transform) {
 //Mesh operations
 float MeshRay(const MeshCollider& mesh, const RayCollider& ray){
     if(mesh.accelerator == nullptr){
-        for(int i = 0; i < mesh.numTriangles; i++){
-            float t = Raycast(mesh.triangles[i], ray);
-            if(t >= 0.0f){
-                return t;
+        for(int i=0; i<mesh.numTriangles; i++){
+            RaycastResult raycast;
+            Raycast(mesh.triangles[i], ray, &raycast);
+            if(raycast.t >= 0.0f){
+                return raycast.t;
             }
         }
     } else {
@@ -838,9 +1011,10 @@ float MeshRay(const MeshCollider& mesh, const RayCollider& ray){
             toProcess.erase(toProcess.begin());
             if(iterator->numTriangles >=0){
                 for(int i = 0; i < iterator->numTriangles; i++){
-                    float t = Raycast(mesh.triangles[iterator->triangles[i]], ray);
-                    if(t >= 0.0f){
-                        return t;
+                    RaycastResult raycast;
+                    Raycast(mesh.triangles[iterator->triangles[i]], ray, &raycast);
+                    if(raycast.t >= 0.0f){
+                        return raycast.t;
                     }
                 }
             }
@@ -918,6 +1092,7 @@ bool SphereMesh(const SphereCollider& s, const MeshCollider& m){
             }
         }
     }
+    return false;
 }
 #define MeshSphere(mesh, sphere) SphereMesh(sphere, mesh)
 bool OBBMesh(const OBBCollider& obb, const MeshCollider& mesh){
@@ -1067,4 +1242,52 @@ bool MeshMesh(const MeshCollider& m1, const MeshCollider& m2){
     }
     return false;
 }
-#endif
+
+
+bool MeshRay(const MeshCollider& mesh, const RayCollider& ray, RaycastResult* result){
+    ResetRaycastResult(*result);
+    bool hit = false;
+    if(mesh.accelerator == nullptr){
+        for(int i = 0; i < mesh.numTriangles; i++){
+            RaycastResult tempResult;
+            if(Raycast(mesh.triangles[i], ray, &tempResult)){
+                if(!hit || tempResult.t < result->t){
+                    *result = tempResult;
+                    hit = true;
+                }
+            }
+        }
+    } else {
+        std::list<BVHNode*> toProcess;
+        toProcess.push_front(mesh.accelerator);
+        while(!toProcess.empty()){
+            BVHNode* iterator = *(toProcess.begin());
+            toProcess.erase(toProcess.begin());
+            if(iterator->numTriangles >=0){
+                for(int i = 0; i < iterator->numTriangles; i++){
+                    RaycastResult tempResult;
+                    if(Raycast(mesh.triangles[iterator->triangles[i]], ray, &tempResult)){
+                        if(!hit || tempResult.t < result->t){
+                            *result = tempResult;
+                            hit = true;
+                        }
+                    }
+                }
+            }
+            if(iterator->children != nullptr){
+                for(int i = 0; i < 8; i++){
+                    float t = Raycast(iterator->children[i].bounds, ray);
+                    if(t >= 0.0f){
+                        toProcess.push_front(&iterator->children[i]);
+                    }
+                }
+            }
+        }   
+    }
+    return hit;
+}
+
+
+
+
+#endif // GEOMETRY3D_H

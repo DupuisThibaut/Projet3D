@@ -64,10 +64,9 @@ public:
             ma_sound_set_spatialization_enabled(comp.sound, MA_FALSE);
         } else if (comp.type == AudioType::SPATIAL) {
             ma_sound_set_spatialization_enabled(comp.sound, MA_TRUE);
-            ma_sound_set_min_distance(comp.sound, 0.01f);
-            ma_sound_set_max_distance(comp.sound, 5.0f);
+            ma_sound_set_min_distance(comp.sound, 1.0f);
+            ma_sound_set_max_distance(comp.sound, 100.0f);
             ma_sound_set_rolloff(comp.sound, 1.0f);
-            ma_sound_set_attenuation_model(comp.sound, ma_attenuation_model_inverse);
         }
         if (comp.playOnStart) {
             ma_sound_start(comp.sound);
