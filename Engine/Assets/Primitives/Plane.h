@@ -22,7 +22,7 @@ public:
             m_centre=centre;
             m_right_vector = rightVector;
             m_up_vector = upVector;
-            m_normal = glm::normalize(glm::cross(rightVector , upVector));
+            m_normal = glm::normalize(glm::cross(upVector , rightVector));
             m_bottom_left = bottomLeft;
     }
 
@@ -46,6 +46,7 @@ public:
 
         glm::vec3 rightDir = m_right_vector;
         glm::vec3 upDir = m_up_vector;
+        glm::vec3 normal = m_normal;
 
         // normalize directions but keep orientation
         if (glm::length(rightDir) > 0.0f) rightDir = glm::normalize(rightDir);
@@ -53,7 +54,7 @@ public:
 
         // originBase is computed so that the plane is centered at (0,0,0)
         // m_bottom_left is interpreted as the plane center by default; we offset to get bottom-left.
-        glm::vec3 originBase = m_bottom_left - rightDir * (width * 0.5f) - upDir * (height * 0.5f);
+        glm::vec3 originBase = - rightDir * (width * 0.5f) - upDir * (height * 0.5f);
 
         glm::vec3 rightStep = rightDir * (width);
         glm::vec3 upStep = upDir * (height);
@@ -65,7 +66,7 @@ public:
                 float u = (nx == 0) ? 0.0f : float(i) / float(nx);
                 glm::vec3 pos = originBase + rightStep * u + upStep * v;
                 outVertices.push_back(pos);
-                outNormals.push_back(glm::normalize(m_normal));
+                outNormals.push_back(normal);
                 float uu = glm::mix(uMin, uMax, u);
                 float vv = glm::mix(vMin, vMax, v);
                 outUVs.push_back(glm::vec2(uu, vv));
@@ -83,16 +84,16 @@ public:
 
                 // two triangles: (v0, v1, v3) and (v0, v3, v2)
                 outIndices.push_back(v0);
-                outIndices.push_back(v1);
                 outIndices.push_back(v3);
+                outIndices.push_back(v1);
 
                 outIndices.push_back(v0);
-                outIndices.push_back(v3);
                 outIndices.push_back(v2);
+                outIndices.push_back(v3);
 
                 if (outTriangles) {
-                    outTriangles->push_back(std::vector<unsigned short>{v0, v1, v3});
-                    outTriangles->push_back(std::vector<unsigned short>{v0, v3, v2});
+                   outTriangles->push_back(std::vector<unsigned short>{v0, v3, v1});
+                   outTriangles->push_back(std::vector<unsigned short>{v0, v2, v3});
                 }
             }
         }

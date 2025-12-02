@@ -4,7 +4,7 @@
       "id": 0,
       "transform": {
         "position": [0, -9.5, 0.0],
-        "rotation": [-90.0, 0.0, 0.0],
+        "rotation": [0.0, 0.0, 0.0],
         "scale": [10.0, 10.0, 10.0],
         "parent": -1,
         "children": []

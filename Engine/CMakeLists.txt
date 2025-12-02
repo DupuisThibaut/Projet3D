@@ -116,7 +116,41 @@ elseif(UNIX)
     )
 endif()
 
-message(STATUS "✅ ImGui will be downloaded and built automatically")
+message(STATUS "ImGui will be downloaded and built automatically")
+
+# ════════════════════════════════════════════════════════════════
+#  ASSIMP CONFIGURATION
+# ════════════════════════════════════════════════════════════════
+
+# Options pour désactiver les fonctionnalités inutiles d'Assimp
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_NO_EXPORT ON CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF CACHE BOOL "" FORCE)
+
+# Active uniquement les importers nécessaires
+set(ASSIMP_BUILD_OBJ_IMPORTER ON CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_COLLADA_IMPORTER ON CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_FBX_IMPORTER ON CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_GLTF_IMPORTER ON CACHE BOOL "" FORCE)
+
+# Compilation statique d'Assimp
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libs" FORCE)
+set(ASSIMP_BUILD_STATIC_LIB ON CACHE BOOL "" FORCE)
+
+# Désactive les warnings Assimp
+if(NOT MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
+endif()
+
+FetchContent_Declare(
+    assimp
+    GIT_REPOSITORY https://github.com/assimp/assimp.git
+    GIT_TAG v5.3.1
+)
+FetchContent_MakeAvailable(assimp)
+
+message(STATUS "Assimp will be downloaded and built automatically")
 
 # --- Dépendances externes ---
 add_subdirectory(external)

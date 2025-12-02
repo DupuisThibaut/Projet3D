@@ -226,7 +226,7 @@ struct MeshComponent {
             m_bottom_left=glm::vec3(-0.5,0,-0.5);
             m_right_vector=right_vector;
             m_up_vector=up_vector;
-            Plane plane(centre, right_vector, up_vector, m_bottom_left);
+            Plane plane(centre, right_vector, up_vector, glm::vec3(0,0,0));
             plane.createGridMesh(subdivisions, subdivisions, vertices, normals, uvs, indices);
         }
         else if (primitiveType == "SPHERE"){
