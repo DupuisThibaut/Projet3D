@@ -94,29 +94,40 @@ struct MaterialComponent {
     }
 
     void loadFromFile(const nlohmann::json& entityData, uint32_t entityId, const std::string& gameFolder) {
-        if(entityData["entities"][entityId].contains("material")){
-            if( entityData["entities"][entityId]["material"].contains("type")){
-                if (entityData["entities"][entityId]["material"]["type"] == "texture") {
-                    std::string texturePath = entityData["entities"][entityId]["material"]["path"].get<std::string>();
+        if(entityData.contains("material")){
+            if( entityData["material"].contains("type")){
+                if (entityData["material"]["type"] == "texture") {
+                    std::string texturePath = entityData["material"]["path"].get<std::string>();
                     setTexture(gameFolder + "/" + texturePath);
                     if (!loadTexture()) {
                         std::cerr << "Erreur de changement de la texture pour entity ID : " << entityId << std::endl;
                     }
-                } else if (entityData["entities"][entityId]["material"]["type"] == "color") {
-                    glm::vec3 color = glm::vec3(entityData["entities"][entityId]["material"]["color"][0],
-                                                entityData["entities"][entityId]["material"]["color"][1],
-                                                entityData["entities"][entityId]["material"]["color"][2]);
-                    glm::vec3 ambient=glm::vec3(entityData["entities"][entityId]["material"]["ambient"][0],
-                                                entityData["entities"][entityId]["material"]["ambient"][1],
-                                                entityData["entities"][entityId]["material"]["ambient"][2]);
-                    glm::vec3 diffuse=glm::vec3(entityData["entities"][entityId]["material"]["diffuse"][0],
-                                                entityData["entities"][entityId]["material"]["diffuse"][1],
-                                                entityData["entities"][entityId]["material"]["diffuse"][2]);
-                    glm::vec3 specular=glm::vec3(entityData["entities"][entityId]["material"]["specular"][0],
-                                                 entityData["entities"][entityId]["material"]["specular"][1],
-                                                 entityData["entities"][entityId]["material"]["specular"][2]);
-                    float shininess=entityData["entities"][entityId]["material"]["shininess"];
+                } else if (entityData["material"]["type"] == "color") {
+                    glm::vec3 color = glm::vec3(entityData["material"]["color"][0],
+                                                entityData["material"]["color"][1],
+                                                entityData["material"]["color"][2]);
+                    glm::vec3 ambient=glm::vec3(entityData["material"]["ambient"][0],
+                                                entityData["material"]["ambient"][1],
+                                                entityData["material"]["ambient"][2]);
+                    // std::cout<<"ambient_material x : "<<ambient[0]<<" ambient_material y : "<<ambient[1]<<" ambient_material z : "<<ambient[2]<<std::endl;
+                    glm::vec3 diffuse=glm::vec3(entityData["material"]["diffuse"][0],
+                                                entityData["material"]["diffuse"][1],
+                                                entityData["material"]["diffuse"][2]);
+                    glm::vec3 specular=glm::vec3(entityData["material"]["specular"][0],
+                                                entityData["material"]["specular"][1],
+                                                entityData["material"]["specular"][2]);
+                    float shininess=entityData["material"]["shininess"];
                     setColor(color,ambient,diffuse,specular,shininess);
+                    if( entityData["material"].contains("path")){
+                        std::string texturePath = gameFolder + "/" + entityData["material"]["path"].get<std::string>();
+                        setTexture(texturePath);
+                    }
+                    if( entityData["material"].contains("reflection")){
+                        particularite=1;
+                    }
+                    if( entityData["material"].contains("refraction")){
+                        particularite=2;
+                    }
                 } else {
                     // Default material
                     setColor(glm::vec3(1.0f, 1.0f, 1.0f),glm::vec3(1.0f, 1.0f, 1.0f),glm::vec3(1.0f, 1.0f, 1.0f),glm::vec3(1.0f, 1.0f, 1.0f),1.0f);

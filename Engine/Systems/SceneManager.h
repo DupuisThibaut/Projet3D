@@ -103,9 +103,10 @@ public:
             }
             if(entityData.contains("material")){
                 MaterialComponent mat;
-                mat.loadFromFile(sceneData, e.id, gameFolder);
+                mat.loadFromFile(entityData, e.id, gameFolder);
                 entityManager->AddComponent<MaterialComponent>(e.id, mat);
             }
+            std::cout << "Entity " << e.id << " loaded." << std::endl;
             if(entityData.contains("camera")){
                 CameraComponent cam;
                 cam.loadFromFile(sceneData, e.id, width, height);
@@ -126,6 +127,7 @@ public:
                 audio.loadFromFile(sceneData, e.id, gameFolder);
                 entityManager->AddComponent<MyAudioComponent>(e.id, audio);
             }
+            std::cout << "Finished loading entity " << e.id << std::endl;
             if(entityData.contains("tag")){
                 TagComponent tag;
                 tag.loadFromFile(sceneData, e.id);
@@ -153,6 +155,12 @@ public:
                 std::cout << "Collider pointer for entity " << e.id << " : "
                           << (entityManager->GetComponent<ColliderComponent>(e.id).collider != nullptr) << std::endl;
             }
+            if(entityData.contains("texture")){
+                TextureComponent texture;
+                texture.loadFromFile(entityData, e.id, gameFolder);
+                entityManager->AddComponent<TextureComponent>(e.id, texture);
+            }
+            
             
         }
     }
