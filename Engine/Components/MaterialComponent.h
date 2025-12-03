@@ -6,6 +6,10 @@
 #include <string>
 #include <iostream>
 #include <common/stb_image.h>
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+#include <assimp/material.h>
 
 
 struct MaterialComponent {
@@ -57,6 +61,33 @@ struct MaterialComponent {
         return true;
     }
 
+    bool loadTextureFromAssimp(const std::string& fbxPath) {
+        Assimp::Importer importer;
+        const aiScene* scene = importer.ReadFile(fbxPath,
+            aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_JoinIdenticalVertices);
+
+        if (!scene || !scene->HasMeshes()) {
+            std::cerr << "MaterialComponent: failed to load FBX file: " << fbxPath << std::endl;
+            return false;
+        }
+
+        const aiMesh* mesh = scene->mMeshes[0]; // Prend le premier mesh
+        const aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+
+        aiString texPath;
+        if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texPath) == AI_SUCCESS) {
+            std::string textureFile = texPath.C_Str();
+            std::string folder = fbxPath.substr(0, fbxPath.find_last_of("/\\"));
+            std::string fullTexPath = folder + "/" + textureFile;
+            std::replace(fullTexPath.begin(), fullTexPath.end(), '\\', '/');
+             std::cout << "Full texture path: " << fullTexPath << std::endl;
+            setTexture(fullTexPath);
+            return loadTexture();
+        }
+        std::cerr << "MaterialComponent: aucune texture diffuse trouvée dans le FBX." << std::endl;
+        return false;
+    }
+
     void setColor(const glm::vec3& col, const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular, float shini) {
         type = Type::Color;
         color = col;
@@ -94,13 +125,29 @@ struct MaterialComponent {
     }
 
     void loadFromFile(const nlohmann::json& entityData, uint32_t entityId, const std::string& gameFolder) {
+        bool isFBX = false;
+        std::string meshPath;
+        if(entityData.contains("mesh") && entityData["mesh"].contains("type") && entityData["mesh"]["type"] == "file") {
+            meshPath = gameFolder + "/" + entityData["mesh"]["path"].get<std::string>();
+            std::string ext = meshPath.substr(meshPath.find_last_of('.') + 1);
+            if (ext == "fbx" || ext == "FBX") {
+                isFBX = true;
+            }
+        }
         if(entityData.contains("material")){
             if( entityData["material"].contains("type")){
                 if (entityData["material"]["type"] == "texture") {
-                    std::string texturePath = entityData["material"]["path"].get<std::string>();
-                    setTexture(gameFolder + "/" + texturePath);
-                    if (!loadTexture()) {
-                        std::cerr << "Erreur de changement de la texture pour entity ID : " << entityId << std::endl;
+                    bool t=false;
+                    if(isFBX){
+                        t = loadTextureFromAssimp(meshPath);
+                    } 
+                    if( entityData["material"].contains("path") && t == false){
+                        std::string texturePath = entityData["material"]["path"].get<std::string>();
+                        setTexture(gameFolder + "/" + texturePath);
+                        if (!loadTexture()) {
+                            std::cerr << "Erreur de changement de la texture pour entity ID : " << entityId << std::endl;
+                        }
+                        std::cout << "Texture chargée ID : " << texture<< std::endl;
                     }
                 } else if (entityData["material"]["type"] == "color") {
                     glm::vec3 color = glm::vec3(entityData["material"]["color"][0],

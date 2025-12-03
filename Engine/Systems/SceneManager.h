@@ -28,6 +28,9 @@ struct TagComponent;
 struct LayerComponent;
 struct RigidBodyComponent;
 struct LuaScriptComponent;
+struct ColliderComponent;
+struct TextureComponent;
+struct AnimationComponent;
 
 class SceneManager
 {
@@ -165,8 +168,11 @@ public:
                 particule.loadFromFile(entityData, e.id, gameFolder);
                 entityManager->AddComponent<ParticuleComponent>(e.id, particule);
             }
-            
-            
+            if(entityData.contains("animation")){
+                AnimationComponent animation;
+                animation.loadFromJson(entityData, gameFolder);
+                entityManager->AddComponent<AnimationComponent>(e.id, animation);
+            }
         }
     }
 

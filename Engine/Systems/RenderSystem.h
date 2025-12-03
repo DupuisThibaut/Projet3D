@@ -2,62 +2,6 @@
 #define RENDERSYSTEM_H
 #include <unordered_map>
 
-struct Frustum {
-    glm::vec4 planes[6];
-};
-
-Frustum extractFrustum(const glm::mat4& vpMatrix) {
-    Frustum frustum;
-    // left
-    frustum.planes[0] = glm::vec4(
-        vpMatrix[0][3] + vpMatrix[0][0],
-        vpMatrix[1][3] + vpMatrix[1][0],
-        vpMatrix[2][3] + vpMatrix[2][0],
-        vpMatrix[3][3] + vpMatrix[3][0]
-    );
-    // right
-    frustum.planes[1] = glm::vec4(
-        vpMatrix[0][3] - vpMatrix[0][0],
-        vpMatrix[1][3] - vpMatrix[1][0],
-        vpMatrix[2][3] - vpMatrix[2][0],
-        vpMatrix[3][3] - vpMatrix[3][0]
-    );
-    // bottom
-    frustum.planes[2] = glm::vec4(
-        vpMatrix[0][3] + vpMatrix[0][1],
-        vpMatrix[1][3] + vpMatrix[1][1],
-        vpMatrix[2][3] + vpMatrix[2][1],
-        vpMatrix[3][3] + vpMatrix[3][1]
-    );
-    // top
-    frustum.planes[3] = glm::vec4(
-        vpMatrix[0][3] - vpMatrix[0][1],
-        vpMatrix[1][3] - vpMatrix[1][1],
-        vpMatrix[2][3] - vpMatrix[2][1],
-        vpMatrix[3][3] - vpMatrix[3][1]
-    );
-    // near
-    frustum.planes[4] = glm::vec4(
-        vpMatrix[0][3] + vpMatrix[0][2],
-        vpMatrix[1][3] + vpMatrix[1][2],
-        vpMatrix[2][3] + vpMatrix[2][2],
-        vpMatrix[3][3] + vpMatrix[3][2]
-    );
-    // far
-    frustum.planes[5] = glm::vec4(
-        vpMatrix[0][3] - vpMatrix[0][2],
-        vpMatrix[1][3] - vpMatrix[1][2],
-        vpMatrix[2][3] - vpMatrix[2][2],
-        vpMatrix[3][3] - vpMatrix[3][2]
-    );
-    // Normalisation des plans
-    for (int i = 0; i < 6; i++) {
-        float length = glm::length(glm::vec3(frustum.planes[i]));
-        frustum.planes[i] /= length;
-    }
-    return frustum;
-}
-
 
 class RenderSystem {
 public:
@@ -113,6 +57,16 @@ public:
     }
     void update(const std::vector<Entity>& entities) {
         //debugPrintScene();
+
+        glUseProgram(shaderProgram);
+        for (int i=0;i<nbTextures;i++) {
+            glActiveTexture(GL_TEXTURE0+i);
+            glBindTexture(GL_TEXTURE_2D,textures[i]);
+        }
+        glUniform1iv(glGetUniformLocation(shaderProgram,"textures"),nbTextures,idTextures);
+        glUniform4fv(glGetUniformLocation(shaderProgram,"info"),nbTextures,infoTextures);
+        glUniform1iv(glGetUniformLocation(shaderProgram,"id"),nbTextures,idTextures);
+        glUniform1i(glGetUniformLocation(shaderProgram,"nb"),nbTextures);
         glm::mat4 view;
         glm::mat4 proj;
         for(auto& camera : entityManager->GetComponents<CameraComponent>()){
@@ -126,7 +80,6 @@ public:
             if (projLoc >= 0) glUniformMatrix4fv(projLoc, 1, GL_FALSE, &proj[0][0]);
             glm::mat4 vp = proj * view;
         }
-        Frustum frustum = extractFrustum(proj * view);
         for (const Entity& entity : entities) {
             //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             auto meshIt = entityManager->GetComponents<MeshComponent>().find(entity.id);
@@ -137,9 +90,6 @@ public:
                 const TransformComponent& transform = transformIt->second;
                 const MaterialComponent& material = materialIt->second;
 
-                // if(isSphereInFrustum(frustum, mesh.boundingSphereFrustrumCulling.center + glm::vec3(transform.worldMatrix[3]), mesh.boundingSphereFrustrumCulling.radius * std::max({transform.scale.x, transform.scale.y, transform.scale.z})) == false) {
-                //     continue; 
-                // }
                 glm::mat4 modelMatrix = entityManager->GetComponent<TransformComponent>(entity.id).worldMatrix;
                 glm::mat4 model = modelMatrix;
 
@@ -148,31 +98,40 @@ public:
                 GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
                 glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &model[0][0]);
                 glBindVertexArray(mesh.VAO);
+                GLint isAnimLoc = glGetUniformLocation(shaderProgram, "isAnimated");
+                glUniform1i(isAnimLoc, 0);
+                if (entityManager->HasComponent<AnimationComponent>(entity.id)) {
+                    auto& animComp = entityManager->GetComponent<AnimationComponent>(entity.id);
+                    if (entityManager->GetComponent<AnimationComponent>(entity.id).isPlaying) {
+                        glUniform1i(isAnimLoc, 1);
+                    }
+                    // SSBO with final bone matrices (binding must match shader)
+                    if (animComp.bonesSSBO) {
+                        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, animComp.bonesSSBO); // binding=3
+                        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, animComp.bones.size() * sizeof(glm::mat4), animComp.finalBoneMatrices.data());
+                        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+                    }
+
+                    // Bone IDs attribute (location 5)
+                    if (animComp.boneIDVBO) {
+                        glBindBuffer(GL_ARRAY_BUFFER, animComp.boneIDVBO);
+                        glEnableVertexAttribArray(5);
+                        glVertexAttribIPointer(5, 4, GL_INT, sizeof(glm::ivec4), (void*)0);
+                    }
+
+                    // Bone Weights attribute (location 6)
+                    if (animComp.boneWeightVBO) {
+                        glBindBuffer(GL_ARRAY_BUFFER, animComp.boneWeightVBO);
+                        glEnableVertexAttribArray(6);
+                        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (void*)0);
+                    }
+
+                    // Unbind array buffer to avoid leaking state
+                    glBindBuffer(GL_ARRAY_BUFFER, 0);
+                }
                 glDrawElements(GL_TRIANGLES, mesh.vertexCount, GL_UNSIGNED_SHORT, 0);
-
-
             }
         }
-        
-        glUseProgram(shaderProgram);
-        for (int i=0;i<nbTextures;i++) {
-            glActiveTexture(GL_TEXTURE0+i);
-            glBindTexture(GL_TEXTURE_2D,textures[i]);
-        }
-        glUniform1iv(glGetUniformLocation(shaderProgram,"textures"),nbTextures,idTextures);
-        glUniform4fv(glGetUniformLocation(shaderProgram,"info"),nbTextures,infoTextures);
-        glUniform1iv(glGetUniformLocation(shaderProgram,"id"),nbTextures,idTextures);
-        glUniform1i(glGetUniformLocation(shaderProgram,"nb"),nbTextures);
-    }
-
-    bool isSphereInFrustum(const Frustum& frustum, const glm::vec3& center, float radius) {
-        for (int i = 0; i < 6; i++) {
-            const glm::vec4& plane = frustum.planes[i];
-            if (plane.x * center.x + plane.y * center.y + plane.z * center.z + plane.w <= -radius) {
-                return false;
-            }
-        }
-        return true;
     }
 
     void onInput(const InputEvent& event) {

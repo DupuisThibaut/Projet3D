@@ -7,6 +7,9 @@
 #include <string>
 #include <iostream>
 #include <common/objloader.hpp>
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 enum class PrimitiveType {
     PLANE,
@@ -118,8 +121,16 @@ struct MeshComponent {
                 }
             } else if (entityData["entities"][entityId]["mesh"]["type"] == "file") {
                 std::string meshPath = gameFolder + "/" + entityData["entities"][entityId]["mesh"]["path"].get<std::string>();
-                this->meshFilePath=meshPath;
-                this->load_OFF(meshPath);
+                this->meshFilePath = meshPath;
+                // Récupère l'extension du fichier
+                std::string ext = meshPath.substr(meshPath.find_last_of('.') + 1);
+                if (ext == "off" || ext == "OFF") {
+                    this->load_OFF(meshPath);
+                } else if (ext == "fbx" || ext == "FBX") {
+                    this->loadFBX(meshPath);
+                } else {
+                    std::cerr << "Format de mesh non supporté : " << ext << std::endl;
+                }
             }
         }
     }
@@ -213,6 +224,93 @@ struct MeshComponent {
         glEnableVertexAttribArray(2);
 
         // indices
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned short), indices.data(), GL_STATIC_DRAW);
+
+        glBindVertexArray(0);
+    }
+
+    void loadFBX(const std::string& filename) {
+        Assimp::Importer importer;
+        const aiScene* scene = importer.ReadFile(filename,
+            aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_JoinIdenticalVertices);
+
+        if (!scene || !scene->HasMeshes()) {
+            std::cerr << "Failed to load FBX file: " << filename << std::endl;
+            return;
+        }
+
+        vertices.clear();
+        indices.clear();
+        normals.clear();
+        uvs.clear();
+
+        const aiMesh* mesh = scene->mMeshes[0]; // Charge le premier mesh
+        for (unsigned int i = 0; i < mesh->mNumVertices; ++i) {
+            vertices.push_back(glm::vec3(
+                mesh->mVertices[i].x,
+                mesh->mVertices[i].y,
+                mesh->mVertices[i].z
+            ));
+            if (mesh->HasNormals()) {
+                normals.push_back(glm::vec3(
+                    mesh->mNormals[i].x,
+                    mesh->mNormals[i].y,
+                    mesh->mNormals[i].z
+                ));
+            }
+            if (mesh->HasTextureCoords(0)) {
+                uvs.push_back(glm::vec2(
+                    mesh->mTextureCoords[0][i].x,
+                    mesh->mTextureCoords[0][i].y
+                ));
+            }
+        }
+        for (unsigned int i = 0; i < mesh->mNumFaces; ++i) {
+            const aiFace& face = mesh->mFaces[i];
+            for (unsigned int j = 0; j < face.mNumIndices; ++j) {
+                indices.push_back(face.mIndices[j]);
+            }
+        }
+        triangles.clear();
+        for (unsigned int i = 0; i < mesh->mNumFaces; ++i) {
+            const aiFace& face = mesh->mFaces[i];
+            if (face.mNumIndices == 3) {
+                std::vector<unsigned short> tri = {
+                    static_cast<unsigned short>(face.mIndices[0]),
+                    static_cast<unsigned short>(face.mIndices[1]),
+                    static_cast<unsigned short>(face.mIndices[2])
+                };
+                triangles.push_back(tri);
+            }
+        }
+
+        vertexCount = indices.size();
+
+        // Génère les buffers OpenGL comme dans load_OFF
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+        glGenBuffers(1, &EBO);
+        glGenBuffers(1, &uvVBO);
+        glGenBuffers(1, &normalVBO);
+
+        glBindVertexArray(VAO);
+
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+        glEnableVertexAttribArray(0);
+
+        glBindBuffer(GL_ARRAY_BUFFER, uvVBO);
+        glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(glm::vec2), uvs.data(), GL_STATIC_DRAW);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void*)0);
+        glEnableVertexAttribArray(1);
+
+        glBindBuffer(GL_ARRAY_BUFFER, normalVBO);
+        glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), normals.data(), GL_STATIC_DRAW);
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+        glEnableVertexAttribArray(2);
+
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned short), indices.data(), GL_STATIC_DRAW);
 

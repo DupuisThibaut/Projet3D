@@ -73,6 +73,7 @@ using json = nlohmann::json;
 #include "Components/ColliderComponent.h"
 #include "Components/TextureComponent.h"
 #include "Components/ParticuleComponent.h"
+#include "Components/AnimationComponent.h"
 // Systems
 #include "Systems/EntityManager.h"
 #include "Systems/Dispatcher.h"
@@ -85,6 +86,7 @@ using json = nlohmann::json;
 #include "Systems/RayTracerSystem.h"
 #include "Systems/EditorSystem.h"
 #include "Systems/PhysicSystem.h"
+#include "Systems/AnimationSystem.h"
 #include "Systems/SceneManager.h"
 #include "Systems/ParticuleSystem.h"
 
@@ -127,6 +129,7 @@ PhysicSystem* physicSystem = nullptr;
 TransformSystem* transformSystem = nullptr;
 LightSystem* lightSystem = nullptr;
 RenderSystem* renderSystem = nullptr;
+AnimationSystem* animationSystem = nullptr;
 
 SceneManager sceneManager(&entityManager, &entities);
 
@@ -217,6 +220,16 @@ void StartSystems(GLuint programID){
         std::cout << "Audio component loaded for entity " << id << std::endl;
     }
     std::cout << "--- Audio System initialized. ---" << std::endl;
+    // Système d'animation
+    std::cout << "--- Initializing Animation System... ---" << std::endl;
+    animationSystem = new AnimationSystem(&entityManager);
+    animationSystem->update(0.0f);
+    std::cout << "--- Starting idle animation ---" << std::endl;
+    if (entityManager.HasComponent<AnimationComponent>(1)) {
+        auto& animComp = entityManager.GetComponent<AnimationComponent>(1);
+        animationSystem->PlayClip(animComp, "idle");
+        std::cout << "Started 'idle' animation on entity 1" << std::endl;
+    }
     
     std::cout << "--- Systems initialized. ---" << std::endl;
 }
@@ -225,252 +238,6 @@ void loadScene(){
     sceneManager.gameFolder = gameFolder;
     sceneManager.loadScene(scenePath,SCR_WIDTH,SCR_HEIGHT,EditorMode);
 }
-
-
-// void loadScene(){
-// std::ifstream sceneFile(scenePath);
-//     if (!sceneFile.is_open()) {
-//         std::cerr << "❌ Failed to open scene file: " << scenePath << std::endl;
-//         return;
-//     }
-
-//     sceneData = json::parse(sceneFile);
-
-//     for(const auto& entityData: sceneData["entities"]){
-//         Entity e{entityData["id"]};
-//         entityManager.CreateEntity(e.id);
-//         entities.push_back(e);
-//         std::cout << "Created entity with ID: " << e.id << std::endl;
-//         if(entityData.contains("transform")){
-//             TransformComponent t;
-//             t.position = glm::vec3(entityData["transform"]["position"][0],
-//                                 entityData["transform"]["position"][1],
-//                                 entityData["transform"]["position"][2]);
-//             t.rotation = glm::vec3(entityData["transform"]["rotation"][0],
-//                                 entityData["transform"]["rotation"][1],
-//                                 entityData["transform"]["rotation"][2]);
-//             t.scale = glm::vec3(entityData["transform"]["scale"][0],
-//                                 entityData["transform"]["scale"][1],
-//                                 entityData["transform"]["scale"][2]);
-//             if(entityData["transform"].contains("parent")){
-//                 t.parent = entityData["transform"]["parent"];
-//             }
-//             if(entityData["transform"].contains("children")){
-//                 for (const auto& childId : entityData["transform"]["children"]) {
-//                     t.children.push_back(childId);
-//                 }
-//             }
-//             //transformComponents[e.id] = t;
-//             entityManager.AddComponent<TransformComponent>(e.id, t);
-//         }
-//         if(entityData.contains("mesh")){
-//             MeshComponent m;
-//             if (entityData["mesh"]["type"] == "primitive") {
-//                 if (entityData["mesh"]["mesh_type"] == "PLANE") {
-//                     glm::vec3 normal(0.0f, 1.0f, 0.0f);
-//                     if (entityData["mesh"].contains("normal")) {
-//                         m.normal = glm::vec3(entityData["mesh"]["normal"][0],
-//                                            entityData["mesh"]["normal"][1],
-//                                            entityData["mesh"]["normal"][2]);
-//                     }
-//                     float width = 1.0f;
-//                     int subdivisions = 1;
-//                     if (entityData["mesh"].contains("subdivisions")) {
-//                         m.subdivisions = entityData["mesh"]["subdivisions"];
-//                     }
-//                     m.loadPrimitive("PLANE");
-//                 }
-//                 else if (entityData["mesh"]["mesh_type"] == "SPHERE") {
-//                     if(entityData["mesh"].contains("subdivisions")) {
-//                         m.subdivisions = entityData["mesh"]["subdivisions"];
-//                     }
-//                     m.loadPrimitive("SPHERE", entityManager.GetComponent<TransformComponent>(e.id).position);
-//                 }
-//                 else if (entityData["mesh"]["mesh_type"] == "BOX") {
-//                     m.loadPrimitive("BOX", entityManager.GetComponent<TransformComponent>(e.id).position);
-//                 }
-//                 else if (entityData["mesh"]["mesh_type"] == "CYLINDER") {
-//                     if (entityData["mesh"].contains("subdivisions")) {
-//                         m.subdivisions = entityData["mesh"]["subdivisions"];
-//                     }
-//                     if (entityData["mesh"].contains("width")) {
-//                         m.width = entityData["mesh"]["width"];
-//                     }
-//                     if (entityData["mesh"].contains("height")) {
-//                         m.height = entityData["mesh"]["height"];
-//                     }
-//                     m.loadPrimitive("CYLINDER", entityManager.GetComponent<TransformComponent>(e.id).position);
-//                 }
-//                 else if (entityData["mesh"]["mesh_type"] == "CONE") {
-//                     if (entityData["mesh"].contains("subdivisions")) {
-//                         m.subdivisions = entityData["mesh"]["subdivisions"];
-//                     }
-//                     if (entityData["mesh"].contains("width")) {
-//                         m.width = entityData["mesh"]["width"];
-//                     }
-//                     if (entityData["mesh"].contains("height")) {
-//                         m.height = entityData["mesh"]["height"];
-//                     }
-//                     m.loadPrimitive("CONE", entityManager.GetComponent<TransformComponent>(e.id).position);
-//                 }
-//                 else if (entityData["mesh"]["mesh_type"] == "CAPSULE") {
-//                     if (entityData["mesh"].contains("subdivisions")) {
-//                         m.subdivisions = entityData["mesh"]["subdivisions"];
-//                     }
-//                     if (entityData["mesh"].contains("width")) {
-//                         m.width = entityData["mesh"]["width"];
-//                     }
-//                     if (entityData["mesh"].contains("height")) {
-//                         m.height = entityData["mesh"]["height"];
-//                     }
-//                     m.loadPrimitive("CAPSULE", entityManager.GetComponent<TransformComponent>(e.id).position);
-//                 }
-//             } else if (entityData["mesh"]["type"] == "file") {
-//                 std::string meshPath = gameFolder + "/" + entityData["mesh"]["path"].get<std::string>();
-//                 m.load_OFF(meshPath);
-//             }
-//             //meshComponents[e.id] = m;
-//             entityManager.AddComponent<MeshComponent>(e.id,m);
-//         }
-//         if(entityData.contains("material")){
-//             MaterialComponent mat;
-//             if( entityData["material"].contains("type")){
-//                 if ( entityData["material"]["type"] == "texture") {
-//                     std::string texturePath = gameFolder + "/" + entityData["material"]["path"].get<std::string>();
-//                     mat.setTexture(texturePath);
-//                     if (!mat.loadTexture()) {
-//                         std::cerr << "❌ Failed to load texture for entity ID " << e.id << std::endl;
-//                     }
-//                 } else if (entityData["material"]["type"] == "color") {
-//                     glm::vec3 color = glm::vec3(entityData["material"]["color"][0],
-//                                                 entityData["material"]["color"][1],
-//                                                 entityData["material"]["color"][2]);
-//                     glm::vec3 ambient=glm::vec3(entityData["material"]["ambient"][0],
-//                                                 entityData["material"]["ambient"][1],
-//                                                 entityData["material"]["ambient"][2]);
-//                     // std::cout<<"ambient_material x : "<<ambient[0]<<" ambient_material y : "<<ambient[1]<<" ambient_material z : "<<ambient[2]<<std::endl;
-//                     glm::vec3 diffuse=glm::vec3(entityData["material"]["diffuse"][0],
-//                                                 entityData["material"]["diffuse"][1],
-//                                                 entityData["material"]["diffuse"][2]);
-//                     glm::vec3 specular=glm::vec3(entityData["material"]["specular"][0],
-//                                                 entityData["material"]["specular"][1],
-//                                                 entityData["material"]["specular"][2]);
-//                     float shininess=entityData["material"]["shininess"];
-//                     mat.setColor(color,ambient,diffuse,specular,shininess);
-//                     if( entityData["material"].contains("path")){
-//                         std::string texturePath = gameFolder + "/" + entityData["material"]["path"].get<std::string>();
-//                         mat.setTexture(texturePath);
-//                     }
-//                     if( entityData["material"].contains("reflection")){
-//                         mat.particularite=1;
-//                     }
-//                     if( entityData["material"].contains("refraction")){
-//                         mat.particularite=2;
-//                     }
-//                 } else {
-//                 // Default material
-//                 mat.setColor(glm::vec3(1.0f, 1.0f, 1.0f),glm::vec3(1.0f, 1.0f, 1.0f),glm::vec3(1.0f, 1.0f, 1.0f),glm::vec3(1.0f, 1.0f, 1.0f),1.0f);
-//             }
-//             } else {
-//                 // Default material
-//                 mat.setColor(glm::vec3(1.0f, 1.0f, 1.0f),glm::vec3(1.0f, 1.0f, 1.0f),glm::vec3(1.0f, 1.0f, 1.0f),glm::vec3(1.0f, 1.0f, 1.0f),1.0f);
-//             }
-//             // materialComponents[e.id] = mat;
-//             entityManager.AddComponent<MaterialComponent>(e.id,mat);
-//         }
-//         if (entityData.contains("camera")) {
-//             CameraComponent camData;
-//             camData.id = entityData["camera"]["idCam"];
-//             glm::vec3 pos(0.0f);
-//             glm::vec3 lookAt(0.0f, 0.0f, -1.0f);
-//             glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
-//             if (entityData["camera"].contains("target"))
-//                 lookAt = glm::vec3(entityData["camera"]["target"][0], entityData["camera"]["target"][1], entityData["camera"]["target"][2]);
-//             if (entityData["camera"].contains("up"))
-//                 up = glm::vec3(entityData["camera"]["up"][0], entityData["camera"]["up"][1], entityData["camera"]["up"][2]);
-
-//             camData.up = up;
-//             // convert absolute lookAt position -> normalized direction expected by CameraComponent
-//             glm::vec3 dir = glm::normalize(lookAt - pos);
-//             if (glm::length(dir) > 1e-6f) {
-//                 camData.target = dir;
-//                 camData.yaw   = glm::degrees(atan2(dir.z, dir.x));
-//                 camData.pitch = glm::degrees(asin(glm::clamp(dir.y, -1.0f, 1.0f)));
-//             }
-//             if (entityData["camera"].contains("fov")) camData.fov = entityData["camera"]["fov"];
-//             if (entityData["camera"].contains("near_plane")) camData.nearPlane = entityData["camera"]["near_plane"];
-//             if (entityData["camera"].contains("far_plane")) camData.farPlane = entityData["camera"]["far_plane"];
-//             camData.aspectRatio = (float)SCR_WIDTH / SCR_HEIGHT;
-//             camData.updateDirection();
-//             //cameraComponents[e.id]= camData;
-//             entityManager.AddComponent<CameraComponent>(e.id,camData);
-//         }
-//         if(entityData.contains("light")){
-//             LightComponent light;
-//             light.intensity = entityData["light"]["intensity"];
-//             //lightComponents[e.id] = light;
-//             entityManager.AddComponent<LightComponent>(e.id,light);
-//         }
-//         if(entityData.contains("controller")){
-//             ControllerComponent controller;
-//             controller.moveSpeed = entityData["controller"]["speed"];
-//             //controllerComponents[e.id] = controller;
-//             entityManager.AddComponent<ControllerComponent>(e.id,controller);
-//         }
-//         if(entityData.contains("audio")){
-//             MyAudioComponent audio;
-//             if(entityData["audio"].contains("type")){
-//                 std::string typeStr = entityData["audio"]["type"].get<std::string>();
-//                 // lowercase for robust comparison
-//                 std::transform(typeStr.begin(), typeStr.end(), typeStr.begin(), [](unsigned char c){ return std::tolower(c); });
-//                 if(typeStr == "music")      audio.type = AudioType::MUSIC;
-//                 else if(typeStr == "sfx")   audio.type = AudioType::SFX;
-//                 else if(typeStr == "spatial") audio.type = AudioType::SPATIAL;
-//                 else audio.type = AudioType::NONE;
-//             }
-//             if(entityData["audio"].contains("path")){
-//                 audio.audioFilePath = gameFolder + "/" + entityData["audio"]["path"].get<std::string>();
-//             }
-//             if(entityData["audio"].contains("volume")){
-//                 audio.volume = entityData["audio"]["volume"].get<float>();
-//             }
-//             audio.loop = entityData["audio"].value("loop", false);
-//             audio.playOnStart = entityData["audio"].value("play_on_start", false);
-//             audio.isPlaying = audio.playOnStart;
-
-//             // verify file exists before attempting to load
-//             if (!audio.audioFilePath.empty() && !std::filesystem::exists(audio.audioFilePath)) {
-//                 std::cerr << "Audio file not found: " << audio.audioFilePath << std::endl;
-//             } else {
-//                 //audioComponents[e.id] = audio;
-//                 audioSystem.addAudio(e.id, audio);
-//                 entityManager.AddComponent<MyAudioComponent>(e.id,audio);
-//                 std::cout << "Registered audio for entity ID " << e.id << ": " << audio.audioFilePath << std::endl;
-//             }
-//         }
-//         if(entityData.contains("script")){
-//             std::string scriptType = entityData["script"]["type"].get<std::string>();
-//             if(scriptType == "C++"){
-//                 if(entityData["script"]["path"] == "CameraController"){
-//                     CameraController* controller = new CameraController();
-//                     controller->transform = &entityManager.GetComponent<TransformComponent>(e.id);
-//                     controller->camera = &entityManager.GetComponent<CameraComponent>(e.id);
-//                     input.subscribe(controller);
-//                 }
-//             } else if (scriptType == "Lua") {
-//                 LuaScriptComponent luaScript;
-//                 luaScript.luaScriptPath = gameFolder + "/" + entityData["script"]["path"].get<std::string>();
-//                 entityManager.AddComponent<LuaScriptComponent>(e.id, luaScript);
-//                 scriptSystem.registerLuaScript(e.id, &entityManager.GetComponent<LuaScriptComponent>(e.id));
-                
-//                 scriptSystem.registerEntityManager(&entityManager);
-//                 scriptSystem.initScript(entityManager.GetComponent<LuaScriptComponent>(e.id), e.id);
-//             }
-//         }
-        
-//     }
-// }
-
 
 
 
@@ -548,8 +315,8 @@ int main( int argc, char* argv[] )
         mode2 = "-r";
         EditorMode = false;
     }
-    // scenePath = gameFolder + "/scene.json";
-    scenePath = gameFolder + "/cornelBox.json";
+    scenePath = gameFolder + "/scene.json";
+    //scenePath = gameFolder + "/cornelBox.json";
     sceneManager.gameFolder = gameFolder;
 
 
@@ -563,13 +330,6 @@ int main( int argc, char* argv[] )
     if (!glewIsSupported("GL_ARB_texture_non_power_of_two")) {
         std::cerr << "Your hardware does not support Non-Power-Of-Two textures." << std::endl;
     }
-
-    // glfwWindowHint(GLFW_SAMPLES, 4);
-    // glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    // glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    // glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
-    // glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    // glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
     glfwWindowHint(GLFW_SAMPLES, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -759,7 +519,7 @@ int main( int argc, char* argv[] )
 
         }
         physicSystem->update(deltaTime);
-        
+        animationSystem->update(deltaTime); 
         transformSystem->update();
         lightSystem->update();
         if(EditorMode){

@@ -250,7 +250,7 @@ add_executable(Engine
     Shaders/computeShader.glsl
 )
 
-target_link_libraries(Engine ${ALL_LIBS} lua_static)
+target_link_libraries(Engine PRIVATE ${ALL_LIBS} lua_static assimp)
 
 # Groupes pour IDE
 source_group(common REGULAR_EXPRESSION ".*/common/.*")
