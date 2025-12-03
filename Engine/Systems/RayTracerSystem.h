@@ -813,7 +813,7 @@ public:
                 idTextures[nbTextures]=1+nbTextures;
                 nbTextures++;
             }
-            else if(!entityManager->HasComponent<CameraComponent>(e.id)){
+            else if(!entityManager->HasComponent<CameraComponent>(e.id) && !entityManager->HasComponent<ParticuleComponent>(e.id)){
                 MaterialComponent mat = entityManager->GetComponent<MaterialComponent>(e.id);
                 TransformComponent t = entityManager->GetComponent<TransformComponent>(e.id);
                 if(entityManager->HasComponent<MeshComponent>(e.id)){

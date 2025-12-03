@@ -755,8 +755,8 @@ vec3 couleur(Ray rayon,ivec2 pix,uint seed){
 			}else{
 				testRayon.origin=p+n*0.001;
 				testRayon.direction=random_hemisphere_direction(n,seed);
-				// finalColor*=testColor;
-				// break;
+				finalColor*=testColor;
+				break;
 			}
 		}else if(interObjet==2){
 			vec3 p=ro+rd*tmin;
@@ -773,8 +773,8 @@ vec3 couleur(Ray rayon,ivec2 pix,uint seed){
 			}else{
 				testRayon.origin=p+n*0.001;
 				testRayon.direction=random_hemisphere_direction(n,seed);
-				// finalColor*=testColor;
-				// break;
+				finalColor*=testColor;
+				break;
 			}
 		}else if(interObjet==3){
 			vec3 p=ro+rd*tmin;
@@ -782,8 +782,8 @@ vec3 couleur(Ray rayon,ivec2 pix,uint seed){
 			testColor*=couleurMesh(testRayon,tmin,hitIndex,pix);
 			testRayon.origin=p+n*0.001;
 			testRayon.direction=random_hemisphere_direction(n,seed);
-			// finalColor*=testColor;
-			// break;
+			finalColor*=testColor;
+			break;
 			// if(meshes[hitIndex].padding[1]==1){
 			// 	testRayon=computeReflection(rd,n,p,pix);
 			// }
@@ -822,20 +822,20 @@ void main(){
     vec3 finalColor=couleur(rayon,pix,seed);
 
 	//sans accumulation temporelle
-    // imageStore(imgOutput,pix,vec4(finalColor,1.0));
+    imageStore(imgOutput,pix,vec4(finalColor,1.0));
 
 	//avec accumulation temporelle
-	if(bool(resetAccum) || frameCount == 0){
-        imageStore(imgAccum, pix, vec4(finalColor, 1.0));
-        imageStore(imgOutput, pix, vec4(finalColor, 1.0));
-    } else {
-        vec3 prev = imageLoad(imgAccum, pix).rgb;
-		float t=float(accum)/float(accum+1);
-		vec3 acc=prev*t+finalColor*(1.0-t);
-        imageStore(imgAccum, pix, vec4(acc, 1.0));
-		vec3 color=clamp(acc,0.0,1.0);
-        imageStore(imgOutput, pix, vec4(color, 1.0));
-    }
+	// if(bool(resetAccum) || frameCount == 0){
+    //     imageStore(imgAccum, pix, vec4(finalColor, 1.0));
+    //     imageStore(imgOutput, pix, vec4(finalColor, 1.0));
+    // } else {
+    //     vec3 prev = imageLoad(imgAccum, pix).rgb;
+	// 	float t=float(accum)/float(accum+1);
+	// 	vec3 acc=prev*t+finalColor*(1.0-t);
+    //     imageStore(imgAccum, pix, vec4(acc, 1.0));
+	// 	vec3 color=clamp(acc,0.0,1.0);
+    //     imageStore(imgOutput, pix, vec4(color, 1.0));
+    // }
 }
 
 

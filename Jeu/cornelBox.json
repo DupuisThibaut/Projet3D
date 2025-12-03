@@ -51,7 +51,7 @@
       },
       "script": {
         "type": "Lua",
-        "path": "./Scripts/ChangeColor.lua"
+        "path": "/Scripts/ChangeColor.lua"
       }
     },
     {
@@ -76,7 +76,7 @@
       },
       "script": {
         "type": "Lua",
-        "path": "./Scripts/MoveCam.lua"
+        "path": "/Scripts/MoveCam.lua"
       }
     },
     {
@@ -313,6 +313,20 @@
         "height":0.1,
         "taille":32,
         "police":"./texture/COMICATE.TTF"
+      }
+    },
+    {
+      "id": 13,
+      "particule": {
+        "nombre":100,
+        "path":"./texture/grass.png"
+      },
+      "transform": {
+        "position": [0.0, -1.0, 0.0],
+        "rotation": [0.0, 0.0, 0.0],
+        "scale": [0.5, 0.5, 0.5],
+        "parent": -1,
+        "children": []
       }
     }
   ]

@@ -160,6 +160,11 @@ public:
                 texture.loadFromFile(entityData, e.id, gameFolder);
                 entityManager->AddComponent<TextureComponent>(e.id, texture);
             }
+            if(entityData.contains("particule")){
+                ParticuleComponent particule;
+                particule.loadFromFile(entityData, e.id, gameFolder);
+                entityManager->AddComponent<ParticuleComponent>(e.id, particule);
+            }
             
             
         }

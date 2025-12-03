@@ -34,6 +34,7 @@ struct TransformComponent {
                 }
             }
         }
+        
     }
 };
 

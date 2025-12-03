@@ -72,6 +72,7 @@ using json = nlohmann::json;
 #include "Components/RigidBodyComponent.h"
 #include "Components/ColliderComponent.h"
 #include "Components/TextureComponent.h"
+#include "Components/ParticuleComponent.h"
 // Systems
 #include "Systems/EntityManager.h"
 #include "Systems/Dispatcher.h"
@@ -85,6 +86,7 @@ using json = nlohmann::json;
 #include "Systems/EditorSystem.h"
 #include "Systems/PhysicSystem.h"
 #include "Systems/SceneManager.h"
+#include "Systems/ParticuleSystem.h"
 
 // Scripts
 #include "Scripts/CameraController.h"
@@ -546,8 +548,8 @@ int main( int argc, char* argv[] )
         mode2 = "-r";
         EditorMode = false;
     }
-    scenePath = gameFolder + "/scene.json";
-    //scenePath = gameFolder + "/cornelBox.json";
+    // scenePath = gameFolder + "/scene.json";
+    scenePath = gameFolder + "/cornelBox.json";
     sceneManager.gameFolder = gameFolder;
 
 
