@@ -126,6 +126,7 @@ ControllerSystem input = ControllerSystem(dispatcher);
 RayTracerSystem* rayTracerSystem = nullptr;
 EditorSystem* editorSystem = nullptr;
 PhysicSystem* physicSystem = nullptr;
+ParticuleSystem* particuleSystem = nullptr;
 TransformSystem* transformSystem = nullptr;
 LightSystem* lightSystem = nullptr;
 RenderSystem* renderSystem = nullptr;
@@ -198,6 +199,13 @@ void StartSystems(GLuint programID){
     transformSystem = new TransformSystem(&entityManager);
     transformSystem->update();
     std::cout<< "--- Transform System initialized. ---" <<std::endl;
+
+    //Système de particules
+    std::cout<< "--- Initializing Particule System... ---" <<std::endl;
+    particuleSystem = new ParticuleSystem(&entityManager);
+    // particuleSystem->update();
+    std::cout<< "--- Particule System initialized. ---" <<std::endl;
+
 #if defined (__APPLE__) || defined(MACOSX)
 #else
     // Système de Ray Tracing -> pointeur global
@@ -316,7 +324,7 @@ int main( int argc, char* argv[] )
         EditorMode = false;
     }
     scenePath = gameFolder + "/scene.json";
-    //scenePath = gameFolder + "/cornelBox.json";
+    // scenePath = gameFolder + "/cornelBox.json";
     sceneManager.gameFolder = gameFolder;
 
 
@@ -520,6 +528,7 @@ int main( int argc, char* argv[] )
         }
         physicSystem->update(deltaTime);
         animationSystem->update(deltaTime); 
+        particuleSystem->update(deltaTime);
         transformSystem->update();
         lightSystem->update();
         if(EditorMode){

@@ -15,6 +15,7 @@ struct ParticuleComponent {
     std::vector<glm::vec3> speed;
     std::vector<float> age;
     std::vector<float> ageMax;
+    std::vector<float> rayon;
     glm::vec3 position;
 
     void loadFromFile(const nlohmann::json& entityData, uint32_t entityId, const std::string& gameFolder){

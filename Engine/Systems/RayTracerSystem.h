@@ -53,6 +53,10 @@ struct world{
     glm::vec4 testSphere;
 };
 
+struct partic{
+    float x,y,z,r;
+};
+
 std::vector<std::vector<unsigned short>> newTriangles;
 std::vector<bvh> creerBVH(std::vector<glm::vec3> vertices, std::vector<std::vector<unsigned short>> triangles){
     newTriangles.clear();
@@ -277,6 +281,7 @@ public:
     GLuint ssboMeshes=0;
     GLuint ssboBVH=0;
     GLuint ssboWorld=0;
+    GLuint ssboParticules=0;
     GLuint texture;
 
     std::vector<sp> sps;        
@@ -287,6 +292,7 @@ public:
     std::vector<m> ms;
     std::vector<bvh> bvhs;
     std::vector<world> worlds;
+    std::vector<partic> particules;
 
     unsigned int TEXTURE_WIDTH = 512;
     unsigned int TEXTURE_HEIGHT = 512;
@@ -462,7 +468,9 @@ public:
         bool updateSquare=false;
         bool updateMesh=false;
         bool updateLight=false;
+        bool updateParticule=false;
         bool reset=false;
+        int part=0;
         for(auto& e : entities){
             if(entityManager->HasComponent<MeshComponent>(e.id)){
                 MeshComponent M = entityManager->GetComponent<MeshComponent>(e.id);
@@ -529,6 +537,15 @@ public:
                     updateLight=true;
                 }
                 // light.update=false;
+            }else if(entityManager->HasComponent<ParticuleComponent>(e.id)){
+                auto particule=entityManager->GetComponent<ParticuleComponent>(e.id);
+                for(int i=0;i<particule.nb;i++){
+                    particules[i+part].x=particule.pos[i].x;
+                    particules[i+part].y=particule.pos[i].y;
+                    particules[i+part].z=particule.pos[i].z;
+                }
+                part+=particule.nb;
+                updateParticule=true;
             }
         }
         if(updateSphere){
@@ -565,6 +582,15 @@ public:
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, ssboLights);
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
             updateLight=false;
+            reset=true;
+        }
+        if(updateParticule){
+            // glGenBuffers(1,&ssboLights);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboParticules);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, particules.size()*sizeof(partic), particules.data(), GL_STATIC_DRAW);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, ssboParticules);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+            updateParticule=false;
             reset=true;
         }
 
@@ -776,7 +802,7 @@ public:
         // std::cout<<"debut fonction"<<std::endl;
         std::vector<bvh> bvhs;
         bvh root;bvhs.push_back(root);
-        int nbBVH=1,nbV=0,nbT=0;
+        int nbBVH=1,nbV=0,nbT=0,nbP=0;
         float minx=FLT_MAX,miny=FLT_MAX,minz=FLT_MAX,maxx=-FLT_MAX,maxy=-FLT_MAX,maxz=-FLT_MAX;
         for(auto& e : entities){
             // std::cout<<"debut de la boucle"<<std::endl;
@@ -812,8 +838,19 @@ public:
                 }
                 idTextures[nbTextures]=1+nbTextures;
                 nbTextures++;
+            }else if(entityManager->HasComponent<ParticuleComponent>(e.id)){
+                ParticuleComponent particule=entityManager->GetComponent<ParticuleComponent>(e.id);
+                nbP+=particule.nb;
+                for(int i=0;i<particule.nb;i++){
+                    partic p;
+                    p.x=particule.pos[i][0];
+                    p.y=particule.pos[i][1];
+                    p.z=particule.pos[i][2];
+                    p.r=particule.rayon[i];
+                    particules.push_back(p);
+                }
             }
-            else if(!entityManager->HasComponent<CameraComponent>(e.id) && !entityManager->HasComponent<ParticuleComponent>(e.id)){
+            else if(!entityManager->HasComponent<CameraComponent>(e.id)){
                 MaterialComponent mat = entityManager->GetComponent<MaterialComponent>(e.id);
                 TransformComponent t = entityManager->GetComponent<TransformComponent>(e.id);
                 if(entityManager->HasComponent<MeshComponent>(e.id)){
@@ -950,6 +987,7 @@ public:
                     }
                     //Meshes
                     if(M.type==PrimitiveType::MESH){
+                        std::cout<<"IL Y A UN MESH !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
                         std::vector<bvh> bvhsYep=creerBVH(M.vertices,M.triangles);
                         M.triangles=newTriangles;
                         int nbV=0,nbT=0;
@@ -1115,6 +1153,12 @@ public:
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, ssboWorld);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
+        glGenBuffers(1,&ssboParticules);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboParticules);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, particules.size()*sizeof(partic), particules.data(), GL_STATIC_DRAW);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, ssboParticules);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
 
         // glGenBuffers(1, &debugBuffer);
         // glBindBuffer(GL_SHADER_STORAGE_BUFFER, debugBuffer);
@@ -1132,7 +1176,9 @@ public:
         if(locL>=0)glUniform1i(locL,(GLint)ls.size());
         GLint locM=glGetUniformLocation(computeProg,"nbMesh");
         if(locM>=0)glUniform1i(locM,(GLint)ms.size());
-        std::cout<<"nb sphere : "<<sps.size()<<" nb squares : "<<sqs.size()<<" nb lights : "<<ls.size()<<" nb meshes : "<<ms.size()<<std::endl;
+        GLint locP=glGetUniformLocation(computeProg,"nbParticule");
+        if(locP>=0)glUniform1i(locP,(GLint)particules.size());
+        std::cout<<"nb sphere : "<<sps.size()<<" nb squares : "<<sqs.size()<<" nb lights : "<<ls.size()<<" nb meshes : "<<ms.size()<<" nb particules : "<<particules.size()<<std::endl;
         glUseProgram(0);
 
         //Création HUD (UI)

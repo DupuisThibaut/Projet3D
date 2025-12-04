@@ -38,6 +38,9 @@ public:
         rigid.velocity = rigid.velocity + dt * rigid.acceleration;
         rigid.velocity *= rigid.friction;
         transform.position = transform.position + rigid.velocity*dt;
+        auto& mesh = entityManager->GetComponent<MeshComponent>(e);
+        mesh.update=true;
+        // std::cout<<"Entity "<<e<<" gravite : "<<rigid.gravity.y<<" position y : "<<transform.position.y<<" velocity y : "<<rigid.velocity.y<<std::endl;
     }
 
     void detectCollisions(std::vector<std::pair<uint32_t, uint32_t>>& collidingPairs) {

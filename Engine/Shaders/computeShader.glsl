@@ -13,6 +13,7 @@ uniform int nbSphere;
 uniform int nbSquare;
 uniform int nbLight;
 uniform int nbMesh;
+uniform int nbParticule;
 uniform int resetAccum;
 uniform uint accum;
 
@@ -26,6 +27,11 @@ vec2 uvFinal;
 // 	vec3 normal;
 // 	vec3
 // }
+
+struct Particule{
+	vec4 position;
+};
+layout(std430,binding=11)buffer Particules{Particule particules[];};
 
 struct Ray{
 	vec3 origin;
@@ -280,6 +286,11 @@ intersection intersectScene(Ray rayon){
         float t=intersectSquare(rayon,squares[i].m_bottom_left.xyz,squares[i].m_right_vector.xyz,squares[i].m_up_vector.xyz,squares[i].m_normal.xyz,squares[i].m_up_vector[3],squares[i].m_right_vector[3]);
         if(t>0.0 && t<res.tmin){res.tmin=t;res.hitIndex=i;res.inter=2;uvFinal=uvTest;}
     }
+
+	for(int i=0;i<nbParticule;i++){
+		float t=intersectSphere(rayon,particules[i].position.xyz,particules[i].position.w);
+		if(t>0.0 && t<res.tmin){res.tmin=t;res.hitIndex=i;res.inter=4;}
+	}
 
 	// if(intersectBVH(roLocal,rdLocal,bvhs[0].minp.xyz,bvhs[0].maxp.xyz)>0.0){
 		for(int i=0;i<nbMesh;i++){
@@ -793,6 +804,9 @@ vec3 couleur(Ray rayon,ivec2 pix,uint seed){
 			// if(meshes[hitIndex].padding[1]==3){
 			// 	testRayon=computeMetalic(rd,n,p,pix,testColor);
 			// }
+		}else if(interObjet==4){
+			finalColor*=vec3(0.8,0.0,0.8);
+			break;
 		}else{
 			finalColor*=vec3(0.68,0.85,0.90);
 			break;

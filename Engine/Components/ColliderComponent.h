@@ -53,22 +53,25 @@ struct ColliderComponent {
         else if(colliderType == "AABB"){
             type = ColliderType::AABB;
             MeshComponent mesh = entityManager->GetComponent<MeshComponent>(index);
+            TransformComponent t = entityManager->GetComponent<TransformComponent>(index);
             std::cout<<"Loading AABB collider for entity "<<index<<" with "<<mesh.vertices.size()<<std::endl;
             if (mesh.vertices.empty()) {
                 std::cerr << "Mesh vertices empty for entity " << index << std::endl;
                 return;
             }
-            glm::vec3 min = mesh.vertices[0];
-            glm::vec3 max = mesh.vertices[0];
+            glm::vec3 min = mesh.vertices[0]*t.scale;
+            glm::vec3 max = mesh.vertices[0]*t.scale;
             for(int i =1; i < mesh.vertices.size(); i++){
-                min.x = std::min(min.x, mesh.vertices[i].x);
-                min.y =  std::min(min.y, mesh.vertices[i].y);
-                min.z =  std::min(min.z, mesh.vertices[i].z);
-                max.x =  std::max(max.x, mesh.vertices[i].x);
-                max.y =  std::max(max.y, mesh.vertices[i].y);
-                max.z =  std::max(max.z, mesh.vertices[i].z);
+                min.x = std::min(min.x, mesh.vertices[i].x*t.scale.x);
+                min.y =  std::min(min.y, mesh.vertices[i].y*t.scale.y);
+                min.z =  std::min(min.z, mesh.vertices[i].z*t.scale.z);
+                max.x =  std::max(max.x, mesh.vertices[i].x*t.scale.x);
+                max.y =  std::max(max.y, mesh.vertices[i].y*t.scale.y);
+                max.z =  std::max(max.z, mesh.vertices[i].z*t.scale.z);
             }
             collider = std::make_unique<AABBCollider>( (min + max) * 0.5f, (max - min) * 0.5f);
+            std::cout<<"min: "<<min.x<<","<<min.y<<","<<min.z<<std::endl;
+            std::cout<<"max: "<<max.x<<","<<max.y<<","<<max.z<<std::endl;
         }
         else if(colliderType == "OBB"){
             type = ColliderType::OBB;

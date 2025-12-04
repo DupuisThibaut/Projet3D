@@ -231,6 +231,7 @@ struct MeshComponent {
     }
 
     void loadFBX(const std::string& filename) {
+        type=PrimitiveType::MESH;
         Assimp::Importer importer;
         const aiScene* scene = importer.ReadFile(filename,
             aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_JoinIdenticalVertices);

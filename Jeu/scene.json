@@ -33,6 +33,9 @@
         "play_on_start": true,
         "loop": true,
         "isPlaying": true
+      },
+      "collider": {
+        "type": "PLANE"
       }
     },
     {
@@ -67,6 +70,13 @@
           0.009999999776482582,
           0.009999999776482582
         ]
+      },
+      "collider": {
+        "type": "AABB",
+        "isTrigger": false
+      },
+      "rigidbody":{
+
       }
     },
     {
@@ -122,7 +132,7 @@
     {
       "id": 4,
       "transform": {
-      "position": [-2.5, -9.0, 0.0],
+      "position": [-2.5, -5.0, 0.0],
       "rotation": [0.0, 0.0, 0.0],
       "scale": [0.5, 0.5, 0.5],
       "parent": -1,
@@ -143,6 +153,14 @@
       "diffuse":[1.0, 1.0, 1.0],
       "specular":[1.0, 1.0, 1.0],
       "shininess":16.0
+      },
+      "collider": {
+        "type": "SPHERE",
+        "isTrigger": false,
+        "radius": 0.5
+      },
+      "rigidbody":{
+
       }
     }
   ]
