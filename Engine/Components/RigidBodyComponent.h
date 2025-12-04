@@ -8,11 +8,14 @@
 
 struct RigidBodyComponent {
     glm::vec3 gravity = glm::vec3(0.0,-9.81,0.0);
-    float friction = 0.95;
+    float friction = 0.9999f;
     float bounce = 0.7;
     float mass = 1.0;
     glm::vec3 acceleration = glm::vec3(0,0,0);
     glm::vec3 velocity = glm::vec3(0,0,0);
+    glm::vec3 oldPosition = glm::vec3(0,0,0);
+    glm::vec3 oldVelocity = glm::vec3(0,0,0);
+    bool firstFrame = true;
 
     glm::vec3 forces = glm::vec3(0,0,0);
 

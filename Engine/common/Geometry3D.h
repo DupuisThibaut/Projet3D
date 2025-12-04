@@ -90,10 +90,10 @@ AABBCollider FromMinMax(const vec3& min, const vec3& max) {
 typedef struct OBBCollider : BaseCollider {
     PointCollider position;
     vec3 size;
-    mat3 oritentation;
-    inline OBBCollider() : size(1.0f, 1.0f, 1.0f), oritentation(1.0f) {}
-    inline OBBCollider(const PointCollider& p, const vec3& s) : position(p), size(s), oritentation(1.0f) {}
-    inline OBBCollider(const PointCollider& p, const vec3& s, const mat3& o) : position(p), size(s), oritentation(o) {}
+    mat3 orientation;
+    inline OBBCollider() : size(1.0f, 1.0f, 1.0f), orientation(1.0f) {}
+    inline OBBCollider(const PointCollider& p, const vec3& s) : position(p), size(s), orientation(1.0f) {}
+    inline OBBCollider(const PointCollider& p, const vec3& s, const mat3& o) : position(p), size(s), orientation(o) {}
 } OBBCollider;
 
 // -------- Plane --------
@@ -160,7 +160,7 @@ PointCollider ClosestPoint(const AABBCollider& aabb, const PointCollider& point)
 bool PointInOBB(const PointCollider& point, const OBBCollider& obb){
     vec3 dir = point - obb.position;
     for(int i = 0; i < 3; i++){
-        vec3 axis = vec3(obb.oritentation[0][i], obb.oritentation[1][i], obb.oritentation[2][i]);
+        vec3 axis = vec3(obb.orientation[0][i], obb.orientation[1][i], obb.orientation[2][i]);
         float distance = glm::dot(dir, axis);
         if (distance > obb.size[i] || distance < -obb.size[i]) {
             return false;
@@ -172,7 +172,7 @@ PointCollider ClosestPoint(const OBBCollider& obb, const PointCollider& point){
     vec3 dir = point - obb.position;
     PointCollider result = obb.position;
     for(int i = 0; i < 3; i++){
-        vec3 axis = vec3(obb.oritentation[0][i], obb.oritentation[1][i], obb.oritentation[2][i]);
+        vec3 axis = vec3(obb.orientation[0][i], obb.orientation[1][i], obb.orientation[2][i]);
         float distance = glm::dot(dir, axis);
         if (distance > obb.size[i]) {
             distance = obb.size[i];
@@ -301,9 +301,9 @@ Interval GetInterval(const OBBCollider& obb, const vec3& axis){
     vec3 C = obb.position;
     vec3 E = obb.size;
     vec3 A[] = {
-        vec3(obb.oritentation[0][0], obb.oritentation[1][0], obb.oritentation[2][0]),
-        vec3(obb.oritentation[0][1], obb.oritentation[1][1], obb.oritentation[2][1]),
-        vec3(obb.oritentation[0][2], obb.oritentation[1][2], obb.oritentation[2][2])
+        vec3(obb.orientation[0][0], obb.orientation[1][0], obb.orientation[2][0]),
+        vec3(obb.orientation[0][1], obb.orientation[1][1], obb.orientation[2][1]),
+        vec3(obb.orientation[0][2], obb.orientation[1][2], obb.orientation[2][2])
     };
     vertex[0] = C + A[0] * E.x + A[1] * E.y + A[2] * E.z;
     vertex[1] = C + A[0] * E.x + A[1] * E.y - A[2] * E.z;
@@ -332,9 +332,9 @@ bool AABBOBB(const AABBCollider& aabb, const OBBCollider& obb){
         vec3(1.0f, 0.0f, 0.0f),
         vec3(0.0f, 1.0f, 0.0f),
         vec3(0.0f, 0.0f, 1.0f),
-        vec3(obb.oritentation[0][0], obb.oritentation[1][0], obb.oritentation[2][0]),
-        vec3(obb.oritentation[0][1], obb.oritentation[1][1], obb.oritentation[2][1]),
-        vec3(obb.oritentation[0][2], obb.oritentation[1][2], obb.oritentation[2][2]),
+        vec3(obb.orientation[0][0], obb.orientation[1][0], obb.orientation[2][0]),
+        vec3(obb.orientation[0][1], obb.orientation[1][1], obb.orientation[2][1]),
+        vec3(obb.orientation[0][2], obb.orientation[1][2], obb.orientation[2][2]),
     };
     for(int i = 0; i < 3; i++){
         for(int j = 0; j < 3; j++){
@@ -367,12 +367,12 @@ bool OverlapOnAxis(const OBBCollider& obb1, const OBBCollider& obb2, const vec3&
 }
 bool OBBOBB(const OBBCollider& obb1, const OBBCollider& obb2){
     vec3 test[15] = {
-        vec3(obb1.oritentation[0][0], obb1.oritentation[1][0], obb1.oritentation[2][0]),
-        vec3(obb1.oritentation[0][1], obb1.oritentation[1][1], obb1.oritentation[2][1]),
-        vec3(obb1.oritentation[0][2], obb1.oritentation[1][2], obb1.oritentation[2][2]),
-        vec3(obb2.oritentation[0][0], obb2.oritentation[1][0], obb2.oritentation[2][0]),
-        vec3(obb2.oritentation[0][1], obb2.oritentation[1][1], obb2.oritentation[2][1]),
-        vec3(obb2.oritentation[0][2], obb2.oritentation[1][2], obb2.oritentation[2][2]),
+        vec3(obb1.orientation[0][0], obb1.orientation[1][0], obb1.orientation[2][0]),
+        vec3(obb1.orientation[0][1], obb1.orientation[1][1], obb1.orientation[2][1]),
+        vec3(obb1.orientation[0][2], obb1.orientation[1][2], obb1.orientation[2][2]),
+        vec3(obb2.orientation[0][0], obb2.orientation[1][0], obb2.orientation[2][0]),
+        vec3(obb2.orientation[0][1], obb2.orientation[1][1], obb2.orientation[2][1]),
+        vec3(obb2.orientation[0][2], obb2.orientation[1][2], obb2.orientation[2][2]),
     };
     for(int i = 0; i < 3; i++){
         for(int j = 0; j < 3; j++){
@@ -389,9 +389,9 @@ bool OBBOBB(const OBBCollider& obb1, const OBBCollider& obb2){
 //OBB-Plane
 bool OBBPlane(const OBBCollider& obb, const PlaneCollider& plane){
     vec3 rot[] = {
-        vec3(obb.oritentation[0][0], obb.oritentation[1][0], obb.oritentation[2][0]),
-        vec3(obb.oritentation[0][1], obb.oritentation[1][1], obb.oritentation[2][1]),
-        vec3(obb.oritentation[0][2], obb.oritentation[1][2], obb.oritentation[2][2])
+        vec3(obb.orientation[0][0], obb.orientation[1][0], obb.orientation[2][0]),
+        vec3(obb.orientation[0][1], obb.orientation[1][1], obb.orientation[2][1]),
+        vec3(obb.orientation[0][2], obb.orientation[1][2], obb.orientation[2][2])
     };
     vec3 normal = plane.normal;
     float pLen = obb.size.x * fabs(glm::dot(normal, rot[0])) +
@@ -446,9 +446,9 @@ float Raycast(const AABBCollider& aabb, const RayCollider& ray){
 }
 // Raycast OBB
 float Raycast(const OBBCollider& obb, const RayCollider& ray){
-    vec3 X = vec3(obb.oritentation[0][0], obb.oritentation[1][0], obb.oritentation[2][0]);
-    vec3 Y = vec3(obb.oritentation[0][1], obb.oritentation[1][1], obb.oritentation[2][1]);
-    vec3 Z = vec3(obb.oritentation[0][2], obb.oritentation[1][2], obb.oritentation[2][2]);
+    vec3 X = vec3(obb.orientation[0][0], obb.orientation[1][0], obb.orientation[2][0]);
+    vec3 Y = vec3(obb.orientation[0][1], obb.orientation[1][1], obb.orientation[2][1]);
+    vec3 Z = vec3(obb.orientation[0][2], obb.orientation[1][2], obb.orientation[2][2]);
     vec3 p = obb.position - ray.origin;
     vec3 f = vec3(glm::dot(X, ray.direction), glm::dot(Y, ray.direction), glm::dot(Z, ray.direction));
     vec3 e = vec3(glm::dot(X, p), glm::dot(Y, p), glm::dot(Z, p));
@@ -547,9 +547,9 @@ bool Raycast(const AABBCollider& aabb, const RayCollider& ray, RaycastResult* re
 
 bool Raycast(const OBBCollider& obb, const RayCollider& ray, RaycastResult* result){
     ResetRaycastResult(*result);
-    vec3 X = vec3(obb.oritentation[0][0], obb.oritentation[1][0], obb.oritentation[2][0]);
-    vec3 Y = vec3(obb.oritentation[0][1], obb.oritentation[1][1], obb.oritentation[2][1]);
-    vec3 Z = vec3(obb.oritentation[0][2], obb.oritentation[1][2], obb.oritentation[2][2]);
+    vec3 X = vec3(obb.orientation[0][0], obb.orientation[1][0], obb.orientation[2][0]);
+    vec3 Y = vec3(obb.orientation[0][1], obb.orientation[1][1], obb.orientation[2][1]);
+    vec3 Z = vec3(obb.orientation[0][2], obb.orientation[1][2], obb.orientation[2][2]);
     vec3 p = obb.position - ray.origin;
     vec3 f = vec3(glm::dot(X, ray.direction), glm::dot(Y, ray.direction), glm::dot(Z, ray.direction));
     vec3 e = vec3(glm::dot(X, p), glm::dot(Y, p), glm::dot(Z, p));
@@ -629,7 +629,7 @@ bool Linetest(const AABBCollider& aabb, const LineCollider& line){
         return false;
     }
     float t = raycast.t;
-    return t >= 0 && t * t <= LengthSq(line);
+    return t >= 0 && t <= LengthSq(line);
 }
 
 // OBB
@@ -641,7 +641,7 @@ bool Linetest(const OBBCollider& obb, const LineCollider& line){
         return false;
     }
     float t = raycast.t;
-    return t >= 0 && t * t <= LengthSq(line);
+    return t >= 0 && t <= LengthSq(line);
 }
 
 // Plane
@@ -746,9 +746,9 @@ bool TriangleOBB(const Triangle& t, const OBBCollider& o){
     vec3 f0 = t.b - t.a;
     vec3 f1 = t.c - t.b;
     vec3 f2 = t.a - t.c;
-    vec3 u0 = vec3(o.oritentation[0][0], o.oritentation[1][0], o.oritentation[2][0]);
-    vec3 u1 = vec3(o.oritentation[0][1], o.oritentation[1][1], o.oritentation[2][1]);
-    vec3 u2 = vec3(o.oritentation[0][2], o.oritentation[1][2], o.oritentation[2][2]);
+    vec3 u0 = vec3(o.orientation[0][0], o.orientation[1][0], o.orientation[2][0]);
+    vec3 u1 = vec3(o.orientation[0][1], o.orientation[1][1], o.orientation[2][1]);
+    vec3 u2 = vec3(o.orientation[0][2], o.orientation[1][2], o.orientation[2][2]);
     vec3 test[13] = {
         u0, u1, u2,
         glm::cross(f0, f1),
@@ -1287,7 +1287,705 @@ bool MeshRay(const MeshCollider& mesh, const RayCollider& ray, RaycastResult* re
     return hit;
 }
 
+bool Linetest(const MeshCollider& mesh, const LineCollider& line){
+    RayCollider ray(line.start, line.end - line.start);
+    ray.NormalizedDirection();
+    
+    if(mesh.accelerator == nullptr){
+        for(int i = 0; i < mesh.numTriangles; i++){
+            RaycastResult result;
+            if(Raycast(mesh.triangles[i], ray, &result)){
+                float t = result.t;
+                if(t >= 0 && t * t <= LengthSq(line)){
+                    return true;
+                }
+            }
+        }
+    } else {
+        std::list<BVHNode*> toProcess;
+        toProcess.push_front(mesh.accelerator);
+        while(!toProcess.empty()){
+            BVHNode* iterator = *(toProcess.begin());
+            toProcess.erase(toProcess.begin());
+            if(!Linetest(iterator->bounds, line)){
+                continue;
+            }
+            
+            if(iterator->numTriangles >= 0){
+                for(int i = 0; i < iterator->numTriangles; i++){
+                    RaycastResult result;
+                    if(Raycast(mesh.triangles[iterator->triangles[i]], ray, &result)){
+                        float t = result.t;
+                        if(t >= 0 && t * t <= LengthSq(line)){
+                            return true;
+                        }
+                    }
+                }
+            }
+            
+            if(iterator->children != nullptr){
+                for(int i = 0; i < 8; i++){
+                    toProcess.push_front(&iterator->children[i]);
+                }
+            }
+        }
+    }
+    return false;
+}
+
+float Raycast(const MeshCollider& mesh, const RayCollider& ray){
+    if(mesh.accelerator == nullptr){
+        for(int i = 0; i < mesh.numTriangles; i++){
+            float t = Raycast(mesh.triangles[i], ray);
+            if(t >= 0.0f){
+                return t;
+            }
+        }
+    } else {
+        std::list<BVHNode*> toProcess;
+        toProcess.push_front(mesh.accelerator);
+        while(!toProcess.empty()){
+            BVHNode* iterator = *(toProcess.begin());
+            toProcess.erase(toProcess.begin());
+            
+            if(iterator->numTriangles >= 0){
+                for(int i = 0; i < iterator->numTriangles; i++){
+                    float t = Raycast(mesh.triangles[iterator->triangles[i]], ray);
+                    if(t >= 0.0f){
+                        return t;
+                    }
+                }
+            }
+            
+            if(iterator->children != nullptr){
+                for(int i = 0; i < 8; i++){
+                    float t = Raycast(iterator->children[i].bounds, ray);
+                    if(t >= 0.0f){
+                        toProcess.push_front(&iterator->children[i]);
+                    }
+                }
+            }
+        }   
+    }
+    return -1.0f;
+}
+
+bool Raycast(const MeshCollider& mesh, const RayCollider& ray, RaycastResult* result){
+    ResetRaycastResult(*result);
+    bool hit = false;
+    
+    if(mesh.accelerator == nullptr){
+        for(int i = 0; i < mesh.numTriangles; i++){
+            RaycastResult tempResult;
+            if(Raycast(mesh.triangles[i], ray, &tempResult)){
+                if(!hit || tempResult.t < result->t){
+                    *result = tempResult;
+                    hit = true;
+                }
+            }
+        }
+    } else {
+        std::list<BVHNode*> toProcess;
+        toProcess.push_front(mesh.accelerator);
+        while(!toProcess.empty()){
+            BVHNode* iterator = *(toProcess.begin());
+            toProcess.erase(toProcess.begin());
+            
+            if(iterator->numTriangles >= 0){
+                for(int i = 0; i < iterator->numTriangles; i++){
+                    RaycastResult tempResult;
+                    if(Raycast(mesh.triangles[iterator->triangles[i]], ray, &tempResult)){
+                        if(!hit || tempResult.t < result->t){
+                            *result = tempResult;
+                            hit = true;
+                        }
+                    }
+                }
+            }
+            
+            if(iterator->children != nullptr){
+                for(int i = 0; i < 8; i++){
+                    float t = Raycast(iterator->children[i].bounds, ray);
+                    if(t >= 0.0f){
+                        toProcess.push_front(&iterator->children[i]);
+                    }
+                }
+            }
+        }   
+    }
+    
+    return hit;
+}
 
 
+// Manifolds
+
+typedef struct CollisionManifold{
+    bool colliding;
+    glm::vec3 normal;
+    float depth;
+    std::vector<glm::vec3> contacts;
+} CollisionManifold;
+
+void ResetCollisionManifold(CollisionManifold* result) {
+    if (result != 0) {
+        result->colliding = false;
+        result->normal = vec3(0, 0, 1);
+        result->depth = FLT_MAX;
+        result->contacts.clear();
+    }
+}
+
+CollisionManifold SphereSphereManifold(const SphereCollider& s1, const SphereCollider& s2){
+    CollisionManifold result;
+    ResetCollisionManifold(&result);
+    float r = s1.radius + s2.radius;
+    vec3 d = s2.position - s1.position;
+    float distSq = MagnitudeSq(d);
+    if(distSq - r * r > 0.0f || CMP(distSq, 0.0f)){
+        return result;
+    }
+    normalize(d);
+    result.colliding = true;
+    result.normal = d;
+    result.depth = fabsf(sqrtf(distSq) - r) * 0.5f;
+    float dtp = s1.radius - result.depth;
+    PointCollider contact = s1.position + d * dtp;
+    result.contacts.push_back(contact);
+    return result;
+}
+
+CollisionManifold AABBSPhereManifold(const AABBCollider& aabb, const SphereCollider& sphere){
+    CollisionManifold result;
+    ResetCollisionManifold(&result);
+    PointCollider closest = ClosestPoint(aabb, sphere.position);
+    float distanceSq = MagnitudeSq(closest - sphere.position);
+    if (distanceSq > sphere.radius * sphere.radius) {
+        return result;
+    }
+    vec3 normal;
+    if(CMP(distanceSq, 0.0f)){
+        float mSq = MagnitudeSq(closest - aabb.origin);
+        if(CMP(mSq, 0.0f)){
+            return result;
+        }
+        normal = Normalized(closest - aabb.origin);
+    } else {
+        normal = Normalized(closest - sphere.position);
+    }
+    PointCollider outsidePoint = sphere.position + normal * sphere.radius;
+    float distance = Magnitude(closest - outsidePoint);
+    result.colliding = true;
+    result.normal = normal;
+    result.depth = distance * 0.5f;
+    result.contacts.push_back(closest + (outsidePoint - closest) * 0.5f);
+    return result;
+}
+#define SphereAABBManifold(sphere, aabb) AABBSPhereManifold(aabb, sphere)
+
+CollisionManifold OBBSphereManifold(const OBBCollider& obb, const SphereCollider& sphere){
+    CollisionManifold result;
+    ResetCollisionManifold(&result);
+    PointCollider closest = ClosestPoint(obb, sphere.position);
+    float distanceSq = MagnitudeSq(closest - sphere.position);
+    if (distanceSq > sphere.radius * sphere.radius) {
+        return result;
+    }
+    vec3 normal;
+    if(CMP(distanceSq, 0.0f)){
+        float mSq = MagnitudeSq(closest - obb.position);
+        if(CMP(mSq, 0.0f)){
+            return result;
+        }
+        normal = Normalized(closest - obb.position);
+    } else {
+        normal = Normalized(closest - sphere.position);
+    }
+    PointCollider outsidePoint = sphere.position + normal * sphere.radius;
+    float distance = Magnitude(closest - outsidePoint);
+    result.colliding = true;
+    result.normal = normal;
+    result.depth = distance * 0.5f;
+    result.contacts.push_back(closest + (outsidePoint - closest) * 0.5f);
+    return result;
+}
+#define SphereOBBManifold(sphere, obb) OBBSphereManifold(obb, sphere)
+
+CollisionManifold PlaneSphereManifold(const PlaneCollider& plane, const SphereCollider& sphere){
+    CollisionManifold result;
+    ResetCollisionManifold(&result);
+    float dist = glm::dot(plane.normal, sphere.position) - plane.distance;
+    if(dist > sphere.radius){
+        return result;
+    }
+    result.colliding = true;
+    result.normal = plane.normal;
+    result.depth = (sphere.radius - dist) * 0.5f;
+    PointCollider contact = sphere.position - plane.normal * (dist + result.depth);
+    result.contacts.push_back(contact);
+    return result;
+}
+#define SpherePlaneManifold(sphere, plane) PlaneSphereManifold(plane, sphere)
+
+CollisionManifold TriangleSphereManifold(const Triangle& triangle, const SphereCollider& sphere){
+    CollisionManifold result;
+    ResetCollisionManifold(&result);
+    PointCollider closest = ClosestPoint(triangle, sphere.position);
+    float distanceSq = MagnitudeSq(closest - sphere.position);
+    if (distanceSq > sphere.radius * sphere.radius) {
+        return result;
+    }
+    vec3 normal;
+    if(CMP(distanceSq, 0.0f)){
+        vec3 triNormal = Normalized(glm::cross(triangle.b - triangle.a, triangle.c - triangle.a));
+        float mSq = MagnitudeSq(triNormal);
+        if(CMP(mSq, 0.0f)){
+            return result;
+        }
+        normal = triNormal;
+    } else {
+        normal = Normalized(closest - sphere.position);
+    }
+    PointCollider outsidePoint = sphere.position + normal * sphere.radius;
+    float distance = Magnitude(closest - outsidePoint);
+    result.colliding = true;
+    result.normal = normal;
+    result.depth = distance * 0.5f;
+    result.contacts.push_back(closest + (outsidePoint - closest) * 0.5f);
+    return result;
+}
+#define SphereMeshManifold(sphere, mesh) MeshSphereManifold(mesh, sphere)
+
+CollisionManifold MeshSphereManifold(const MeshCollider& mesh, const SphereCollider& sphere){
+    CollisionManifold result;
+    ResetCollisionManifold(&result);
+    if(mesh.accelerator != nullptr){
+        std::list<BVHNode*> toProcess;
+        toProcess.push_front(mesh.accelerator);
+        while(!toProcess.empty()){
+            BVHNode* iterator = *(toProcess.begin());
+            toProcess.erase(toProcess.begin());
+            if(iterator->numTriangles >=0){
+                for(int i = 0; i < iterator->numTriangles; i++){
+                    CollisionManifold tempResult = TriangleSphereManifold(mesh.triangles[iterator->triangles[i]], sphere);
+                    if(tempResult.colliding){
+                        if(!result.colliding || tempResult.depth < result.depth){
+                            result = tempResult;
+                        }
+                    }
+                }
+            }
+            if(iterator->children != nullptr){
+                for(int i = 0; i < 8; i++){
+                    if(SphereAABB(sphere, iterator->children[i].bounds)){
+                        toProcess.push_front(&iterator->children[i]);
+                    }
+                }
+            }
+        }   
+    } else {
+        for(int i = 0; i < mesh.numTriangles; i++){
+            CollisionManifold tempResult = TriangleSphereManifold(mesh.triangles[i], sphere);
+            if(tempResult.colliding){
+                if(!result.colliding || tempResult.depth < result.depth){
+                    result = tempResult;
+                }
+            }
+        }
+    }
+    return result;
+}
+#define SphereMeshManifold(sphere, mesh) MeshSphereManifold(mesh, sphere)
+
+
+// Helpers 
+std::vector<PointCollider> GetVertices(const OBBCollider& obb){
+    std::vector<vec3> v;
+    v.resize(8);
+    vec3 C = obb.position;
+    vec3 E = obb.size;
+    vec3 A[] = {
+        vec3(obb.orientation[0][0], obb.orientation[1][0], obb.orientation[2][0]),
+        vec3(obb.orientation[0][1], obb.orientation[1][1], obb.orientation[2][1]),
+        vec3(obb.orientation[0][2], obb.orientation[1][2], obb.orientation[2][2])
+    };
+    v[0] = C + A[0] * E.x + A[1] * E.y + A[2] * E.z;
+    v[1] = C - A[0] * E.x + A[1] * E.y + A[2] * E.z;
+    v[2] = C + A[0] * E.x - A[1] * E.y + A[2] * E.z;
+    v[3] = C + A[0] * E.x + A[1] * E.y - A[2] * E.z;
+    v[4] = C - A[0] * E.x - A[1] * E.y - A[2] * E.z;
+    v[5] = C + A[0] * E.x - A[1] * E.y - A[2] * E.z;
+    v[6] = C - A[0] * E.x + A[1] * E.y - A[2] * E.z;
+    v[7] = C - A[0] * E.x - A[1] * E.y + A[2] * E.z;
+    return v;
+}
+
+std::vector<LineCollider> GetEdges(const OBBCollider& obb){
+    std::vector<LineCollider> result;
+    result.reserve(12);
+    std::vector<PointCollider> v = GetVertices(obb);
+    int index[] [2] = {
+        {6,1},{6,3},{6,4},{2,7},{2,5},{2,0},
+        {0,1},{0,3},{7,1},{7,4},{4,5},{5,3}
+    };
+    for(int i = 0; i < 12; i++){
+        result.push_back(LineCollider(v[index[i][0]], v[index[i][1]]));
+    }
+    return result;
+}
+
+std::vector<PlaneCollider> GetPlanes(const OBBCollider& obb){
+    std::vector<PlaneCollider> result;
+    result.resize(6);
+    vec3 C = obb.position;
+    vec3 E = obb.size;
+    vec3 A[] = {
+        vec3(obb.orientation[0][0], obb.orientation[1][0], obb.orientation[2][0]),
+        vec3(obb.orientation[0][1], obb.orientation[1][1], obb.orientation[2][1]),
+        vec3(obb.orientation[0][2], obb.orientation[1][2], obb.orientation[2][2])
+    };
+    result[0] = PlaneCollider(A[0], glm::dot(A[0], (C + A[0] * E.x)));
+    result[1] = PlaneCollider(A[0]*-1.0f,-glm::dot(A[0],(C-A[0]*E.x)));
+    result[2] = PlaneCollider(A[1], glm::dot(A[1], (C + A[1] * E.y)));
+    result[3] = PlaneCollider(A[1]*-1.0f,-glm::dot(A[1],(C-A[1]*E.y)));
+    result[4] = PlaneCollider(A[2], glm::dot(A[2], (C + A[2] * E.z)));
+    result[5] = PlaneCollider(A[2]*-1.0f,-glm::dot(A[2],(C-A[2]*E.z)));
+    return result;
+}
+
+bool ClipToPlane(const PlaneCollider& plane, const LineCollider& line, PointCollider* outPoint){
+    vec3 ab = line.end - line.start;
+    float nAB = glm::dot(plane.normal, ab);
+    if (CMP(nAB, 0)) {
+        return false;
+    }
+    float nA = glm::dot(plane.normal, line.start);
+    float t = (plane.distance - nA) / nAB;
+    if (t >= 0.0f && t <= 1.0f) {
+        if(outPoint != nullptr){
+            *outPoint = line.start + ab * t;
+        }
+        return true;
+    }
+    return false;
+}
+
+std::vector<PointCollider> ClipToEdgesOBB(const std::vector<LineCollider>& edges, const OBBCollider& obb){
+    std::vector<PointCollider> result;
+    result.reserve(edges.size());
+    PointCollider intersection;
+    std::vector<PlaneCollider> planes = GetPlanes(obb);
+    for(int i=0; i<planes.size(); i++){
+        for(int j=0; j<edges.size(); j++){
+            if(ClipToPlane(planes[i], edges[j], &intersection)){
+                if(PointInOBB(intersection, obb)) result.push_back(intersection);
+            }
+        }
+    }
+    return result;
+}
+
+float PenetrationDepth(const OBBCollider& o1, const OBBCollider& o2, const vec3& axis, bool* outShouldFlip){
+    Interval i1 = GetInterval(o1, Normalized(axis));
+    Interval i2 = GetInterval(o2, Normalized(axis));
+    if (!((i2.min <= i1.max) && (i1.min <= i2.max))) {
+        return 0.0f; // No penerattion
+    }
+    float len1 = i1.max - i1.min;
+    float len2 = i2.max - i2.min;
+    float min = fminf(i1.min, i2.min);
+    float max = fmaxf(i1.max, i2.max);
+    float length = max - min;
+    if(outShouldFlip != nullptr){
+        *outShouldFlip = false;
+        if(i1.min < i2.min){
+            *outShouldFlip = true;
+        }
+    }
+    return len1 + len2 - length;
+}
+
+// ⭐ Crée un AABB à partir d'un Triangle
+AABBCollider AABBFromTriangle(const Triangle& tri){
+    vec3 min = tri.a;
+    vec3 max = tri.a;
+    
+    // Trouve min et max pour chaque axis
+    min.x = fminf(min.x, tri.b.x);
+    min.y = fminf(min.y, tri.b.y);
+    min.z = fminf(min.z, tri.b.z);
+    max.x = fmaxf(max.x, tri.b.x);
+    max.y = fmaxf(max.y, tri.b.y);
+    max.z = fmaxf(max.z, tri.b.z);
+    
+    min.x = fminf(min.x, tri.c.x);
+    min.y = fminf(min.y, tri.c.y);
+    min.z = fminf(min.z, tri.c.z);
+    max.x = fmaxf(max.x, tri.c.x);
+    max.y = fmaxf(max.y, tri.c.y);
+    max.z = fmaxf(max.z, tri.c.z);
+    
+    return FromMinMax(min, max);
+}
+
+// ⭐ Crée un AABB à partir d'un Mesh
+AABBCollider AABBFromMesh(const MeshCollider& mesh){
+    if(mesh.numTriangles == 0){
+        return AABBCollider(vec3(0, 0, 0), vec3(1, 1, 1));
+    }
+    
+    vec3 min = mesh.vertices[0];
+    vec3 max = mesh.vertices[0];
+    
+    for(int i = 1; i < mesh.numTriangles * 3; i++){
+        min.x = fminf(min.x, mesh.vertices[i].x);
+        min.y = fminf(min.y, mesh.vertices[i].y);
+        min.z = fminf(min.z, mesh.vertices[i].z);
+        max.x = fmaxf(max.x, mesh.vertices[i].x);
+        max.y = fmaxf(max.y, mesh.vertices[i].y);
+        max.z = fmaxf(max.z, mesh.vertices[i].z);
+    }
+    
+    return FromMinMax(min, max);
+}
+
+CollisionManifold OBBOBBManifold(const OBBCollider& o1, const OBBCollider& o2){
+    CollisionManifold result;
+    ResetCollisionManifold(&result);
+
+    vec3 test[15] = {
+        vec3(o1.orientation[0][0], o1.orientation[1][0], o1.orientation[2][0]),
+        vec3(o1.orientation[0][1], o1.orientation[1][1], o1.orientation[2][1]),
+        vec3(o1.orientation[0][2], o1.orientation[1][2], o1.orientation[2][2]),
+        vec3(o2.orientation[0][0], o2.orientation[1][0], o2.orientation[2][0]),
+        vec3(o2.orientation[0][1], o2.orientation[1][1], o2.orientation[2][1]),
+        vec3(o2.orientation[0][2], o2.orientation[1][2], o2.orientation[2][2])
+    };
+    for (int i = 0; i< 3; ++i) { 
+        test[6 + i * 3 + 0] = glm::cross(test[i], test[0]);
+        test[6 + i * 3 + 1] = glm::cross(test[i], test[1]);
+        test[6 + i * 3 + 2] = glm::cross(test[i], test[2]);
+    }
+    vec3* hitNormal = 0;
+     bool shouldFlip = false;
+    float minPenetration = FLT_MAX;
+    for (int i = 0; i < 15; i++) {
+        if (MagnitudeSq(test[i])< 0.001f) {
+            continue;
+        }
+        float depth = PenetrationDepth(o1, o2, test[i], &shouldFlip);
+        if (depth <= 0.0f) {
+            return result;
+        } else if (depth <result.depth) {
+            if (shouldFlip) {
+                test[i] = test[i] * -1.0f;
+            }
+            result.depth = depth;
+            hitNormal = &test[i];
+        }
+    }
+    if (hitNormal == 0) {
+        return result;
+    }
+    vec3 axis = Normalized(*hitNormal);
+    std::vector<PointCollider> c1 = ClipToEdgesOBB(GetEdges(o2), o1);
+    std::vector<PointCollider> c2 = ClipToEdgesOBB(GetEdges(o1), o2);
+    result.contacts.reserve(c1.size() + c2.size());
+    result.contacts.insert(result.contacts.end(), c1.begin(), c1.end());
+    result.contacts.insert(result.contacts.end(), c2.begin(), c2.end());
+    Interval i = GetInterval(o1, axis);
+    float distance = (i.max - i.min)* 0.5f - result.depth * 0.5f;
+    vec3 pointOnPlane = o1.position + axis * distance;
+    for (int i = result.contacts.size() - 1; i>= 0; --i) {
+        vec3 contact = result.contacts[i];
+        result.contacts[i] = contact + (axis * glm::dot(axis, pointOnPlane - contact));
+        
+        // ⭐ AJOUTE cette boucle pour enlever les doublons
+        for (int j = result.contacts.size() - 1; j > i; --j) {
+            if (MagnitudeSq(result.contacts[j] - result.contacts[i]) < 0.0001f) {
+                result.contacts.erase(result.contacts.begin() + j);
+                break;
+            }
+        }
+    }
+    result.colliding = true;
+    result.normal = axis;
+    return result;
+}
+
+#define OBBOBBManifold(o1, o2) OBBOBBManifold(o1, o2)
+
+CollisionManifold OBBAABBManifold(const OBBCollider& obb, const AABBCollider& aabb){
+    CollisionManifold result;
+    ResetCollisionManifold(&result);
+    OBBCollider aabbAsObb;
+    aabbAsObb.position = aabb.origin;
+    aabbAsObb.size = aabb.size;
+    aabbAsObb.orientation = glm::mat3(1.0f);
+    result = OBBOBBManifold(obb, aabbAsObb);
+    return result;
+}
+#define AABBOBBManifold(aabb, obb) OBBAABBManifold(obb, aabb)
+
+CollisionManifold OBBPlaneManifold(const OBBCollider& obb, const PlaneCollider& plane){
+    CollisionManifold result;
+    ResetCollisionManifold(&result);
+    float r = 
+        obb.size.x * fabsf(glm::dot(plane.normal, vec3(obb.orientation[0][0], obb.orientation[1][0], obb.orientation[2][0]))) +
+        obb.size.y * fabsf(glm::dot(plane.normal, vec3(obb.orientation[0][1], obb.orientation[1][1], obb.orientation[2][1]))) +
+        obb.size.z * fabsf(glm::dot(plane.normal, vec3(obb.orientation[0][2], obb.orientation[1][2], obb.orientation[2][2])));
+    float s = glm::dot(plane.normal, obb.position) - plane.distance;
+    if (fabsf(s) > r) {
+        return result;
+    }
+    result.colliding = true;
+    result.normal = plane.normal;
+    result.depth = (r - fabsf(s)) * 0.5f;
+    vec3 contactPoint = obb.position - plane.normal * (s + (s < 0 ? -result.depth : result.depth));
+    result.contacts.push_back(contactPoint);
+    return result;
+}
+#define PlaneOBBManifold(plane, obb) OBBPlaneManifold(obb, plane)
+
+CollisionManifold OBBTriangleManifold(const OBBCollider& obb, const Triangle& triangle){
+    CollisionManifold result;
+    ResetCollisionManifold(&result);
+    // Pour simplifier, on peut approximer le triangle par son AABB
+    AABBCollider triangleAABB = AABBFromTriangle(triangle);
+    CollisionManifold tempResult = OBBAABBManifold(obb, triangleAABB);
+    if(tempResult.colliding){
+        result = tempResult;
+    }
+    return result;
+}
+#define TriangleOBBManifold(triangle, obb) OBBTriangleManifold(obb, triangle)
+
+CollisionManifold MeshOBBManifold(const MeshCollider& mesh, const OBBCollider& obb){
+    CollisionManifold result;
+    ResetCollisionManifold(&result);
+    if(mesh.accelerator != nullptr){
+        std::list<BVHNode*> toProcess;
+        toProcess.push_front(mesh.accelerator);
+        while(!toProcess.empty()){
+            BVHNode* iterator = *(toProcess.begin());
+            toProcess.erase(toProcess.begin());
+            if(iterator->numTriangles >=0){
+                for(int i = 0; i < iterator->numTriangles; i++){
+                    CollisionManifold tempResult = OBBTriangleManifold(obb, mesh.triangles[iterator->triangles[i]]);
+                    if(tempResult.colliding){
+                        if(!result.colliding || tempResult.depth < result.depth){
+                            result = tempResult;
+                        }
+                    }
+                }
+            }
+            if(iterator->children != nullptr){
+                for(int i = 0; i < 8; i++){
+                    if(OBBAABB(obb, iterator->children[i].bounds)){
+                        toProcess.push_front(&iterator->children[i]);
+                    }
+                }
+            }
+        }   
+    } else {
+        for(int i = 0; i < mesh.numTriangles; i++){
+            CollisionManifold tempResult = OBBTriangleManifold(obb, mesh.triangles[i]);
+            if(tempResult.colliding){
+                if(!result.colliding || tempResult.depth < result.depth){
+                    result = tempResult;
+                }
+            }
+        }
+    }
+    return result;
+}
+#define OBBMeshManifold(obb, mesh) MeshOBBManifold(mesh, obb)
+
+CollisionManifold AABBAABBManifold(const AABBCollider& aabb1, const AABBCollider& aabb2){
+    CollisionManifold result;
+    ResetCollisionManifold(&result);
+    // Pour simplifier, on peut approximer les AABB par des OBB
+    OBBCollider obb1;
+    obb1.position = aabb1.origin;
+    obb1.size = aabb1.size;
+    obb1.orientation = glm::mat3(1.0f);
+    OBBCollider obb2;
+    obb2.position = aabb2.origin;
+    obb2.size = aabb2.size;
+    obb2.orientation = glm::mat3(1.0f);
+    result = OBBOBBManifold(obb1, obb2);
+    return result;
+}
+#define AABBAABBManifold(aabb1, aabb2) AABBAABBManifold(aabb1, aabb2)
+
+CollisionManifold AABBPlaneManifold(const AABBCollider& aabb, const PlaneCollider& plane){
+    CollisionManifold result;
+    ResetCollisionManifold(&result);
+    // Pour simplifier, on peut approximer l'AABB par un OBB
+    OBBCollider obb;
+    obb.position = aabb.origin;
+    obb.size = aabb.size;
+    obb.orientation = glm::mat3(1.0f);
+    result = OBBPlaneManifold(obb, plane);
+    return result;
+}
+#define PlaneAABBManifold(plane, aabb) AABBPlaneManifold(aabb, plane)
+
+CollisionManifold AABBTriangleManifold(const AABBCollider& aabb, const Triangle& triangle){
+    CollisionManifold result;
+    ResetCollisionManifold(&result);
+    // Pour simplifier, on peut approximer le triangle par son AABB
+    AABBCollider triangleAABB = AABBFromTriangle(triangle);
+    result = AABBAABBManifold(aabb, triangleAABB);
+    return result;
+}
+#define TriangleAABBManifold(triangle, aabb) AABBTriangleManifold(aabb, triangle)
+
+CollisionManifold MeshAABBManifold(const MeshCollider& mesh, const AABBCollider& aabb){
+    CollisionManifold result;
+    ResetCollisionManifold(&result);
+    // Pour simplifier, on peut approximer l'AABB par un OBB
+    OBBCollider obb;
+    obb.position = aabb.origin;
+    obb.size = aabb.size;
+    obb.orientation = glm::mat3(1.0f);
+    result = MeshOBBManifold(mesh, obb);
+    return result;
+}
+#define AABBMeshManifold(aabb, mesh) MeshAABBManifold(mesh, aabb)
+
+CollisionManifold PlaneMeshManifold(const PlaneCollider& plane, const MeshCollider& mesh){
+    CollisionManifold result;
+    ResetCollisionManifold(&result);
+    // Pour simplifier, on peut approximer le plan par un grand AABB
+    float largeSize = 10000.0f;
+    AABBCollider aabb;
+    aabb.origin = plane.normal * (plane.distance - largeSize * 0.5f);
+    aabb.size = vec3(largeSize);
+    result = MeshAABBManifold(mesh, aabb);
+    return result;
+}
+#define MeshPlaneManifold(mesh, plane) PlaneMeshManifold(plane, mesh)
+
+CollisionManifold MeshMeshManifold(const MeshCollider& m1, const MeshCollider& m2){
+    CollisionManifold result;
+    ResetCollisionManifold(&result);
+    // Pour simplifier, on peut approximer les Mesh par des AABB
+    AABBCollider aabb1 = AABBFromMesh(m1);
+    AABBCollider aabb2 = AABBFromMesh(m2);
+    result = AABBAABBManifold(aabb1, aabb2);
+    return result;
+}
+
+CollisionManifold TriangleTriangleManifold(const Triangle& t1, const Triangle& t2){
+    CollisionManifold result;
+    ResetCollisionManifold(&result);
+    // Pour simplifier, on peut approximer les triangles par des AABB
+    AABBCollider aabb1 = AABBFromTriangle(t1);
+    AABBCollider aabb2 = AABBFromTriangle(t2);
+    result = AABBAABBManifold(aabb1, aabb2);
+    return result;
+}
+#define TriangleTriangleManifold(t1, t2) TriangleTriangleManifold(t1, t2)
 
 #endif // GEOMETRY3D_H

@@ -104,7 +104,7 @@ struct ColliderComponent {
                                    entityData["collider"]["normal"][2]);
             }
             glm::vec3 position = entityManager->GetComponent<TransformComponent>(index).position;
-            float distance = glm::dot(normal, position);
+            float distance = glm::dot(position, normal);
             collider = std::make_unique<PlaneCollider>(normal, distance);
         }
         else if(colliderType == "MESH"){

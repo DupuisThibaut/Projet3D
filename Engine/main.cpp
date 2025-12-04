@@ -461,6 +461,7 @@ int main( int argc, char* argv[] )
             if (lightSystem) { delete lightSystem; lightSystem = nullptr; }
             if (physicSystem) { delete physicSystem; physicSystem = nullptr; }
             if (editorSystem) { editorSystem->shutdown(); delete editorSystem; editorSystem = nullptr; }
+            audioSystem.clear();
             sceneManager.applyPendingScene(SCR_WIDTH,SCR_HEIGHT,EditorMode);
             systemsInitialized = false; 
             glfwPollEvents();

@@ -1,6 +1,8 @@
 #ifndef PHYSICSYSTEM_H
 #define PHYSICSYSTEM_H
 #include <unordered_map>
+#include "../common/Geometry3D.h"
+#include <iostream>
 
 class PhysicSystem {
     const double FIXED_DELTA_TIME = 1.0/60.0;
@@ -33,14 +35,87 @@ public:
     void computeVelocity(uint32_t e, float dt){
         auto& rigid = entityManager->GetComponent<RigidBodyComponent>(e);
         auto& transform = entityManager->GetComponent<TransformComponent>(e);
-        ApplyForces(e);
+        if(rigid.firstFrame){
+            rigid.oldPosition = transform.position;
+            rigid.firstFrame = false;
+        }
+        glm::vec3 velocity = transform.position - rigid.oldPosition;
+        rigid.oldPosition = transform.position;
         rigid.acceleration = rigid.forces * InvMass(e);
-        rigid.velocity = rigid.velocity + dt * rigid.acceleration;
-        rigid.velocity *= rigid.friction;
-        transform.position = transform.position + rigid.velocity*dt;
+        float deltaSquare = dt * dt;
+        transform.position = transform.position + (velocity * rigid.friction + rigid.acceleration * deltaSquare);
+        
         auto& mesh = entityManager->GetComponent<MeshComponent>(e);
         mesh.update=true;
-        // std::cout<<"Entity "<<e<<" gravite : "<<rigid.gravity.y<<" position y : "<<transform.position.y<<" velocity y : "<<rigid.velocity.y<<std::endl;
+    }
+
+    struct WorldConstraints{
+        std::vector<SphereCollider> spheres;
+        std::vector<AABBCollider> aabbs;
+        std::vector<OBBCollider> obbs;
+        std::vector<PlaneCollider> planes;
+        std::vector<MeshCollider*> meshes;
+        std::vector<glm::mat4> meshTransforms;
+    };
+
+    WorldConstraints getWorldConstraints(){
+        WorldConstraints wc;
+        const auto& colliders = entityManager->GetComponents<ColliderComponent>();
+        for(const auto& pair : colliders){
+            if(entityManager->HasComponent<RigidBodyComponent>(pair.first)) continue;
+            
+            uint32_t id = pair.first;
+            auto& colliderComp = entityManager->GetComponent<ColliderComponent>(id);
+            auto& transform = entityManager->GetComponent<TransformComponent>(id);
+            glm::mat4 worldMatrix = transform.worldMatrix;
+            
+            switch(colliderComp.type){
+                case ColliderType::SPHERE: {
+                    auto* sphere = static_cast<SphereCollider*>(colliderComp.collider.get());
+                    SphereCollider worldSphere = *sphere;
+                    worldSphere.position = glm::vec3(transform.position);
+                    worldSphere.radius = sphere->radius * std::max({transform.scale.x, transform.scale.y, transform.scale.z});
+                    wc.spheres.push_back(worldSphere);
+                    break;
+                }
+                case ColliderType::AABB: {
+                    auto* aabb = static_cast<AABBCollider*>(colliderComp.collider.get());
+                    AABBCollider worldAABB = *aabb;
+                    glm::vec3 min = GetMin(*aabb);
+                    glm::vec3 max = GetMax(*aabb);
+                    glm::vec3 worldMin = glm::vec3(transform.position + min);
+                    glm::vec3 worldMax = glm::vec3(transform.position + max);
+                    worldAABB.origin = worldMin;
+                    worldAABB.size = worldMax - worldMin;
+                    wc.aabbs.push_back(worldAABB);
+                    break;
+                }
+                case ColliderType::OBB: {
+                    auto* obb = static_cast<OBBCollider*>(colliderComp.collider.get());
+                    OBBCollider worldOBB = *obb;
+                    worldOBB.position = glm::vec3(worldMatrix * glm::vec4(obb->position, 1.0f));
+                    worldOBB.orientation = glm::mat3(worldMatrix) * obb->orientation;
+                    wc.obbs.push_back(worldOBB);
+                    break;
+                }
+                case ColliderType::PLANE: {
+                    auto* plane = static_cast<PlaneCollider*>(colliderComp.collider.get());
+                    PlaneCollider worldPlane = *plane;
+                    worldPlane.normal = plane->normal;
+                    worldPlane.distance = plane->distance;                    
+                    wc.planes.push_back(worldPlane);
+                    break;
+                }
+                case ColliderType::MESH: {
+                    auto* mesh = static_cast<MeshCollider*>(colliderComp.collider.get());
+                    wc.meshes.push_back(mesh);
+                    wc.meshTransforms.push_back(worldMatrix);
+                    break;
+                }
+                default: break;
+            }
+        }
+        return wc;
     }
 
     void detectCollisions(std::vector<std::pair<uint32_t, uint32_t>>& collidingPairs) {
@@ -221,6 +296,105 @@ public:
             }
         }
     }
+    
+    void SolveConstraints(uint32_t e, const WorldConstraints& wc){
+        int size = wc.spheres.size() + wc.aabbs.size() + wc.obbs.size() + wc.planes.size() + wc.meshes.size();
+        auto& rb = entityManager->GetComponent<RigidBodyComponent>(e);
+        auto& transform = entityManager->GetComponent<TransformComponent>(e);
+        for(int i=0; i<size; i++){
+            if(i < wc.spheres.size()){
+                // Sphere
+                SphereCollider sphere = wc.spheres[i];
+                LineCollider traveled(rb.oldPosition, transform.position);
+                if(Linetest(sphere, traveled)){
+                    rb.velocity = transform.position - rb.oldPosition;
+                    glm::vec3 direction = glm::normalize(rb.velocity);
+                    RayCollider ray(rb.oldPosition - direction * 0.01f, direction);
+                    RaycastResult result;
+                    if(Raycast(sphere,ray,&result)){
+                        transform.position = result.point + result.normal * 0.001f;
+                        glm::vec3 velNormal = glm::dot(rb.velocity, result.normal) * result.normal;
+                        glm::vec3 velTangent = rb.velocity - velNormal;
+                        rb.oldPosition = transform.position - (velTangent - velNormal * rb.bounce);
+                        break;
+                    }
+                }
+            } else if(i < wc.spheres.size() + wc.aabbs.size()){
+                AABBCollider aabb = wc.aabbs[i - wc.spheres.size()];
+                LineCollider traveled(rb.oldPosition, transform.position);
+                if(Linetest(aabb, traveled)){
+                    rb.velocity = transform.position - rb.oldPosition;
+                    glm::vec3 direction = glm::normalize(rb.velocity);
+                    RayCollider ray(rb.oldPosition - direction * 0.01f, direction);
+                    RaycastResult result;
+                    if(Raycast(aabb,ray,&result)){
+                        transform.position = result.point + result.normal * 0.001f;
+                        glm::vec3 velNormal = glm::dot(rb.velocity, result.normal) * result.normal;
+                        glm::vec3 velTangent = rb.velocity - velNormal;
+                        rb.oldPosition = transform.position - (velTangent - velNormal * rb.bounce);
+                        break;
+                    }
+                }
+            } else if(i < wc.spheres.size() + wc.aabbs.size() + wc.obbs.size()){
+                OBBCollider obb = wc.obbs[i - wc.spheres.size() - wc.aabbs.size()];
+                LineCollider traveled(rb.oldPosition, transform.position);
+                if(Linetest(obb, traveled)){
+                    rb.velocity = transform.position - rb.oldPosition;
+                    glm::vec3 direction = glm::normalize(rb.velocity);
+                    RayCollider ray(rb.oldPosition - direction * 0.01f, direction);
+                    RaycastResult result;
+                    if(Raycast(obb,ray,&result)){
+                        transform.position = result.point + result.normal * 0.001f;
+                        glm::vec3 velNormal = glm::dot(rb.velocity, result.normal) * result.normal;
+                        glm::vec3 velTangent = rb.velocity - velNormal;
+                        rb.oldPosition = transform.position - (velTangent - velNormal * rb.bounce);
+                        break;
+                    }
+                }
+            } else if(i < wc.spheres.size() + wc.aabbs.size() + wc.obbs.size() + wc.planes.size()){
+                PlaneCollider plane = wc.planes[i - wc.spheres.size() - wc.aabbs.size() - wc.obbs.size()];
+                auto& entityCollider = entityManager->GetComponent<ColliderComponent>(e);
+                float entityRadius = 0.0f;
+                if(entityCollider.type == ColliderType::SPHERE) {
+                    auto* sphere = static_cast<SphereCollider*>(entityCollider.collider.get());
+                    entityRadius = sphere->radius;
+                }
+                PlaneCollider adjustedPlane = plane;
+                adjustedPlane.distance += entityRadius;
+                LineCollider traveled(rb.oldPosition, transform.position);
+                if(Linetest(adjustedPlane, traveled)){
+                    rb.velocity = transform.position - rb.oldPosition;
+                    glm::vec3 direction = glm::normalize(rb.velocity);
+                    RayCollider ray(rb.oldPosition - direction * 0.01f, direction);
+                    RaycastResult result;
+                    if(Raycast(plane, ray, &result)){
+                        transform.position = result.point + result.normal * (entityRadius + 0.001f);
+                        glm::vec3 velNormal = glm::dot(rb.velocity, result.normal) * result.normal;
+                        glm::vec3 velTangent = rb.velocity - velNormal;
+                        rb.oldPosition = transform.position - (velTangent - velNormal * rb.bounce);
+                        break;
+                    }
+                }
+            } else {
+                MeshCollider* mesh = wc.meshes[i - wc.spheres.size() - wc.aabbs.size() - wc.obbs.size() - wc.planes.size()];
+                LineCollider traveled(rb.oldPosition, transform.position);
+                if(Linetest(*mesh, traveled)){
+                    rb.velocity = transform.position - rb.oldPosition;
+                    glm::vec3 direction = glm::normalize(rb.velocity);
+                    RayCollider ray(rb.oldPosition - direction * 0.01f, direction);
+                    RaycastResult result;
+                    if(Raycast(*mesh,ray,&result)){
+                        transform.position = result.point + result.normal * 0.001f;
+                        glm::vec3 velNormal = glm::dot(rb.velocity, result.normal) * result.normal;
+                        glm::vec3 velTangent = rb.velocity - velNormal;
+                        rb.oldPosition = transform.position - (velTangent - velNormal * rb.bounce);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    
     void update(float deltaTime) {
         accumulator += deltaTime;
         if (accumulator > MAX_ACCUMULATOR) {
@@ -229,24 +403,22 @@ public:
         const float fixedDeltaTime = static_cast<float>(FIXED_DELTA_TIME);
         while(accumulator >= FIXED_DELTA_TIME){
             const auto& rigidBodies = entityManager->GetComponents<RigidBodyComponent>();
-            const auto& colliders = entityManager->GetComponents<ColliderComponent>();
-            if(rigidBodies.empty() && colliders.empty()) return;
-            std::vector<std::pair<uint32_t, uint32_t>> collidingPairs;
-            detectCollisions(collidingPairs);                
-            for(const auto& pair : collidingPairs){
-                if(entityManager->HasComponent<RigidBodyComponent>(pair.first)){
-                    auto& rigidA = entityManager->GetComponent<RigidBodyComponent>(pair.first);
-                    rigidA.gravity = glm::vec3(0.0f);
-                }
-                if(entityManager->HasComponent<RigidBodyComponent>(pair.second)){
-                    auto& rigidB = entityManager->GetComponent<RigidBodyComponent>(pair.second);
-                    rigidB.gravity = glm::vec3(0.0f);
-                }
+            if(rigidBodies.empty()){
+                accumulator -= FIXED_DELTA_TIME;
+                continue;
             }
-        
+            // Appliquer les forces avant de calculer la vélocité
+            for(const auto& rb : rigidBodies){
+                ApplyForces(rb.first);
+            }
+            // Calcul de la vélocité
             for(const auto& rb : rigidBodies){
                 computeVelocity(rb.first, fixedDeltaTime);
             }
+            WorldConstraints wc = getWorldConstraints();
+            for(const auto& rb : rigidBodies){
+                SolveConstraints(rb.first, wc);
+            } 
             accumulator -= FIXED_DELTA_TIME;
         }
     }
