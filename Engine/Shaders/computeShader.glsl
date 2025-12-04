@@ -16,6 +16,7 @@ uniform int nbMesh;
 uniform int nbParticule;
 uniform int resetAccum;
 uniform uint accum;
+uniform int blinn;
 
 #define PI 3.1415926538
 
@@ -122,6 +123,8 @@ float intersectSquare(Ray rayon, vec3 m_bottom_left, vec3 m_right_vector, vec3 m
 struct Light{
 	vec3 pos;
 	float rayon;
+	vec3 color;
+	float padding;
 };
 layout(std430,binding=3)buffer Lights{Light lights[];};
 
@@ -161,6 +164,8 @@ layout(std430,binding=7)buffer BVHS{BVH bvhs[];};
 vec3 normalTriangleTest;
 vec3 normalTriangleFinal;
 
+vec3 wTriangle;
+
 float intersectTriangle(Ray rayon, vec3 v0, vec3 v1, vec3 v2){
 	vec3 ro=rayon.origin;
 	vec3 rd=rayon.direction;
@@ -186,6 +191,7 @@ float intersectTriangle(Ray rayon, vec3 v0, vec3 v1, vec3 v2){
 	float u2=(d00*d21-d01*d20)/denom;
 	float u0=1.0-u1-u2;
 	if(u0<0.0||u1<0.0||u2<0.0||u0>1.0||u1>1.0||u2>1.0)return -1.0;
+	wTriangle=vec3(u0,u1,u2);
 	return t;
 }
 
@@ -236,6 +242,7 @@ float intersectMesh(Ray rayon, int indice){
                 if(t>0 && t<tmin){
                     tmin=t;
                     normalTriangleFinal=normalize(cross(v1-v0,v2-v0));
+					uvTest=vec2(wTriangle.x*vertices[i0].position.w+wTriangle.y*vertices[i1].position.w+wTriangle.z*vertices[i2].position.w,wTriangle.x*vertices[i0].normal.w+wTriangle.y*vertices[i1].normal.w+wTriangle.z*vertices[i2].normal.w);
                 }
             }
 			if(tmin!=1e20)return tmin;
@@ -312,7 +319,7 @@ intersection intersectScene(Ray rayon){
 					// mat3 normalMat=transpose(inverse(mat3(model)));
 					normalTriangleFinal=normalize(normalMat*normalTriangleFinal);
 					// normalTriangleFinal=normalize(mat3(model)*normalTriangleFinal);
-					res.tmin=t2;res.hitIndex=i;res.inter=3;
+					res.tmin=t2;res.hitIndex=i;res.inter=3;uvFinal=uvTest;
 				}
 			}
 		}
@@ -583,26 +590,29 @@ vec3 couleurSphere(Ray rayon,float tmin,int hitIndex,vec2 pix){
 	// 	finalColor=vec3(1.0,1.0,1.0);
 	// }
 	vec3 finalColor=vec3(1.0,1.0,1.0);
-	vec3 light=lights[0].pos;
-	vec3 p=ro+rd*tmin;
-	vec3 L=light-p;
-	float Ldist=length(L);
-	vec3 n=(p-spheres[hitIndex].centre)/spheres[hitIndex].rayon;
-	vec3 v=ro-p;
-	L=normalize(L);
-	v=normalize(v);
-	float cosT=max(dot(n,L),0.0);
-	vec3 r=reflect(-L,n);
-	r=normalize(r);
-	float cosA=max(dot(r,v),0.0);
-	float shininess=spheres[hitIndex].specular.w;
-	vec3 ambient=spheres[hitIndex].ambient.rgb;
-	vec3 diffuse=spheres[hitIndex].diffuse.rgb;
-	vec3 specular=spheres[hitIndex].specular.rgb;
-	finalColor[0]*=l[0]*ambient[0]+l[0]*diffuse[0]*cosT+l[0]*specular[0]*pow(cosA,shininess);
-	finalColor[1]*=l[1]*ambient[1]+l[1]*diffuse[1]*cosT+l[1]*specular[1]*pow(cosA,shininess);
-	finalColor[2]*=l[2]*ambient[2]+l[2]*diffuse[2]*cosT+l[2]*specular[2]*pow(cosA,shininess);
-	// finalColor*=ombre(p,n,pix,light);
+	for(int i=0;i<nbLight;i++){
+		l=lights[i].color;
+		vec3 light=lights[i].pos;
+		vec3 p=ro+rd*tmin;
+		vec3 L=light-p;
+		float Ldist=length(L);
+		vec3 n=(p-spheres[hitIndex].centre)/spheres[hitIndex].rayon;
+		vec3 v=ro-p;
+		L=normalize(L);
+		v=normalize(v);
+		float cosT=max(dot(n,L),0.0);
+		vec3 r=reflect(-L,n);
+		r=normalize(r);
+		float cosA=max(dot(r,v),0.0);
+		float shininess=spheres[hitIndex].specular.w;
+		vec3 ambient=spheres[hitIndex].ambient.rgb;
+		vec3 diffuse=spheres[hitIndex].diffuse.rgb;
+		vec3 specular=spheres[hitIndex].specular.rgb;
+		finalColor[0]*=l[0]*ambient[0]+l[0]*diffuse[0]*cosT+l[0]*specular[0]*pow(cosA,shininess);
+		finalColor[1]*=l[1]*ambient[1]+l[1]*diffuse[1]*cosT+l[1]*specular[1]*pow(cosA,shininess);
+		finalColor[2]*=l[2]*ambient[2]+l[2]*diffuse[2]*cosT+l[2]*specular[2]*pow(cosA,shininess);
+		// finalColor*=ombre(p,n,pix,light);
+	}
 	return finalColor;
 }
 
@@ -616,26 +626,29 @@ vec3 couleurSquare(Ray rayon,float tmin,int hitIndex,vec2 pix){
 	// 	finalColor=vec3(1.0,1.0,1.0);
 	// }
 	vec3 finalColor=vec3(1.0,1.0,1.0);
-	vec3 light=lights[0].pos;
-	vec3 p=ro+rd*tmin;
-	vec3 L=light-p;
-	float Ldist=length(L);
-	vec3 n=squares[hitIndex].m_normal.xyz;
-	vec3 v=ro-p;
-	L=normalize(L);
-	v=normalize(v);
-	float cosT=max(dot(n,L),0.0);
-	vec3 r=reflect(-L,n);
-	r=normalize(r);
-	float cosA=max(dot(r,v),0.0);
-	float shininess=squares[hitIndex].specular.w;
-	vec3 ambient=squares[hitIndex].ambient.rgb;
-	vec3 diffuse=squares[hitIndex].diffuse.rgb;
-	vec3 specular=squares[hitIndex].specular.rgb;
-	finalColor[0]*=l[0]*ambient[0]+l[0]*diffuse[0]*cosT+l[0]*specular[0]*pow(cosA,shininess);
-	finalColor[1]*=l[1]*ambient[1]+l[1]*diffuse[1]*cosT+l[1]*specular[1]*pow(cosA,shininess);
-	finalColor[2]*=l[2]*ambient[2]+l[2]*diffuse[2]*cosT+l[2]*specular[2]*pow(cosA,shininess);
-	// finalColor*=ombre(p,n,pix,light);
+	for(int i=0;i<nbLight;i++){
+		l=lights[i].color;
+		vec3 light=lights[i].pos;
+		vec3 p=ro+rd*tmin;
+		vec3 L=light-p;
+		float Ldist=length(L);
+		vec3 n=squares[hitIndex].m_normal.xyz;
+		vec3 v=ro-p;
+		L=normalize(L);
+		v=normalize(v);
+		float cosT=max(dot(n,L),0.0);
+		vec3 r=reflect(-L,n);
+		r=normalize(r);
+		float cosA=max(dot(r,v),0.0);
+		float shininess=squares[hitIndex].specular.w;
+		vec3 ambient=squares[hitIndex].ambient.rgb;
+		vec3 diffuse=squares[hitIndex].diffuse.rgb;
+		vec3 specular=squares[hitIndex].specular.rgb;
+		finalColor[0]*=l[0]*ambient[0]+l[0]*diffuse[0]*cosT+l[0]*specular[0]*pow(cosA,shininess);
+		finalColor[1]*=l[1]*ambient[1]+l[1]*diffuse[1]*cosT+l[1]*specular[1]*pow(cosA,shininess);
+		finalColor[2]*=l[2]*ambient[2]+l[2]*diffuse[2]*cosT+l[2]*specular[2]*pow(cosA,shininess);
+		// finalColor*=ombre(p,n,pix,light);
+	}
 	return finalColor;
 }
 
@@ -649,26 +662,29 @@ vec3 couleurMesh(Ray rayon,float tmin,int hitIndex,vec2 pix){
 	// 	finalColor=vec3(1.0,1.0,1.0);
 	// }
 	vec3 finalColor=vec3(1.0,1.0,1.0);
-	vec3 light=lights[0].pos;
-	vec3 p=ro+rd*tmin;
-	vec3 L=light-p;
-	float Ldist=length(L);
-	vec3 n=normalTriangleFinal;
-	vec3 v=ro-p;
-	L=normalize(L);
-	v=normalize(v);
-	float cosT=max(dot(n,L),0.0);
-	vec3 r=reflect(-L,n);
-	r=normalize(r);
-	float cosA=max(dot(r,v),0.0);
-	float shininess=meshes[hitIndex].specular.w;
-	vec3 ambient=meshes[hitIndex].ambient.rgb;
-	vec3 diffuse=meshes[hitIndex].diffuse.rgb;
-	vec3 specular=meshes[hitIndex].specular.rgb;
-	finalColor[0]=l[0]*ambient[0]+l[0]*diffuse[0]*cosT+l[0]*specular[0]*pow(cosA,shininess);
-	finalColor[1]=l[1]*ambient[1]+l[1]*diffuse[1]*cosT+l[1]*specular[1]*pow(cosA,shininess);
-	finalColor[2]=l[2]*ambient[2]+l[2]*diffuse[2]*cosT+l[2]*specular[2]*pow(cosA,shininess);
-	// finalColor*=ombre(p,n,pix,light);
+	for(int i=0;i<nbLight;i++){
+		l=lights[i].color;
+		vec3 light=lights[i].pos;
+		vec3 p=ro+rd*tmin;
+		vec3 L=light-p;
+		float Ldist=length(L);
+		vec3 n=normalTriangleFinal;
+		vec3 v=ro-p;
+		L=normalize(L);
+		v=normalize(v);
+		float cosT=max(dot(n,L),0.0);
+		vec3 r=reflect(-L,n);
+		r=normalize(r);
+		float cosA=max(dot(r,v),0.0);
+		float shininess=meshes[hitIndex].specular.w;
+		vec3 ambient=meshes[hitIndex].ambient.rgb;
+		vec3 diffuse=meshes[hitIndex].diffuse.rgb;
+		vec3 specular=meshes[hitIndex].specular.rgb;
+		finalColor[0]=l[0]*ambient[0]+l[0]*diffuse[0]*cosT+l[0]*specular[0]*pow(cosA,shininess);
+		finalColor[1]=l[1]*ambient[1]+l[1]*diffuse[1]*cosT+l[1]*specular[1]*pow(cosA,shininess);
+		finalColor[2]=l[2]*ambient[2]+l[2]*diffuse[2]*cosT+l[2]*specular[2]*pow(cosA,shininess);
+		// finalColor*=ombre(p,n,pix,light);
+	}
 	return finalColor;
 }
 
@@ -766,8 +782,10 @@ vec3 couleur(Ray rayon,ivec2 pix,uint seed){
 			}else{
 				testRayon.origin=p+n*0.001;
 				testRayon.direction=random_hemisphere_direction(n,seed);
-				finalColor*=testColor;
-				break;
+				if(bool(blinn)){
+					finalColor*=testColor;
+					break;
+				}
 			}
 		}else if(interObjet==2){
 			vec3 p=ro+rd*tmin;
@@ -784,26 +802,31 @@ vec3 couleur(Ray rayon,ivec2 pix,uint seed){
 			}else{
 				testRayon.origin=p+n*0.001;
 				testRayon.direction=random_hemisphere_direction(n,seed);
-				finalColor*=testColor;
-				break;
+				if(bool(blinn)){
+					finalColor*=testColor;
+					break;
+				}
 			}
 		}else if(interObjet==3){
 			vec3 p=ro+rd*tmin;
 			vec3 n=normalTriangleFinal;
 			testColor*=couleurMesh(testRayon,tmin,hitIndex,pix);
-			testRayon.origin=p+n*0.001;
-			testRayon.direction=random_hemisphere_direction(n,seed);
-			finalColor*=testColor;
-			break;
-			// if(meshes[hitIndex].padding[1]==1){
-			// 	testRayon=computeReflection(rd,n,p,pix);
-			// }
-			// if(meshes[hitIndex].padding[1]==2){
-			// 	testRayon=computeRefraction(testRayon,n,p,pix,0.75,2,hitIndex);
-			// }
-			// if(meshes[hitIndex].padding[1]==3){
-			// 	testRayon=computeMetalic(rd,n,p,pix,testColor);
-			// }
+			if(meshes[hitIndex].padding[1]==1){
+				testRayon=computeReflection(rd,n,p,pix);
+			}
+			if(meshes[hitIndex].padding[1]==2){
+				testRayon=computeRefraction(testRayon,n,p,pix,0.75,2,hitIndex);
+			}
+			if(meshes[hitIndex].padding[1]==3){
+				// testRayon=computeMetalic(rd,n,p,pix,testColor);
+			}else{
+				testRayon.origin=p+n*0.001;
+				testRayon.direction=random_hemisphere_direction(n,seed);
+				if(bool(blinn)){
+					finalColor*=testColor;
+					break;
+				}
+			}
 		}else if(interObjet==4){
 			finalColor*=vec3(0.8,0.0,0.8);
 			break;
@@ -836,20 +859,23 @@ void main(){
     vec3 finalColor=couleur(rayon,pix,seed);
 
 	//sans accumulation temporelle
-    imageStore(imgOutput,pix,vec4(finalColor,1.0));
+	if(bool(blinn)){
+    	imageStore(imgOutput,pix,vec4(finalColor,1.0));
+	}else{
+		if(bool(resetAccum) || frameCount == 0){
+			imageStore(imgAccum, pix, vec4(finalColor, 1.0));
+			imageStore(imgOutput, pix, vec4(finalColor, 1.0));
+		} else {
+			vec3 prev = imageLoad(imgAccum, pix).rgb;
+			float t=float(accum)/float(accum+1);
+			vec3 acc=prev*t+finalColor*(1.0-t);
+			imageStore(imgAccum, pix, vec4(acc, 1.0));
+			vec3 color=clamp(acc,0.0,1.0);
+			imageStore(imgOutput, pix, vec4(color, 1.0));
+		}
+	}
 
 	//avec accumulation temporelle
-	// if(bool(resetAccum) || frameCount == 0){
-    //     imageStore(imgAccum, pix, vec4(finalColor, 1.0));
-    //     imageStore(imgOutput, pix, vec4(finalColor, 1.0));
-    // } else {
-    //     vec3 prev = imageLoad(imgAccum, pix).rgb;
-	// 	float t=float(accum)/float(accum+1);
-	// 	vec3 acc=prev*t+finalColor*(1.0-t);
-    //     imageStore(imgAccum, pix, vec4(acc, 1.0));
-	// 	vec3 color=clamp(acc,0.0,1.0);
-    //     imageStore(imgOutput, pix, vec4(color, 1.0));
-    // }
 }
 
 

@@ -25,7 +25,7 @@ struct sq{
 };
 
 struct l{
-    float x,y,z,r;
+    float x,y,z,r,cr,cb,cg,p;
 };
 
 struct v{
@@ -271,6 +271,7 @@ void renderQuad()
 class RayTracerSystem {
 public:
     EntityManager* entityManager;
+    Dispatcher* dispatcher;
     GLuint computeProg;
     GLuint quadProg;
     GLuint ssboSpheres=0;
@@ -310,9 +311,24 @@ public:
 
     GLint frameCount=0;
 
+    bool blinn=true;
 
-    RayTracerSystem(EntityManager* em) : entityManager(em){
 
+    RayTracerSystem(EntityManager* em, Dispatcher* disp) : entityManager(em), dispatcher(disp){
+        dispatcher->subscribe([this](const InputEvent& event) {
+            this->onInput(event);
+            return false;
+        });
+
+    }
+
+    void onInput(const InputEvent& event) {
+        if(event.buttons.empty()) return;
+        for(const auto& button : event.buttons) {
+            if(button == "B") {
+                blinn=!blinn;
+            }
+        }
     }
 
     bool initialize(){
@@ -528,7 +544,7 @@ public:
                 auto& t = entityManager->GetComponent<TransformComponent>(e.id);
                 // t.position[0]+=0.01;
                 int i=light.nb;
-                // light.update=true;
+                light.update=true;
                 if(light.update){
                     ls[i].x=t.position[0];
                     ls[i].y=t.position[1];
@@ -637,6 +653,8 @@ public:
         }
         glUniform1ui(glGetUniformLocation(computeProg, "accum"), accum);
         reset=false;
+
+        glUniform1i(glGetUniformLocation(computeProg, "blinn"), (int)blinn);
 
         
         glDispatchCompute(groups_x, groups_y, 1);
@@ -987,7 +1005,6 @@ public:
                     }
                     //Meshes
                     if(M.type==PrimitiveType::MESH){
-                        std::cout<<"IL Y A UN MESH !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
                         std::vector<bvh> bvhsYep=creerBVH(M.vertices,M.triangles);
                         M.triangles=newTriangles;
                         int nbV=0,nbT=0;
@@ -1088,9 +1105,12 @@ public:
                     b.y=t.position[1];
                     b.z=t.position[2];
                     b.r=t.scale[0];
+                    b.cr=mat.color[0];
+                    b.cg=mat.color[1];
+                    b.cb=mat.color[2];
                     light.nb=ls.size();
                     ls.push_back(b);
-                    // std::cout<<"light x : "<<b.x<<" light y : "<<b.y<<" light z : "<<b.z<<std::endl;
+                    std::cout<<"light x : "<<b.x<<" light y : "<<b.y<<" light z : "<<b.z<<std::endl;
                 }
             }
         }

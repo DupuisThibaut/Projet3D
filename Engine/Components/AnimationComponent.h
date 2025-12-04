@@ -387,7 +387,7 @@ struct AnimationComponent {
             
             for (unsigned int i = 0; i < aiAnim->mNumChannels; ++i) {
                 const aiNodeAnim* channel = aiAnim->mChannels[i];
-                BoneAnimation boneAnim(channel->mNodeName.C_Str(), i, channel);  // ✅ Constructeur fait tout !
+                BoneAnimation boneAnim(channel->mNodeName.C_Str(), i, channel);
                 anim.boneAnimations.push_back(boneAnim);
             }
             anim.BoneInfoMap.clear();

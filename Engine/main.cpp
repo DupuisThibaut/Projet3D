@@ -209,7 +209,7 @@ void StartSystems(GLuint programID){
 #if defined (__APPLE__) || defined(MACOSX)
 #else
     // Système de Ray Tracing -> pointeur global
-    rayTracerSystem = new RayTracerSystem(&entityManager);
+    rayTracerSystem = new RayTracerSystem(&entityManager, &dispatcher);
     rayTracerSystem->resize(SCR_WIDTH, SCR_HEIGHT);
     if(!rayTracerSystem->initialize()){
         std::cerr << "Failed to initialize RayTracerSystem." << std::endl;
