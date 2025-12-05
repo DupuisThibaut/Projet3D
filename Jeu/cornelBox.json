@@ -23,8 +23,7 @@
         "ambient":[0.0, 0.0, 0.0],
         "diffuse":[1.0, 1.0, 1.0],
         "specular":[1.0, 1.0, 1.0],
-        "shininess":16.0,
-        "path":"./texture/grass.png"
+        "shininess":16.0
       }
     },
     {
@@ -93,7 +92,7 @@
       },
       "material":{
         "type":"color",
-        "color":[0.9, 0.9, 1.0],
+        "color":[0.9,0.9,1.0],
         "ambient":[1.0, 0.0, 0.0],
         "diffuse":[1.0, 0.0, 0.0],
         "specular":[1.0, 0.0, 0.0],
@@ -124,8 +123,7 @@
       "diffuse":[1.0, 1.0, 1.0],
       "specular":[1.0, 1.0, 1.0],
       "shininess":16.0,
-      "reflection":1,
-      "path":"./texture/grass.png"
+      "reflection":1
       }
     },
     {
@@ -151,8 +149,7 @@
         "ambient":[0.0, 0.0, 0.0],
         "diffuse":[0.0, 1.0, 0.0],
         "specular":[0.0, 1.0, 0.0],
-        "shininess":16.0,
-        "path":"./texture/grass.png"
+        "shininess":16.0
       }
     },
     {
@@ -178,8 +175,7 @@
         "ambient":[0.0, 0.0, 0.0],
         "diffuse":[1.0, 1.0, 1.0],
         "specular":[1.0, 1.0, 1.0],
-        "shininess":16.0,
-        "path":"./texture/grass.png"
+        "shininess":16.0
       }
     },
     {
@@ -205,8 +201,7 @@
         "ambient":[0.0, 0.0, 0.0],
         "diffuse":[1.0, 0.0, 0.0],
         "specular":[1.0, 0.0, 0.0],
-        "shininess":16.0,
-        "path":"./texture/grass.png"
+        "shininess":16.0
       }
     },
     {
@@ -259,8 +254,7 @@
         "ambient":[0.0, 0.0, 0.0],
         "diffuse":[1.0, 1.0, 1.0],
         "specular":[1.0, 1.0, 1.0],
-        "shininess":16.0,
-        "path":"./texture/grass.png"
+        "shininess":16.0
       }
     },
     {
@@ -287,8 +281,7 @@
         "diffuse":[0.8, 0.8, 0.8],
         "specular":[1.0, 1.0, 1.0],
         "shininess":16.0,
-        "reflection":1,
-        "path":"./texture/grass.png"
+        "reflection":1
       }
     },
     {
@@ -313,20 +306,6 @@
         "height":0.1,
         "taille":32,
         "police":"./texture/COMICATE.TTF"
-      }
-    },
-    {
-      "id": 13,
-      "particule": {
-        "nombre":100,
-        "path":"./texture/grass.png"
-      },
-      "transform": {
-        "position": [0.0, 0.0, 0.0],
-        "rotation": [0.0, 0.0, 0.0],
-        "scale": [0.5, 0.5, 0.5],
-        "parent": -1,
-        "children": []
       }
     }
   ]

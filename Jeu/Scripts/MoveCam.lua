@@ -69,16 +69,16 @@ function onInput(event)
     for _, btn in ipairs(event.buttons) do
         if btn == "Forward" then 
             tr.position = add(tr.position, scale(forward, speed * event.dt))
-            --springtrap.transform.position = add(springtrap.transform.position, scale(forward, speed * event.dt))
+            -- springtrap.transform.position = add(springtrap.transform.position, scale(forward, speed * event.dt))
         elseif btn == "Backward" then 
             tr.position = subtract(tr.position, scale(forward, speed * event.dt))
-            --springtrap.transform.position = subtract(springtrap.transform.position, scale(forward, speed * event.dt))
+            -- springtrap.transform.position = subtract(springtrap.transform.position, scale(forward, speed * event.dt))
         elseif btn == "Right" then 
             tr.position = add(tr.position, scale(right, speed * event.dt))
-            --springtrap.transform.position = add(springtrap.transform.position, scale(right, speed * event.dt))
+            -- springtrap.transform.position = add(springtrap.transform.position, scale(right, speed * event.dt))
         elseif btn == "Left" then 
             tr.position = subtract(tr.position, scale(right, speed * event.dt))
-            --springtrap.transform.position = subtract(springtrap.transform.position, scale(right, speed * event.dt))
+            -- springtrap.transform.position = subtract(springtrap.transform.position, scale(right, speed * event.dt))
         end
         cam.update=true
     end

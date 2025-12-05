@@ -293,6 +293,30 @@ private:
             }); lua_setfield(L,-2,"__newindex");
         } else { lua_pop(L,1); }
 
+        // LightMetaTable
+        if (luaL_newmetatable(L, "LightMetaTable")) {
+            // __index
+            lua_pushcfunction(L, [](lua_State* s)->int {
+                LightComponent* l = *(LightComponent**)luaL_checkudata(s, 1, "LightMetaTable");
+                const char* key = luaL_checkstring(s, 2);
+                if (strcmp(key, "intensity") == 0) { lua_pushnumber(s, l->intensity); return 1; }
+                if (strcmp(key, "update") == 0) { lua_pushboolean(s, l->update); return 1; }
+                if (strcmp(key, "nb") == 0) { lua_pushinteger(s, l->nb); return 1; }
+                lua_pushnil(s); return 1;
+            });
+            lua_setfield(L, -2, "__index");
+            // __newindex
+            lua_pushcfunction(L, [](lua_State* s)->int {
+                LightComponent* l = *(LightComponent**)luaL_checkudata(s, 1, "LightMetaTable");
+                const char* key = luaL_checkstring(s, 2);
+                if (strcmp(key, "intensity") == 0) { l->intensity = (float)lua_tonumber(s, 3); return 0; }
+                if (strcmp(key, "update") == 0) { l->update = lua_toboolean(s, 3); return 0; }
+                if (strcmp(key, "nb") == 0) { l->nb = (int)lua_tointeger(s, 3); return 0; }
+                return 0;
+            });
+            lua_setfield(L, -2, "__newindex");
+        } else { lua_pop(L,1); }
+
         // MaterialMetaTable
         if (luaL_newmetatable(L, "MaterialMetaTable")) {
             lua_pushcfunction(L, [](lua_State* s)->int {
@@ -313,7 +337,7 @@ private:
 
         // Lightweight metatables for other component types
         auto mkEmptyMeta = [&](const char* name){ if (luaL_newmetatable(L, name)) lua_pop(L,1); else lua_pop(L,1); };
-        mkEmptyMeta("MeshMetaTable"); mkEmptyMeta("LightMetaTable"); mkEmptyMeta("ControllerMetaTable");
+        mkEmptyMeta("MeshMetaTable"); mkEmptyMeta("ControllerMetaTable");
         mkEmptyMeta("AudioMetaTable"); mkEmptyMeta("TagMetaTable"); mkEmptyMeta("LayerMetaTable");
     }
 
@@ -322,10 +346,7 @@ private:
         if (!sys || !sys->entityManager) { lua_pushnil(L); return; }
         ensureComponentMetatables(L);
         lua_newtable(L); // result table
-        if (sys->entityManager->HasComponent<TransformComponent>(entityId)) {
-            TransformComponent* t = &sys->entityManager->GetComponent<TransformComponent>(entityId);
-            pushComponentUserdata<TransformComponent>(L, t, "TransformMetaTable"); lua_setfield(L, -2, "transform");
-        }
+        if (sys->entityManager->HasComponent<TransformComponent>(entityId)) {TransformComponent* t = &sys->entityManager->GetComponent<TransformComponent>(entityId);pushComponentUserdata<TransformComponent>(L, t, "TransformMetaTable"); lua_setfield(L, -2, "transform");}
         if (sys->entityManager->HasComponent<CameraComponent>(entityId)) { CameraComponent* c = &sys->entityManager->GetComponent<CameraComponent>(entityId); pushComponentUserdata<CameraComponent>(L, c, "CameraMetaTable"); lua_setfield(L, -2, "camera"); }
         if (sys->entityManager->HasComponent<MaterialComponent>(entityId)) { MaterialComponent* m = &sys->entityManager->GetComponent<MaterialComponent>(entityId); pushComponentUserdata<MaterialComponent>(L, m, "MaterialMetaTable"); lua_setfield(L, -2, "material"); }
         if (sys->entityManager->HasComponent<MeshComponent>(entityId)) { MeshComponent* mm = &sys->entityManager->GetComponent<MeshComponent>(entityId); pushComponentUserdata<MeshComponent>(L, mm, "MeshMetaTable"); lua_setfield(L, -2, "mesh"); }
@@ -428,6 +449,10 @@ private:
             if (!sys->entityManager->HasComponent<MeshComponent>(id)) { lua_pushnil(L); return 1; }
             MeshComponent& ref = sys->entityManager->GetComponent<MeshComponent>(id);
             MeshComponent** udata = (MeshComponent**)lua_newuserdata(L, sizeof(MeshComponent*)); *udata = &ref; luaL_getmetatable(L, "MeshMetaTable"); lua_setmetatable(L, -2); return 1;
+        } else if (name == "Light") {
+            if (!sys->entityManager->HasComponent<LightComponent>(id)) { lua_pushnil(L); return 1; }
+            LightComponent& ref = sys->entityManager->GetComponent<LightComponent>(id);
+            LightComponent** udata = (LightComponent**)lua_newuserdata(L, sizeof(LightComponent*)); *udata = &ref; luaL_getmetatable(L, "LightMetaTable"); lua_setmetatable(L, -2); return 1;
         }
         lua_pushnil(L); return 1;
     }
@@ -687,11 +712,12 @@ public:
     }
 
     // Backwards-compatible bind helper
-    void bind(LuaScriptComponent& script, TransformComponent* t, CameraComponent* c, MaterialComponent* m) {
+    void bind(LuaScriptComponent& script, TransformComponent* t, CameraComponent* c, MaterialComponent* m, LightComponent* l) {
         lua_State* L = script.L;
         if (!L) return;
         if (t) { TransformComponent** udata = (TransformComponent**)lua_newuserdata(L, sizeof(TransformComponent*)); *udata = t; luaL_getmetatable(L, "TransformMetaTable"); lua_setmetatable(L, -2); lua_setglobal(L, "transform"); }
         if (c) { CameraComponent** udata = (CameraComponent**)lua_newuserdata(L, sizeof(CameraComponent*)); *udata = c; luaL_getmetatable(L, "CameraMetaTable"); lua_setmetatable(L, -2); lua_setglobal(L, "camera"); }
         if (m) { MaterialComponent** udata = (MaterialComponent**)lua_newuserdata(L, sizeof(MaterialComponent*)); *udata = m; luaL_getmetatable(L, "MaterialMetaTable"); lua_setmetatable(L, -2); lua_setglobal(L, "material"); }
+        if (l) { LightComponent** udata = (LightComponent**)lua_newuserdata(L, sizeof(LightComponent*)); *udata = l; luaL_getmetatable(L, "LightMetaTable"); lua_setmetatable(L, -2); lua_setglobal(L, "light");}
     }
 };

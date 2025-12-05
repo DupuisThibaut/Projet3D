@@ -1,5 +1,5 @@
 #version 430 core
-// #extension GL_ARB_bindless_texture : require
+#extension GL_ARB_bindless_texture : require
 layout(local_size_x = 16, local_size_y = 16) in;
 
 layout(rgba32f, binding = 0) uniform image2D imgOutput;
@@ -296,7 +296,7 @@ intersection intersectScene(Ray rayon){
 
 	for(int i=0;i<nbParticule;i++){
 		float t=intersectSphere(rayon,particules[i].position.xyz,particules[i].position.w);
-		if(t>0.0 && t<res.tmin){res.tmin=t;res.hitIndex=i;res.inter=4;}
+		if(t>0.0 && t<res.tmin){res.tmin=t;res.hitIndex=i;res.inter=4;finalSecondeIntersectionSphere=secondeIntersection;}
 	}
 
 	// if(intersectBVH(roLocal,rdLocal,bvhs[0].minp.xyz,bvhs[0].maxp.xyz)>0.0){
@@ -558,7 +558,7 @@ bool testOmbre(Ray rayon, float dist){
 
 float ombre(vec3 p, vec3 n, vec2 pix, vec3 light){
 	float nombreRayonOmbreDouce=0.0;
-	int nombreRayon=5;
+	int nombreRayon=1;
 	float pourcentageOmbre=0.0;
 	vec3 newRay;
 	vec3 ro=p+n*0.01;
@@ -583,13 +583,13 @@ vec3 l=vec3(0.8,0.8,0.8);
 vec3 couleurSphere(Ray rayon,float tmin,int hitIndex,vec2 pix){
 	vec3 ro=rayon.origin;
 	vec3 rd=rayon.direction;
-	// if(spheres[hitIndex].padding[0]==1){
-	// 	sampler2D tex=sampler2D(spheres[hitIndex].text);
-	// 	finalColor=texture(tex,uvFinal).rgb;
-	// }else{
-	// 	finalColor=vec3(1.0,1.0,1.0);
-	// }
 	vec3 finalColor=vec3(1.0,1.0,1.0);
+	if(spheres[hitIndex].padding[0]==1){
+		sampler2D tex=sampler2D(spheres[hitIndex].text);
+		finalColor=texture(tex,uvFinal).rgb;
+	}else{
+		finalColor=vec3(1.0,1.0,1.0);
+	}
 	for(int i=0;i<nbLight;i++){
 		l=lights[i].color;
 		vec3 light=lights[i].pos;
@@ -619,13 +619,13 @@ vec3 couleurSphere(Ray rayon,float tmin,int hitIndex,vec2 pix){
 vec3 couleurSquare(Ray rayon,float tmin,int hitIndex,vec2 pix){
 	vec3 ro=rayon.origin;
 	vec3 rd=rayon.direction;
-	// if(squares[hitIndex].padding[0]==1){
-	// 	sampler2D tex=sampler2D(squares[hitIndex].text);
-	// 	finalColor=texture(tex,uvFinal).rgb;
-	// }else{
-	// 	finalColor=vec3(1.0,1.0,1.0);
-	// }
 	vec3 finalColor=vec3(1.0,1.0,1.0);
+	if(squares[hitIndex].padding[0]==1){
+		sampler2D tex=sampler2D(squares[hitIndex].text);
+		finalColor=texture(tex,uvFinal).rgb;
+	}else{
+		finalColor=vec3(1.0,1.0,1.0);
+	}
 	for(int i=0;i<nbLight;i++){
 		l=lights[i].color;
 		vec3 light=lights[i].pos;
@@ -655,13 +655,14 @@ vec3 couleurSquare(Ray rayon,float tmin,int hitIndex,vec2 pix){
 vec3 couleurMesh(Ray rayon,float tmin,int hitIndex,vec2 pix){
 	vec3 ro=rayon.origin;
 	vec3 rd=rayon.direction;
-	// if(meshes[hitIndex].padding[0]==1){
-	// 	sampler2D tex=sampler2D(meshes[hitIndex].text);
-	// 	finalColor=texture(tex,uvFinal).rgb;
-	// }else{
-	// 	finalColor=vec3(1.0,1.0,1.0);
-	// }
 	vec3 finalColor=vec3(1.0,1.0,1.0);
+	if(meshes[hitIndex].padding[0]==1){
+		sampler2D tex=sampler2D(meshes[hitIndex].text);
+		finalColor=texture(tex,uvFinal).rgb;
+		// return finalColor;
+	}else{
+		finalColor=vec3(1.0,1.0,1.0);
+	}
 	for(int i=0;i<nbLight;i++){
 		l=lights[i].color;
 		vec3 light=lights[i].pos;
@@ -680,9 +681,9 @@ vec3 couleurMesh(Ray rayon,float tmin,int hitIndex,vec2 pix){
 		vec3 ambient=meshes[hitIndex].ambient.rgb;
 		vec3 diffuse=meshes[hitIndex].diffuse.rgb;
 		vec3 specular=meshes[hitIndex].specular.rgb;
-		finalColor[0]=l[0]*ambient[0]+l[0]*diffuse[0]*cosT+l[0]*specular[0]*pow(cosA,shininess);
-		finalColor[1]=l[1]*ambient[1]+l[1]*diffuse[1]*cosT+l[1]*specular[1]*pow(cosA,shininess);
-		finalColor[2]=l[2]*ambient[2]+l[2]*diffuse[2]*cosT+l[2]*specular[2]*pow(cosA,shininess);
+		finalColor[0]*=l[0]*ambient[0]+l[0]*diffuse[0]*cosT+l[0]*specular[0]*pow(cosA,shininess);
+		finalColor[1]*=l[1]*ambient[1]+l[1]*diffuse[1]*cosT+l[1]*specular[1]*pow(cosA,shininess);
+		finalColor[2]*=l[2]*ambient[2]+l[2]*diffuse[2]*cosT+l[2]*specular[2]*pow(cosA,shininess);
 		// finalColor*=ombre(p,n,pix,light);
 	}
 	return finalColor;
@@ -815,7 +816,7 @@ vec3 couleur(Ray rayon,ivec2 pix,uint seed){
 				testRayon=computeReflection(rd,n,p,pix);
 			}
 			if(meshes[hitIndex].padding[1]==2){
-				testRayon=computeRefraction(testRayon,n,p,pix,0.75,2,hitIndex);
+				testRayon=computeRefraction(testRayon,n,p,pix,0.75,3,hitIndex);
 			}
 			if(meshes[hitIndex].padding[1]==3){
 				// testRayon=computeMetalic(rd,n,p,pix,testColor);
@@ -828,8 +829,13 @@ vec3 couleur(Ray rayon,ivec2 pix,uint seed){
 				}
 			}
 		}else if(interObjet==4){
-			finalColor*=vec3(0.8,0.0,0.8);
-			break;
+			vec3 p=ro+rd*tmin;
+			vec3 n=(p-particules[hitIndex].position.xyz)/particules[hitIndex].position.w;
+			testColor*=vec3(0.0,0.6,1.0);
+			testRayon=computeRefraction(testRayon,n,p,pix,0.99,4,hitIndex);
+			testRayon.origin=ro+rd*finalSecondeIntersectionSphere;
+			// finalColor*=vec3(0.0,1.0,1.0);
+			// break;
 		}else{
 			finalColor*=vec3(0.68,0.85,0.90);
 			break;

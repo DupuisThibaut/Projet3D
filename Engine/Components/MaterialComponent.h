@@ -140,6 +140,11 @@ struct MaterialComponent {
                     bool t=false;
                     if(isFBX){
                         t = loadTextureFromAssimp(meshPath);
+                        glm::vec3 ambient=glm::vec3(0.0,0.0,0.0);
+                        glm::vec3 diffuse=glm::vec3(1.0,1.0,1.0);
+                        glm::vec3 specular=glm::vec3(1.0,1.0,1.0);
+                        float shininess=16.0f;
+                        setColor(glm::vec3(1.0,1.0,1.0),ambient,diffuse,specular,shininess);
                     } 
                     if( entityData["material"].contains("path") && t == false){
                         std::string texturePath = entityData["material"]["path"].get<std::string>();
