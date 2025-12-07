@@ -14,7 +14,8 @@ enum class ColliderType {
     OBB,
     SPHERE,
     PLANE,
-    MESH
+    MESH,
+    NONE
 };
 
 

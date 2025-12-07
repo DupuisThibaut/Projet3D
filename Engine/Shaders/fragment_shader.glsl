@@ -20,6 +20,8 @@ uniform int nb;
 uniform vec4 info[16];
 uniform int id[16];
 
+uniform bool selected;
+
 out vec4 FragColor;
 
 void main() {
@@ -62,6 +64,9 @@ vec3 albedo;
             // texCol=col;
         }
     } 
+    if(selected){
+        texCol=vec4(1.0, 0.4824, 0.0, 1.0);
+    }
 
     FragColor = texCol;
 }

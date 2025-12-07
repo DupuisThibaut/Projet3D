@@ -174,6 +174,7 @@ public:
                 entityManager->AddComponent<AnimationComponent>(e.id, animation);
             }
         }
+        std::cout << "--- Scene " << scenePath << " loaded. ---" << std::endl;
     }
 
     void resetScene(){

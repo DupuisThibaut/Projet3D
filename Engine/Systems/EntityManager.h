@@ -46,7 +46,7 @@ private:
     }
 
 public:
-
+    EntityID selected = -1;
     bool HasEntity(EntityID e) const {
         return usedIds.count(e) != 0;
     }
@@ -76,9 +76,9 @@ public:
         auto& store = getStore<T>();
         auto it = store.find(e);
         if (it != store.end()) {
-            it->second = component; // copy-assign
+            it->second = component;
         } else {
-            store.emplace(e, component); // copy-construct
+            store.emplace(e, component);
         }
     }
     

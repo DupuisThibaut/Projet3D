@@ -787,10 +787,37 @@ private:
     
     // Méthodes privées d'aide
     void renderEntityNode(const Entity& entity){
-        std::string label = "Entity " + std::to_string(entity.id);
-        
+        ImGuiIO& io = ImGui::GetIO();
+        bool isHierarchyFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
+
+        std::string label;
+        if(entityManager->HasComponent<TagComponent>(entity.id)){
+            auto& tag = entityManager->GetComponent<TagComponent>(entity.id);
+            label = tag.tag;
+        } else {
+            label = "Entity " + std::to_string(entity.id);
+        }
+
         if (ImGui::Selectable(label.c_str(), selectedEntityId == entity.id)) {
-            selectedEntityId = entity.id;
+            // Distinguish mouse activation vs keyboard/nav activation
+            if (ImGui::IsItemClicked(0)) { // left mouse click on the selectable
+                // toggle selection only if hierarchy is focused OR ImGui isn't capturing mouse/keyboard
+                if (isHierarchyFocused || (!io.WantCaptureMouse && !io.WantCaptureKeyboard)) {
+                    if (selectedEntityId == entity.id) {
+                        selectedEntityId = UINT32_MAX;
+                        entityManager->selected = UINT32_MAX;
+                    } else {
+                        selectedEntityId = entity.id;
+                        entityManager->selected = entity.id;
+                    }
+                }
+            } else {
+                // activated by keyboard / nav: only select (don't toggle) when hierarchy focused
+                if (isHierarchyFocused) {
+                    selectedEntityId = entity.id;
+                    entityManager->selected = entity.id;
+                }
+            }
         }
     }
 

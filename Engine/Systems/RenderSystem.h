@@ -95,6 +95,9 @@ public:
 
                 material.bind(shaderProgram);
 
+                GLint selectedLoc = glGetUniformLocation(shaderProgram, "selected");
+                glUniform1i(selectedLoc, entity.id == entityManager->selected);
+
                 GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
                 glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &model[0][0]);
                 glBindVertexArray(mesh.VAO);

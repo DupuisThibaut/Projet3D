@@ -104,7 +104,8 @@ std::string scenePath;
 std::string mode;
 std::string mode2;
 json sceneData;
-bool EditorMode = true;
+bool EditorMode = false;
+bool WasEditorMode = false;
 static bool systemsInitialized = false;
 
 
@@ -221,13 +222,15 @@ void StartSystems(GLuint programID){
     input.setRenderSystem(renderSystem);
     physicSystem = new PhysicSystem(&entityManager);
     // Système audio
-     std::cout << "--- Initializing Audio System... ---" << std::endl;
-    for(const auto& [id, audioComp] : entityManager.GetComponents<MyAudioComponent>()){
-        MyAudioComponent& comp = entityManager.GetComponent<MyAudioComponent>(id);
-        audioSystem.addAudio(id, comp);
-        std::cout << "Audio component loaded for entity " << id << std::endl;
+    if(!EditorMode){
+        std::cout << "--- Initializing Audio System... ---" << std::endl;
+        for(const auto& [id, audioComp] : entityManager.GetComponents<MyAudioComponent>()){
+            MyAudioComponent& comp = entityManager.GetComponent<MyAudioComponent>(id);
+            audioSystem.addAudio(id, comp);
+            std::cout << "Audio component loaded for entity " << id << std::endl;
+        }
+        std::cout << "--- Audio System initialized. ---" << std::endl;
     }
-    std::cout << "--- Audio System initialized. ---" << std::endl;
     // Système d'animation
     std::cout << "--- Initializing Animation System... ---" << std::endl;
     animationSystem = new AnimationSystem(&entityManager);
@@ -280,6 +283,17 @@ void processInput(GLFWwindow *window)
     if(glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_RELEASE && hotReloadKey){
         hotReloadKey = false;
     }
+    if(glfwGetKey(window, GLFW_KEY_F1) == GLFW_PRESS && EditorMode && WasEditorMode){
+        EditorMode = false;
+        sceneManager.requestHotReload();
+    }
+    if(glfwGetKey(window, GLFW_KEY_F2) == GLFW_PRESS && !EditorMode && WasEditorMode){
+        EditorMode = true;
+        if (systemsInitialized) {
+            sceneManager.requestHotReload();
+            std::cout << "Switching to Editor Mode" << std::endl;
+        }
+    }
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
@@ -313,6 +327,7 @@ int main( int argc, char* argv[] )
     bool foundRaytracer = (std::find(args.begin(), args.end(), "-r") != args.end());
     
     EditorMode = found;
+    WasEditorMode = EditorMode;
     
     if (foundBench) {
         mode = "-b";
@@ -453,6 +468,7 @@ int main( int argc, char* argv[] )
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
+        processInput(window);
         if(sceneManager.Reloading){
             scriptSystem.onSceneReset();
             if (renderSystem) { delete renderSystem; renderSystem = nullptr; }
@@ -461,6 +477,8 @@ int main( int argc, char* argv[] )
             if (lightSystem) { delete lightSystem; lightSystem = nullptr; }
             if (physicSystem) { delete physicSystem; physicSystem = nullptr; }
             if (editorSystem) { editorSystem->shutdown(); delete editorSystem; editorSystem = nullptr; }
+            if (particuleSystem) { delete particuleSystem; particuleSystem = nullptr; }
+            if (animationSystem) { delete animationSystem; animationSystem = nullptr; }
             audioSystem.clear();
             sceneManager.applyPendingScene(SCR_WIDTH,SCR_HEIGHT,EditorMode);
             systemsInitialized = false; 
@@ -485,9 +503,8 @@ int main( int argc, char* argv[] )
             systemsInitialized = true;
         }
 
-                // input
-        // -----
-        processInput(window);
+                
+        // -----input-----
         input.update(window,deltaTime);
         if(mode == "-b" || mode2 == "-b"){
             sceneManager.updateBenchmark(deltaTime);
@@ -501,35 +518,32 @@ int main( int argc, char* argv[] )
         
         // Clear the screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        {
-            auto &camMap = entityManager.GetComponents<CameraComponent>();
-            const auto &transMap = entityManager.GetComponents<TransformComponent>();
-            uint32_t activeCamId = UINT32_MAX;
-            for (const auto &kv : camMap) if (kv.second.isActive) { activeCamId = kv.first; break; }
-            if (activeCamId != UINT32_MAX) {
-                glm::vec3 listenerPos(0.0f);
-                auto tIt = transMap.find(activeCamId);
-                if (tIt != transMap.end()) {
-                    listenerPos = tIt->second.position;
-                } else {
-                    listenerPos = glm::vec3(0.0f);
-                }
-                auto &cam = const_cast<CameraComponent&>(camMap.at(activeCamId));
-                glm::vec3 listenerForward = cam.target;
-                glm::vec3 listenerUp = cam.up;
-                //cam.aspectRatio = static_cast<float>(SCR_WIDTH)/ static_cast<float>(SCR_HEIGHT);
-                audioSystem.updateListener(listenerPos, listenerForward, listenerUp);
+        auto &camMap = entityManager.GetComponents<CameraComponent>();
+        const auto &transMap = entityManager.GetComponents<TransformComponent>();
+        uint32_t activeCamId = UINT32_MAX;
+        for (const auto &kv : camMap) if (kv.second.isActive) { activeCamId = kv.first; break; }
+        if (activeCamId != UINT32_MAX && !EditorMode) {
+            glm::vec3 listenerPos(0.0f);
+            auto tIt = transMap.find(activeCamId);
+            if (tIt != transMap.end()) {
+                listenerPos = tIt->second.position;
+            } else {
+                listenerPos = glm::vec3(0.0f);
             }
+            auto &cam = const_cast<CameraComponent&>(camMap.at(activeCamId));
+            glm::vec3 listenerForward = cam.target;
+            glm::vec3 listenerUp = cam.up;
+            audioSystem.updateListener(listenerPos, listenerForward, listenerUp);
+            //cam.aspectRatio = static_cast<float>(SCR_WIDTH)/ static_cast<float>(SCR_HEIGHT);
         }
         glUseProgram(programID);
         if(!EditorMode){
             audioSystem.update();
             scriptSystem.onUpdate(deltaTime);
-
+            physicSystem->update(deltaTime);
+            animationSystem->update(deltaTime); 
+            particuleSystem->update(deltaTime);
         }
-        physicSystem->update(deltaTime);
-        animationSystem->update(deltaTime); 
-        particuleSystem->update(deltaTime);
         transformSystem->update();
         lightSystem->update();
         if(EditorMode){

@@ -18,9 +18,7 @@ class ParticuleSystem {
 public:
     EntityManager* entityManager;
 
-    ParticuleSystem(EntityManager* em) : entityManager(em) {
-        initialize();
-    }
+    ParticuleSystem(EntityManager* em) : entityManager(em) {}
 
     void computeVelocity(ParticuleComponent* p, int i, float dt){
         if(p->firstFrame[i]){
@@ -29,9 +27,8 @@ public:
         }
         glm::vec3 velocity = p->pos[i] - p->posAvant[i];
         p->posAvant[i] = p->pos[i];
-        p->speed[i] = glm::vec3(0.0,-9.81,0.0);
         float deltaSquare = dt * dt;
-        p->pos[i] = p->pos[i] + (velocity + glm::vec3(0.0,-9.81,0.0) * deltaSquare);
+        p->pos[i] = p->pos[i] + (velocity + p->velocity[i] * deltaSquare);
     }
 
     struct WorldConstraints{
@@ -112,31 +109,31 @@ public:
                     SphereCollider sphere = wc.spheres[i];
                     LineCollider traveled(p->posAvant[par], p->pos[par]);
                     if(Linetest(sphere, traveled)){
-                        p->velocity[par] = p->pos[par] - p->posAvant[par];
-                        glm::vec3 direction = glm::normalize(p->velocity[par]);
+                        glm::vec3 velocity = p->pos[par] - p->posAvant[par];
+                        glm::vec3 direction = glm::normalize(velocity);
                         RayCollider ray(p->posAvant[par] - direction * 0.01f, direction);
                         RaycastResult result;
                         if(Raycast(sphere,ray,&result)){
                             p->pos[par] = result.point + result.normal * 0.001f;
-                            glm::vec3 velNormal = glm::dot(p->velocity[par], result.normal) * result.normal;
-                            glm::vec3 velTangent = p->velocity[par] - velNormal;
-                            p->posAvant[par] = p->pos[par] - (velTangent - velNormal * 0.2f);
+                            glm::vec3 velNormal = glm::dot(velocity, result.normal) * result.normal;
+                            glm::vec3 velTangent = velocity - velNormal;
+                            p->posAvant[par] = p->pos[par] - (velTangent - velNormal * p->bouncingFactor);
                             break;
                         }
                     }
                 } else if(i < wc.spheres.size() + wc.aabbs.size()){
                     AABBCollider aabb = wc.aabbs[i - wc.spheres.size()];
+                    glm::vec3 velocity = p->pos[par] - p->posAvant[par];
                     LineCollider traveled(p->posAvant[par], p->pos[par]);
                     if(Linetest(aabb, traveled)){
-                        p->velocity[par] = p->pos[par] - p->posAvant[par];
-                        glm::vec3 direction = glm::normalize(p->velocity[par]);
+                        glm::vec3 direction = glm::normalize(velocity);
                         RayCollider ray(p->posAvant[par] - direction * 0.01f, direction);
                         RaycastResult result;
                         if(Raycast(aabb,ray,&result)){
                             p->pos[par] = result.point + result.normal * 0.001f;
-                            glm::vec3 velNormal = glm::dot(p->velocity[par], result.normal) * result.normal;
-                            glm::vec3 velTangent = p->velocity[par] - velNormal;
-                            p->posAvant[par] = p->pos[par] - (velTangent - velNormal * 0.2f);
+                            glm::vec3 velNormal = glm::dot(velocity, result.normal) * result.normal;
+                            glm::vec3 velTangent = velocity - velNormal;
+                            p->posAvant[par] = p->pos[par] - (velTangent - velNormal * p->bouncingFactor);
                             break;
                         }
                     }
@@ -144,15 +141,15 @@ public:
                     OBBCollider obb = wc.obbs[i - wc.spheres.size() - wc.aabbs.size()];
                     LineCollider traveled(p->posAvant[par], p->pos[par]);
                     if(Linetest(obb, traveled)){
-                        p->velocity[par] = p->pos[par] - p->posAvant[par];
-                        glm::vec3 direction = glm::normalize(p->velocity[par]);
+                        glm::vec3 velocity = p->pos[par] - p->posAvant[par];
+                        glm::vec3 direction = glm::normalize(velocity);
                         RayCollider ray(p->posAvant[par] - direction * 0.01f, direction);
                         RaycastResult result;
                         if(Raycast(obb,ray,&result)){
                             p->pos[par] = result.point + result.normal * 0.001f;
-                            glm::vec3 velNormal = glm::dot(p->velocity[par], result.normal) * result.normal;
-                            glm::vec3 velTangent = p->velocity[par] - velNormal;
-                            p->posAvant[par] = p->pos[par] - (velTangent - velNormal * 0.2f);
+                            glm::vec3 velNormal = glm::dot(velocity, result.normal) * result.normal;
+                            glm::vec3 velTangent = velocity - velNormal;
+                            p->posAvant[par] = p->pos[par] - (velTangent - velNormal * p->bouncingFactor);
                             break;
                         }
                     }
@@ -163,15 +160,15 @@ public:
                     adjustedPlane.distance += entityRadius;
                     LineCollider traveled(p->posAvant[par], p->pos[par]);
                     if(Linetest(adjustedPlane, traveled)){
-                        p->velocity[par] = p->pos[par] - p->posAvant[par];
-                        glm::vec3 direction = glm::normalize(p->velocity[par]);
+                        glm::vec3 velocity = p->pos[par] - p->posAvant[par];
+                        glm::vec3 direction = glm::normalize(velocity);
                         RayCollider ray(p->posAvant[par] - direction * 0.01f, direction);
                         RaycastResult result;
                         if(Raycast(plane, ray, &result)){
                             p->pos[par] = result.point + result.normal * (entityRadius + 0.001f);
-                            glm::vec3 velNormal = glm::dot(p->velocity[par], result.normal) * result.normal;
-                            glm::vec3 velTangent = p->velocity[par] - velNormal;
-                            p->posAvant[par] = p->pos[par] - (velTangent - velNormal * 0.2f);
+                            glm::vec3 velNormal = glm::dot(velocity, result.normal) * result.normal;
+                            glm::vec3 velTangent = velocity - velNormal;
+                            p->posAvant[par] = p->pos[par] - (velTangent - velNormal * p->bouncingFactor);
                             break;
                         }
                     }
@@ -179,15 +176,15 @@ public:
                     MeshCollider* mesh = wc.meshes[i - wc.spheres.size() - wc.aabbs.size() - wc.obbs.size() - wc.planes.size()];
                     LineCollider traveled(p->posAvant[par], p->pos[par]);
                     if(Linetest(*mesh, traveled)){
-                        p->velocity[par] = p->pos[par] - p->posAvant[par];
-                        glm::vec3 direction = glm::normalize(p->velocity[par]);
+                        glm::vec3 velocity = p->pos[par] - p->posAvant[par];
+                        glm::vec3 direction = glm::normalize(velocity);
                         RayCollider ray(p->posAvant[par] - direction * 0.01f, direction);
                         RaycastResult result;
                         if(Raycast(*mesh,ray,&result)){
                             p->pos[par] = result.point + result.normal * 0.001f;
-                            glm::vec3 velNormal = glm::dot(p->velocity[par], result.normal) * result.normal;
-                            glm::vec3 velTangent = p->velocity[par] - velNormal;
-                            p->posAvant[par] = p->pos[par] - (velTangent - velNormal * 0.2f);
+                            glm::vec3 velNormal = glm::dot(velocity, result.normal) * result.normal;
+                            glm::vec3 velTangent = velocity - velNormal;
+                            p->posAvant[par] = p->pos[par] - (velTangent - velNormal * p->bouncingFactor);
                             break;
                         }
                     }
@@ -215,46 +212,15 @@ public:
 
                 computeVelocity(&particule,i,t);
 
-                particule.age[i] += 1.0f;
+                particule.age[i] += t;
                 // age+=t/15.0f;
                 // std::cout<<"age : "<<age<<std::endl;
-                if(particule.age[i] >= particule.ageMax[i]) init(i,&particule);
+                if(particule.age[i] >= particule.ageMax[i]) particule.init(i);
             }
             WorldConstraints wc = getWorldConstraints();
             SolveConstraints(wc,&particule);
             // std::cout<<"particule x : "<<particule.pos[0].x<<" particule y : "<<particule.pos[0].y<<" particule z : "<<particule.pos[0].z<<std::endl;
 
-        }
-    }
-
-    void init(int i, ParticuleComponent* p){
-        p->pos[i] = p->position;
-        p->pos[i]+=glm::vec3(8.0f*rand() / static_cast<float>(RAND_MAX)-4.0f,rand() / static_cast<float>(RAND_MAX)-0.5f,8.0f*rand() / static_cast<float>(RAND_MAX)-4.0f);
-        float angle = 2.0 * M_PI * rand() / RAND_MAX;
-        float norm = 0.04 * rand() / RAND_MAX;
-        p->speed[i] = glm::vec3(norm * cos(angle), norm * sin(angle),
-                    rand() / static_cast<float>(RAND_MAX));
-        p->age[i] = 0.0f;
-        p->ageMax[i] = 125.0f + (100.0f * rand() / float(RAND_MAX));
-        p->rayon[i]=rand()/float(RAND_MAX)*0.05f;
-        p->firstFrame[i]=true;
-    }
-
-    void initialize(){
-        for (auto& [id, p] : entityManager->GetComponents<ParticuleComponent>()) {
-            // p.update(t);
-            auto& particule=entityManager->GetComponent<ParticuleComponent>(id);
-            particule.pos.resize(particule.nb);
-            particule.speed.resize(particule.nb);
-            particule.age.resize(particule.nb);
-            particule.ageMax.resize(particule.nb);
-            particule.rayon.resize(particule.nb);
-            particule.firstFrame.resize(particule.nb);
-            particule.posAvant.resize(particule.nb);
-            particule.velocity.resize(particule.nb);
-            for(int i=0;i<particule.nb;i++){
-                init(i,&particule);
-            }
         }
     }
 };

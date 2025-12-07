@@ -901,25 +901,25 @@ public:
                         //     pt=mat.texturePath;
                         //     std::cout<<"TEXTURE : "<<pt<<std::endl;
                         // }
-                        if(mat.texturePath!=""){
-                            GLuint textSphere;
-                            glGenTextures(1, &textSphere);
-                            glBindTexture(GL_TEXTURE_2D, textSphere);
-                            int w,h,c;
-                            unsigned char* img=stbi_load(mat.texturePath.c_str(),&w,&h,&c,4);
-                            glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
-                            glGenerateMipmap(GL_TEXTURE_2D);
-                            stbi_image_free(img);
-                            GLuint64 text=glGetTextureHandleARB(textSphere);
-                            glMakeTextureHandleResidentARB(text);
-                            uint32_t lo=uint32_t(text & 0xFFFFFFFFull);
-                            uint32_t hi=uint32_t(text >> 32);
-                            b.texture[0]=lo;
-                            b.texture[1]=hi;
-                            b.padding[0]=1;
-                        }else{
-                            b.padding[0]=-1;
-                        }
+                        // if(mat.texturePath!=""){
+                        //     GLuint textSphere;
+                        //     glGenTextures(1, &textSphere);
+                        //     glBindTexture(GL_TEXTURE_2D, textSphere);
+                        //     int w,h,c;
+                        //     unsigned char* img=stbi_load(mat.texturePath.c_str(),&w,&h,&c,4);
+                        //     glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
+                        //     glGenerateMipmap(GL_TEXTURE_2D);
+                        //     stbi_image_free(img);
+                        //     GLuint64 text=glGetTextureHandleARB(textSphere);
+                        //     glMakeTextureHandleResidentARB(text);
+                        //     uint32_t lo=uint32_t(text & 0xFFFFFFFFull);
+                        //     uint32_t hi=uint32_t(text >> 32);
+                        //     b.texture[0]=lo;
+                        //     b.texture[1]=hi;
+                        //     b.padding[0]=1;
+                        // }else{
+                        //     b.padding[0]=-1;
+                        // }
                         if(mat.particularite==1)b.padding[1]=2;
                         M.nb=sps.size();
                         sps.push_back(b);
@@ -983,25 +983,25 @@ public:
                         b.p2=lengthRV;
                         b.p1=length(m_right_vector);
                         b.p4=length(m_up_vector);
-                        if(mat.texturePath!=""){
-                            GLuint textPlane;
-                            glGenTextures(1, &textPlane);
-                            glBindTexture(GL_TEXTURE_2D, textPlane);
-                            int w,h,c;
-                            unsigned char* img=stbi_load(mat.texturePath.c_str(),&w,&h,&c,4);
-                            glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
-                            glGenerateMipmap(GL_TEXTURE_2D);
-                            stbi_image_free(img);
-                            GLuint64 text=glGetTextureHandleARB(textPlane);
-                            glMakeTextureHandleResidentARB(text);
-                            uint32_t lo=uint32_t(text & 0xFFFFFFFFull);
-                            uint32_t hi=uint32_t(text >> 32);
-                            b.texture[0]=lo;
-                            b.texture[1]=hi;
-                            b.padding[0]=1;
-                        }else{
-                            b.padding[0]=-1;
-                        }
+                        // if(mat.texturePath!=""){
+                        //     GLuint textPlane;
+                        //     glGenTextures(1, &textPlane);
+                        //     glBindTexture(GL_TEXTURE_2D, textPlane);
+                        //     int w,h,c;
+                        //     unsigned char* img=stbi_load(mat.texturePath.c_str(),&w,&h,&c,4);
+                        //     glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
+                        //     glGenerateMipmap(GL_TEXTURE_2D);
+                        //     stbi_image_free(img);
+                        //     GLuint64 text=glGetTextureHandleARB(textPlane);
+                        //     glMakeTextureHandleResidentARB(text);
+                        //     uint32_t lo=uint32_t(text & 0xFFFFFFFFull);
+                        //     uint32_t hi=uint32_t(text >> 32);
+                        //     b.texture[0]=lo;
+                        //     b.texture[1]=hi;
+                        //     b.padding[0]=1;
+                        // }else{
+                        //     b.padding[0]=-1;
+                        // }
                         if(mat.particularite==1)b.padding[1]=1;
                         if(mat.particularite==2)b.padding[1]=2;
                         // b.texture=text;
@@ -1075,26 +1075,26 @@ public:
                         mesh.sb=mat.specular_material[2];
                         mesh.s=mat.shininess;
                         if(mat.particularite==1)mesh.padding[1]=1;
-                        if(mat.texturePath!=""){
-                            std::cout<<"TEXTURE : "<<mat.texturePath<<std::endl;
-                            GLuint textMesh;
-                            glGenTextures(1, &textMesh);
-                            glBindTexture(GL_TEXTURE_2D, textMesh);
-                            int w,h,c;
-                            unsigned char* img=stbi_load(mat.texturePath.c_str(),&w,&h,&c,4);
-                            glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
-                            glGenerateMipmap(GL_TEXTURE_2D);
-                            stbi_image_free(img);
-                            GLuint64 text=glGetTextureHandleARB(textMesh);
-                            glMakeTextureHandleResidentARB(text);
-                            uint32_t lo=uint32_t(text & 0xFFFFFFFFull);
-                            uint32_t hi=uint32_t(text >> 32);
-                            mesh.texture[0]=lo;
-                            mesh.texture[1]=hi;
-                            mesh.padding[0]=1;
-                        }else{
-                            mesh.padding[0]=-1;
-                        }
+                        // if(mat.texturePath!=""){
+                        //     std::cout<<"TEXTURE : "<<mat.texturePath<<std::endl;
+                        //     GLuint textMesh;
+                        //     glGenTextures(1, &textMesh);
+                        //     glBindTexture(GL_TEXTURE_2D, textMesh);
+                        //     int w,h,c;
+                        //     unsigned char* img=stbi_load(mat.texturePath.c_str(),&w,&h,&c,4);
+                        //     glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
+                        //     glGenerateMipmap(GL_TEXTURE_2D);
+                        //     stbi_image_free(img);
+                        //     GLuint64 text=glGetTextureHandleARB(textMesh);
+                        //     glMakeTextureHandleResidentARB(text);
+                        //     uint32_t lo=uint32_t(text & 0xFFFFFFFFull);
+                        //     uint32_t hi=uint32_t(text >> 32);
+                        //     mesh.texture[0]=lo;
+                        //     mesh.texture[1]=hi;
+                        //     mesh.padding[0]=1;
+                        // }else{
+                        //     mesh.padding[0]=-1;
+                        // }
                         M.nb=sps.size();
                         ms.push_back(mesh);
                         for(unsigned int j=0;j<bvhsYep.size();j++){
