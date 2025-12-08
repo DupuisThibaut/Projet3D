@@ -57,6 +57,18 @@ struct partic{
     float x,y,z,r;uvec2 texture;uvec2 padding;
 };
 
+struct boneID{
+    glm::ivec4 ids;
+};
+
+struct weight{
+    glm::vec4 weights;
+};
+
+struct bonesBuffer{
+    glm::mat4 boneMatrices;
+};
+
 std::vector<std::vector<unsigned short>> newTriangles;
 std::vector<bvh> creerBVH(std::vector<glm::vec3> vertices, std::vector<std::vector<unsigned short>> triangles){
     newTriangles.clear();
@@ -273,6 +285,9 @@ public:
     EntityManager* entityManager;
     Dispatcher* dispatcher;
     GLuint computeProg;
+    GLuint computeProg1;
+    GLuint computeProg2;
+    GLuint computeProg3;
     GLuint quadProg;
     GLuint ssboSpheres=0;
     GLuint ssboSquares=0;
@@ -283,6 +298,10 @@ public:
     GLuint ssboBVH=0;
     GLuint ssboWorld=0;
     GLuint ssboParticules=0;
+    GLuint ssboBonesID=0;
+    GLuint ssboWeights=0;
+    GLuint ssboBonesBuffer=0;
+    GLuint ssboVerticesOrigin=0;
     GLuint texture;
 
     std::vector<sp> sps;        
@@ -294,6 +313,10 @@ public:
     std::vector<bvh> bvhs;
     std::vector<world> worlds;
     std::vector<partic> particules;
+    std::vector<boneID> bonesIDs;
+    std::vector<weight> weights;
+    std::vector<bonesBuffer> bonesBuffers;
+    std::vector<v> verticesOrigins;
 
     unsigned int TEXTURE_WIDTH = 512;
     unsigned int TEXTURE_HEIGHT = 512;
@@ -332,6 +355,8 @@ public:
     }
 
     bool initialize(){
+
+        std::cout<<"initialisation i"<<std::endl;
 
         glGenTextures(1, &texture);
         glActiveTexture(GL_TEXTURE0);
@@ -386,6 +411,92 @@ public:
         computeProg=glCreateProgram();
         glAttachShader(computeProg,cs);
         glLinkProgram(computeProg);
+
+        const char* path1="Shaders/computeShaderBVH1.glsl";
+        std::ifstream sfile1;
+        sfile1.open(path1);
+        std::stringstream sstream1;
+        sstream1<<sfile1.rdbuf();
+        sfile1.close();
+        std::string ccode1=sstream1.str();
+        const char* source1=ccode1.c_str();
+        GLuint cs1=glCreateShader(GL_COMPUTE_SHADER);
+        glShaderSource(cs1,1,&source1,NULL);
+        glCompileShader(cs1);
+
+        //erreur
+        GLint success1;
+        glGetShaderiv(cs1, GL_COMPILE_STATUS, &success1);
+        if(!success1) {
+            GLint maxLength1 = 0;
+            glGetShaderiv(cs1, GL_INFO_LOG_LENGTH, &maxLength1);
+            std::vector<GLchar> errorLog(maxLength1);
+            glGetShaderInfoLog(cs1, maxLength1, &maxLength1, &errorLog[0]);
+            std::cout << "Erreur de compilation du compute shader:" << std::endl;
+            std::cout << &errorLog[0] << std::endl;
+        }
+
+        computeProg1=glCreateProgram();
+        glAttachShader(computeProg1,cs1);
+        glLinkProgram(computeProg1);
+
+        const char* path2="Shaders/computeShaderBVH2.glsl";
+        std::ifstream sfile2;
+        sfile2.open(path2);
+        std::stringstream sstream2;
+        sstream2<<sfile2.rdbuf();
+        sfile2.close();
+        std::string ccode2=sstream2.str();
+        const char* source2=ccode2.c_str();
+        GLuint cs2=glCreateShader(GL_COMPUTE_SHADER);
+        glShaderSource(cs2,1,&source2,NULL);
+        glCompileShader(cs2);
+
+        //erreur
+        GLint success2;
+        glGetShaderiv(cs2, GL_COMPILE_STATUS, &success2);
+        if(!success2) {
+            GLint maxLength2 = 0;
+            glGetShaderiv(cs2, GL_INFO_LOG_LENGTH, &maxLength2);
+            std::vector<GLchar> errorLog(maxLength2);
+            glGetShaderInfoLog(cs2, maxLength2, &maxLength2, &errorLog[0]);
+            std::cout << "Erreur de compilation du compute shader:" << std::endl;
+            std::cout << &errorLog[0] << std::endl;
+        }
+
+        computeProg2=glCreateProgram();
+        glAttachShader(computeProg2,cs2);
+        glLinkProgram(computeProg2);
+
+        const char* path3="Shaders/computeShaderSkinning.glsl";
+        std::ifstream sfile3;
+        sfile3.open(path3);
+        std::stringstream sstream3;
+        sstream3<<sfile3.rdbuf();
+        sfile3.close();
+        std::string ccode3=sstream3.str();
+        const char* source3=ccode3.c_str();
+        GLuint cs3=glCreateShader(GL_COMPUTE_SHADER);
+        glShaderSource(cs3,1,&source3,NULL);
+        glCompileShader(cs3);
+
+        //erreur
+        GLint success3;
+        glGetShaderiv(cs3, GL_COMPILE_STATUS, &success3);
+        if(!success3) {
+            GLint maxLength3 = 0;
+            glGetShaderiv(cs3, GL_INFO_LOG_LENGTH, &maxLength3);
+            std::vector<GLchar> errorLog(maxLength3);
+            glGetShaderInfoLog(cs3, maxLength3, &maxLength3, &errorLog[0]);
+            std::cout << "Erreur de compilation du compute shader:" << std::endl;
+            std::cout << &errorLog[0] << std::endl;
+        }
+
+        computeProg3=glCreateProgram();
+        glAttachShader(computeProg3,cs3);
+        glLinkProgram(computeProg3);
+
+
 
         //erreur
         glGetProgramiv(computeProg, GL_LINK_STATUS, &success);
@@ -448,6 +559,8 @@ public:
         unsigned int LOCAL_Y = 16;
         groups_x = (TEXTURE_WIDTH  + LOCAL_X - 1) / LOCAL_X;
         groups_y = (TEXTURE_HEIGHT + LOCAL_Y - 1) / LOCAL_Y;
+
+        std::cout<<"initialisation i fin"<<std::endl;
         return true;
     }
 
@@ -490,6 +603,7 @@ public:
         for(auto& e : entities){
             if(entityManager->HasComponent<MeshComponent>(e.id)){
                 MeshComponent M = entityManager->GetComponent<MeshComponent>(e.id);
+                M.update=true;
                 // M.update=true;
                 // auto& t = entityManager->GetComponent<TransformComponent>(e.id);
                 // t.position[0]+=0.01;
@@ -536,6 +650,15 @@ public:
                     if(M.type==PrimitiveType::MESH){
                         worlds[i].modelMat=t.worldMatrix;worlds[i].invModelMatrix=inverse(t.worldMatrix);worlds[i].normalMat=transpose(inverse(mat3(t.worldMatrix)));
                         updateMesh=true;
+                        if(entityManager->HasComponent<AnimationComponent>(e.id)){
+                            auto& anim=entityManager->GetComponent<AnimationComponent>(e.id);
+                            bonesBuffers.clear();
+                            for(unsigned int j=0;j<anim.finalBoneMatrices.size();j++){
+                                bonesBuffer b;
+                                b.boneMatrices=anim.finalBoneMatrices[j];
+                                bonesBuffers.push_back(b);
+                            }
+                        }
                     }
                     M.update=false;
                 }
@@ -591,6 +714,10 @@ public:
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboWorld);
             glBufferData(GL_SHADER_STORAGE_BUFFER, worlds.size()*sizeof(world), worlds.data(), GL_STATIC_DRAW);
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, ssboWorld);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboBonesBuffer);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, bonesBuffers.size()*sizeof(bonesBuffer), bonesBuffers.data(), GL_STATIC_DRAW);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 15, ssboBonesBuffer);
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
             updateMesh=false;
             reset=true;
@@ -660,7 +787,48 @@ public:
 
         glUniform1i(glGetUniformLocation(computeProg, "blinn"), (int)blinn);
 
-        
+        std::cout << "verticesOrigins.size() = " << verticesOrigins.size()<< ", vs.size() = " << vs.size() << "\n";
+
+        std::cout << "bonesIDs size: " << bonesIDs.size()<< ", boneWeights: " << weights.size() << "\n";
+
+
+        glUseProgram(computeProg3);
+
+        unsigned int count = verticesOrigins.size();
+        unsigned int groupSize = 256;
+        unsigned int numGroups = (count + groupSize - 1) / groupSize;
+
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, ssboVerticesOrigin);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 13, ssboBonesID);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 14, ssboWeights);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 15, ssboBonesBuffer);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4,  ssboVertices);
+
+        std::cout << "Dispatching skinning: " << numGroups << " groups for " << count << " vertices\n";
+        std::cout << "bonesBuffers.size() = " << bonesBuffers.size() << "\n";
+
+        glDispatchCompute(numGroups, 1, 1);
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+
+        unsigned int triangleCount = ts.size();
+        unsigned int nbLeaf = triangleCount;
+        unsigned int localSizeLeaf = 128;
+        unsigned int numGroupsLeaf = (nbLeaf + localSizeLeaf - 1) / localSizeLeaf;
+
+        unsigned int internalCount = triangleCount - 1;
+        unsigned int localSizeInternal = 128;
+        unsigned int numGroupsInternal =(internalCount + localSizeInternal - 1) / localSizeInternal;
+
+        glUseProgram(computeProg1);
+        glDispatchCompute(numGroupsLeaf, 1, 1);
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+        glUseProgram(computeProg2);
+        glDispatchCompute(numGroupsInternal, 1, 1);
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+        glUseProgram(computeProg);
         glDispatchCompute(groups_x, groups_y, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT|GL_SHADER_IMAGE_ACCESS_BARRIER_BIT|GL_TEXTURE_FETCH_BARRIER_BIT);
         glUseProgram(0);
@@ -866,33 +1034,33 @@ public:
                 nbP+=particule.nb;
                 uint32_t lo;
                 uint32_t hi;
-                if(particule.texture!=""){
-                    GLuint textMesh;
-                    glGenTextures(1, &textMesh);
-                    glBindTexture(GL_TEXTURE_2D, textMesh);
-                    int w,h,c;
-                    unsigned char* img=stbi_load(particule.texture.c_str(),&w,&h,&c,4);
-                    glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
-                    glGenerateMipmap(GL_TEXTURE_2D);
-                    stbi_image_free(img);
-                    GLuint64 text=glGetTextureHandleARB(textMesh);
-                    glMakeTextureHandleResidentARB(text);
-                    lo=uint32_t(text & 0xFFFFFFFFull);
-                    hi=uint32_t(text >> 32);
-                }
+                // if(particule.texture!=""){
+                //     GLuint textMesh;
+                //     glGenTextures(1, &textMesh);
+                //     glBindTexture(GL_TEXTURE_2D, textMesh);
+                //     int w,h,c;
+                //     unsigned char* img=stbi_load(particule.texture.c_str(),&w,&h,&c,4);
+                //     glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
+                //     glGenerateMipmap(GL_TEXTURE_2D);
+                //     stbi_image_free(img);
+                //     GLuint64 text=glGetTextureHandleARB(textMesh);
+                //     glMakeTextureHandleResidentARB(text);
+                //     lo=uint32_t(text & 0xFFFFFFFFull);
+                //     hi=uint32_t(text >> 32);
+                // }
                 for(int i=0;i<particule.nb;i++){
                     partic p;
                     p.x=particule.pos[i][0];
                     p.y=particule.pos[i][1];
                     p.z=particule.pos[i][2];
                     p.r=particule.rayon[i];
-                    if(particule.texture!=""){
-                        p.texture[0]=lo;
-                        p.texture[1]=hi;
-                        p.padding[0]=1;
-                    }else{
-                        p.padding[0]=-1;
-                    }
+                    // if(particule.texture!=""){
+                    //     p.texture[0]=lo;
+                    //     p.texture[1]=hi;
+                    //     p.padding[0]=1;
+                    // }else{
+                    //     p.padding[0]=-1;
+                    // }
                     p.padding[1]=particule.particularite;
                     particules.push_back(p);
                 }
@@ -925,25 +1093,25 @@ public:
                         //     pt=mat.texturePath;
                         //     std::cout<<"TEXTURE : "<<pt<<std::endl;
                         // }
-                        if(mat.texturePath!=""){
-                            GLuint textSphere;
-                            glGenTextures(1, &textSphere);
-                            glBindTexture(GL_TEXTURE_2D, textSphere);
-                            int w,h,c;
-                            unsigned char* img=stbi_load(mat.texturePath.c_str(),&w,&h,&c,4);
-                            glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
-                            glGenerateMipmap(GL_TEXTURE_2D);
-                            stbi_image_free(img);
-                            GLuint64 text=glGetTextureHandleARB(textSphere);
-                            glMakeTextureHandleResidentARB(text);
-                            uint32_t lo=uint32_t(text & 0xFFFFFFFFull);
-                            uint32_t hi=uint32_t(text >> 32);
-                            b.texture[0]=lo;
-                            b.texture[1]=hi;
-                            b.padding[0]=1;
-                        }else{
-                            b.padding[0]=-1;
-                        }
+                        // if(mat.texturePath!=""){
+                        //     GLuint textSphere;
+                        //     glGenTextures(1, &textSphere);
+                        //     glBindTexture(GL_TEXTURE_2D, textSphere);
+                        //     int w,h,c;
+                        //     unsigned char* img=stbi_load(mat.texturePath.c_str(),&w,&h,&c,4);
+                        //     glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
+                        //     glGenerateMipmap(GL_TEXTURE_2D);
+                        //     stbi_image_free(img);
+                        //     GLuint64 text=glGetTextureHandleARB(textSphere);
+                        //     glMakeTextureHandleResidentARB(text);
+                        //     uint32_t lo=uint32_t(text & 0xFFFFFFFFull);
+                        //     uint32_t hi=uint32_t(text >> 32);
+                        //     b.texture[0]=lo;
+                        //     b.texture[1]=hi;
+                        //     b.padding[0]=1;
+                        // }else{
+                        //     b.padding[0]=-1;
+                        // }
                         if(mat.particularite==1)b.padding[1]=2;
                         M.nb=sps.size();
                         sps.push_back(b);
@@ -1007,25 +1175,25 @@ public:
                         b.p2=lengthRV;
                         b.p1=length(m_right_vector);
                         b.p4=length(m_up_vector);
-                        if(mat.texturePath!=""){
-                            GLuint textPlane;
-                            glGenTextures(1, &textPlane);
-                            glBindTexture(GL_TEXTURE_2D, textPlane);
-                            int w,h,c;
-                            unsigned char* img=stbi_load(mat.texturePath.c_str(),&w,&h,&c,4);
-                            glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
-                            glGenerateMipmap(GL_TEXTURE_2D);
-                            stbi_image_free(img);
-                            GLuint64 text=glGetTextureHandleARB(textPlane);
-                            glMakeTextureHandleResidentARB(text);
-                            uint32_t lo=uint32_t(text & 0xFFFFFFFFull);
-                            uint32_t hi=uint32_t(text >> 32);
-                            b.texture[0]=lo;
-                            b.texture[1]=hi;
-                            b.padding[0]=1;
-                        }else{
-                            b.padding[0]=-1;
-                        }
+                        // if(mat.texturePath!=""){
+                        //     GLuint textPlane;
+                        //     glGenTextures(1, &textPlane);
+                        //     glBindTexture(GL_TEXTURE_2D, textPlane);
+                        //     int w,h,c;
+                        //     unsigned char* img=stbi_load(mat.texturePath.c_str(),&w,&h,&c,4);
+                        //     glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
+                        //     glGenerateMipmap(GL_TEXTURE_2D);
+                        //     stbi_image_free(img);
+                        //     GLuint64 text=glGetTextureHandleARB(textPlane);
+                        //     glMakeTextureHandleResidentARB(text);
+                        //     uint32_t lo=uint32_t(text & 0xFFFFFFFFull);
+                        //     uint32_t hi=uint32_t(text >> 32);
+                        //     b.texture[0]=lo;
+                        //     b.texture[1]=hi;
+                        //     b.padding[0]=1;
+                        // }else{
+                        //     b.padding[0]=-1;
+                        // }
                         if(mat.particularite==1)b.padding[1]=1;
                         if(mat.particularite==2)b.padding[1]=2;
                         // b.texture=text;
@@ -1037,6 +1205,38 @@ public:
                         std::vector<bvh> bvhsYep=creerBVH(M.vertices,M.triangles);
                         M.triangles=newTriangles;
                         int nbV=0,nbT=0;
+                        if(entityManager->HasComponent<AnimationComponent>(e.id)){
+                            auto& anim=entityManager->GetComponent<AnimationComponent>(e.id);
+                            std::cout<<"nb bone : "<<anim.boneIDs.size()<<std::endl;
+                            for(unsigned int j=0;j<anim.boneIDs.size();j++){
+                                boneID b;
+                                b.ids=anim.boneIDs[j];
+                                bonesIDs.push_back(b);
+                            }
+                            for(unsigned int j=0;j<anim.boneWeights.size();j++){
+                                weight b;
+                                b.weights=anim.boneWeights[j];
+                                weights.push_back(b);
+                            }
+                            for(unsigned int j=0;j<anim.finalBoneMatrices.size();j++){
+                                bonesBuffer b;
+                                b.boneMatrices=anim.finalBoneMatrices[j];
+                                bonesBuffers.push_back(b);
+                            }
+                            for(unsigned int j=0;j<M.vertices.size();j++){
+                                glm::vec3 vertex=M.vertices[j];
+                                v ve;
+                                ve.px=vertex[0];
+                                ve.py=vertex[1];
+                                ve.pz=vertex[2];
+                                ve.nx=M.normals[j][0];
+                                ve.ny=M.normals[j][1];
+                                ve.nz=M.normals[j][2];
+                                ve.u=M.uvs[j][0];
+                                ve.v=M.uvs[j][1];
+                                verticesOrigins.push_back(ve);
+                            }
+                        }
                         for(unsigned int j=0;j<M.vertices.size();j++){
                             glm::vec3 vertex=M.vertices[j];
                             v ve;
@@ -1097,25 +1297,25 @@ public:
                         mesh.sb=mat.specular_material[2];
                         mesh.s=mat.shininess;
                         if(mat.particularite==1)mesh.padding[1]=1;
-                        if(mat.texturePath!=""){
-                            GLuint textMesh;
-                            glGenTextures(1, &textMesh);
-                            glBindTexture(GL_TEXTURE_2D, textMesh);
-                            int w,h,c;
-                            unsigned char* img=stbi_load(mat.texturePath.c_str(),&w,&h,&c,4);
-                            glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
-                            glGenerateMipmap(GL_TEXTURE_2D);
-                            stbi_image_free(img);
-                            GLuint64 text=glGetTextureHandleARB(textMesh);
-                            glMakeTextureHandleResidentARB(text);
-                            uint32_t lo=uint32_t(text & 0xFFFFFFFFull);
-                            uint32_t hi=uint32_t(text >> 32);
-                            mesh.texture[0]=lo;
-                            mesh.texture[1]=hi;
-                            mesh.padding[0]=1;
-                        }else{
-                            mesh.padding[0]=-1;
-                        }
+                        // if(mat.texturePath!=""){
+                        //     GLuint textMesh;
+                        //     glGenTextures(1, &textMesh);
+                        //     glBindTexture(GL_TEXTURE_2D, textMesh);
+                        //     int w,h,c;
+                        //     unsigned char* img=stbi_load(mat.texturePath.c_str(),&w,&h,&c,4);
+                        //     glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
+                        //     glGenerateMipmap(GL_TEXTURE_2D);
+                        //     stbi_image_free(img);
+                        //     GLuint64 text=glGetTextureHandleARB(textMesh);
+                        //     glMakeTextureHandleResidentARB(text);
+                        //     uint32_t lo=uint32_t(text & 0xFFFFFFFFull);
+                        //     uint32_t hi=uint32_t(text >> 32);
+                        //     mesh.texture[0]=lo;
+                        //     mesh.texture[1]=hi;
+                        //     mesh.padding[0]=1;
+                        // }else{
+                        //     mesh.padding[0]=-1;
+                        // }
                         M.nb=sps.size();
                         ms.push_back(mesh);
                         for(unsigned int j=0;j<bvhsYep.size();j++){
@@ -1207,6 +1407,30 @@ public:
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboParticules);
         glBufferData(GL_SHADER_STORAGE_BUFFER, particules.size()*sizeof(partic), particules.data(), GL_STATIC_DRAW);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, ssboParticules);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+        glGenBuffers(1,&ssboBonesID);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboBonesID);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, bonesIDs.size()*sizeof(boneID), bonesIDs.data(), GL_STATIC_DRAW);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 13, ssboBonesID);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+        glGenBuffers(1,&ssboWeights);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboWeights);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, weights.size()*sizeof(weight), weights.data(), GL_STATIC_DRAW);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 14, ssboWeights);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+        glGenBuffers(1,&ssboBonesBuffer);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboBonesBuffer);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, bonesBuffers.size()*sizeof(bonesBuffer), bonesBuffers.data(), GL_STATIC_DRAW);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 15, ssboBonesBuffer);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+        glGenBuffers(1,&ssboVerticesOrigin);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboVerticesOrigin);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, verticesOrigins.size()*sizeof(v), verticesOrigins.data(), GL_STATIC_DRAW);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, ssboVerticesOrigin);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 
