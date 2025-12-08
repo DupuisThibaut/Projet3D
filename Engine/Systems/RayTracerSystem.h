@@ -54,7 +54,7 @@ struct world{
 };
 
 struct partic{
-    float x,y,z,r;
+    float x,y,z,r;uvec2 texture;uvec2 padding;
 };
 
 std::vector<std::vector<unsigned short>> newTriangles;
@@ -864,12 +864,36 @@ public:
             }else if(entityManager->HasComponent<ParticuleComponent>(e.id)){
                 ParticuleComponent particule=entityManager->GetComponent<ParticuleComponent>(e.id);
                 nbP+=particule.nb;
+                uint32_t lo;
+                uint32_t hi;
+                if(particule.texture!=""){
+                    GLuint textMesh;
+                    glGenTextures(1, &textMesh);
+                    glBindTexture(GL_TEXTURE_2D, textMesh);
+                    int w,h,c;
+                    unsigned char* img=stbi_load(particule.texture.c_str(),&w,&h,&c,4);
+                    glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
+                    glGenerateMipmap(GL_TEXTURE_2D);
+                    stbi_image_free(img);
+                    GLuint64 text=glGetTextureHandleARB(textMesh);
+                    glMakeTextureHandleResidentARB(text);
+                    lo=uint32_t(text & 0xFFFFFFFFull);
+                    hi=uint32_t(text >> 32);
+                }
                 for(int i=0;i<particule.nb;i++){
                     partic p;
                     p.x=particule.pos[i][0];
                     p.y=particule.pos[i][1];
                     p.z=particule.pos[i][2];
                     p.r=particule.rayon[i];
+                    if(particule.texture!=""){
+                        p.texture[0]=lo;
+                        p.texture[1]=hi;
+                        p.padding[0]=1;
+                    }else{
+                        p.padding[0]=-1;
+                    }
+                    p.padding[1]=particule.particularite;
                     particules.push_back(p);
                 }
             }
@@ -901,25 +925,25 @@ public:
                         //     pt=mat.texturePath;
                         //     std::cout<<"TEXTURE : "<<pt<<std::endl;
                         // }
-                        // if(mat.texturePath!=""){
-                        //     GLuint textSphere;
-                        //     glGenTextures(1, &textSphere);
-                        //     glBindTexture(GL_TEXTURE_2D, textSphere);
-                        //     int w,h,c;
-                        //     unsigned char* img=stbi_load(mat.texturePath.c_str(),&w,&h,&c,4);
-                        //     glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
-                        //     glGenerateMipmap(GL_TEXTURE_2D);
-                        //     stbi_image_free(img);
-                        //     GLuint64 text=glGetTextureHandleARB(textSphere);
-                        //     glMakeTextureHandleResidentARB(text);
-                        //     uint32_t lo=uint32_t(text & 0xFFFFFFFFull);
-                        //     uint32_t hi=uint32_t(text >> 32);
-                        //     b.texture[0]=lo;
-                        //     b.texture[1]=hi;
-                        //     b.padding[0]=1;
-                        // }else{
-                        //     b.padding[0]=-1;
-                        // }
+                        if(mat.texturePath!=""){
+                            GLuint textSphere;
+                            glGenTextures(1, &textSphere);
+                            glBindTexture(GL_TEXTURE_2D, textSphere);
+                            int w,h,c;
+                            unsigned char* img=stbi_load(mat.texturePath.c_str(),&w,&h,&c,4);
+                            glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
+                            glGenerateMipmap(GL_TEXTURE_2D);
+                            stbi_image_free(img);
+                            GLuint64 text=glGetTextureHandleARB(textSphere);
+                            glMakeTextureHandleResidentARB(text);
+                            uint32_t lo=uint32_t(text & 0xFFFFFFFFull);
+                            uint32_t hi=uint32_t(text >> 32);
+                            b.texture[0]=lo;
+                            b.texture[1]=hi;
+                            b.padding[0]=1;
+                        }else{
+                            b.padding[0]=-1;
+                        }
                         if(mat.particularite==1)b.padding[1]=2;
                         M.nb=sps.size();
                         sps.push_back(b);
@@ -983,25 +1007,25 @@ public:
                         b.p2=lengthRV;
                         b.p1=length(m_right_vector);
                         b.p4=length(m_up_vector);
-                        // if(mat.texturePath!=""){
-                        //     GLuint textPlane;
-                        //     glGenTextures(1, &textPlane);
-                        //     glBindTexture(GL_TEXTURE_2D, textPlane);
-                        //     int w,h,c;
-                        //     unsigned char* img=stbi_load(mat.texturePath.c_str(),&w,&h,&c,4);
-                        //     glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
-                        //     glGenerateMipmap(GL_TEXTURE_2D);
-                        //     stbi_image_free(img);
-                        //     GLuint64 text=glGetTextureHandleARB(textPlane);
-                        //     glMakeTextureHandleResidentARB(text);
-                        //     uint32_t lo=uint32_t(text & 0xFFFFFFFFull);
-                        //     uint32_t hi=uint32_t(text >> 32);
-                        //     b.texture[0]=lo;
-                        //     b.texture[1]=hi;
-                        //     b.padding[0]=1;
-                        // }else{
-                        //     b.padding[0]=-1;
-                        // }
+                        if(mat.texturePath!=""){
+                            GLuint textPlane;
+                            glGenTextures(1, &textPlane);
+                            glBindTexture(GL_TEXTURE_2D, textPlane);
+                            int w,h,c;
+                            unsigned char* img=stbi_load(mat.texturePath.c_str(),&w,&h,&c,4);
+                            glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
+                            glGenerateMipmap(GL_TEXTURE_2D);
+                            stbi_image_free(img);
+                            GLuint64 text=glGetTextureHandleARB(textPlane);
+                            glMakeTextureHandleResidentARB(text);
+                            uint32_t lo=uint32_t(text & 0xFFFFFFFFull);
+                            uint32_t hi=uint32_t(text >> 32);
+                            b.texture[0]=lo;
+                            b.texture[1]=hi;
+                            b.padding[0]=1;
+                        }else{
+                            b.padding[0]=-1;
+                        }
                         if(mat.particularite==1)b.padding[1]=1;
                         if(mat.particularite==2)b.padding[1]=2;
                         // b.texture=text;
@@ -1010,8 +1034,6 @@ public:
                     }
                     //Meshes
                     if(M.type==PrimitiveType::MESH){
-                        std::cout<<"YEEEPI UN MESH"<<std::endl;
-                        std::cout<<"vertices size : "<<M.vertices.size()<<std::endl;
                         std::vector<bvh> bvhsYep=creerBVH(M.vertices,M.triangles);
                         M.triangles=newTriangles;
                         int nbV=0,nbT=0;
@@ -1038,12 +1060,12 @@ public:
                         glm::vec3 centre=glm::vec3((maxx+minx)/2.0f,(maxy+miny)/2.0f,(maxz+minz)/2.0f);
                         glm::vec3 centreModel=glm::vec3(w.modelMat*vec4(centre,1.0));
                         w.testSphere[0]=centreModel[0];w.testSphere[1]=centreModel[1];w.testSphere[2]=centreModel[2];w.testSphere[3]=distance(centre,glm::vec3(maxx,maxy,maxz))*0.2;
-                        std::cout<<"min : "<<minx<<" min : "<<miny<<" min : "<<minz<<std::endl;
-                        std::cout<<"max : "<<maxx<<" max : "<<maxy<<" max : "<<maxz<<std::endl;
-                        std::cout<<"centre : "<<centre[0]<<" centre : "<<centre[1]<<" centre : "<<centre[2]<<std::endl;
-                        std::cout<<"centreModel : "<<centreModel[0]<<" centreModel : "<<centreModel[1]<<" centreModel : "<<centreModel[2]<<std::endl;
-                        std::cout<<"rayon : "<<w.testSphere[3]<<std::endl;
-                        std::cout<<"distance : "<<distance(centre,glm::vec3(maxx,maxy,maxz))<<std::endl;
+                        // std::cout<<"min : "<<minx<<" min : "<<miny<<" min : "<<minz<<std::endl;
+                        // std::cout<<"max : "<<maxx<<" max : "<<maxy<<" max : "<<maxz<<std::endl;
+                        // std::cout<<"centre : "<<centre[0]<<" centre : "<<centre[1]<<" centre : "<<centre[2]<<std::endl;
+                        // std::cout<<"centreModel : "<<centreModel[0]<<" centreModel : "<<centreModel[1]<<" centreModel : "<<centreModel[2]<<std::endl;
+                        // std::cout<<"rayon : "<<w.testSphere[3]<<std::endl;
+                        // std::cout<<"distance : "<<distance(centre,glm::vec3(maxx,maxy,maxz))<<std::endl;
                         worlds.push_back(w);
                         for(unsigned int j=0;j<M.triangles.size();j++){
                             std::vector<unsigned short> triangle=M.triangles[j];
@@ -1075,26 +1097,25 @@ public:
                         mesh.sb=mat.specular_material[2];
                         mesh.s=mat.shininess;
                         if(mat.particularite==1)mesh.padding[1]=1;
-                        // if(mat.texturePath!=""){
-                        //     std::cout<<"TEXTURE : "<<mat.texturePath<<std::endl;
-                        //     GLuint textMesh;
-                        //     glGenTextures(1, &textMesh);
-                        //     glBindTexture(GL_TEXTURE_2D, textMesh);
-                        //     int w,h,c;
-                        //     unsigned char* img=stbi_load(mat.texturePath.c_str(),&w,&h,&c,4);
-                        //     glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
-                        //     glGenerateMipmap(GL_TEXTURE_2D);
-                        //     stbi_image_free(img);
-                        //     GLuint64 text=glGetTextureHandleARB(textMesh);
-                        //     glMakeTextureHandleResidentARB(text);
-                        //     uint32_t lo=uint32_t(text & 0xFFFFFFFFull);
-                        //     uint32_t hi=uint32_t(text >> 32);
-                        //     mesh.texture[0]=lo;
-                        //     mesh.texture[1]=hi;
-                        //     mesh.padding[0]=1;
-                        // }else{
-                        //     mesh.padding[0]=-1;
-                        // }
+                        if(mat.texturePath!=""){
+                            GLuint textMesh;
+                            glGenTextures(1, &textMesh);
+                            glBindTexture(GL_TEXTURE_2D, textMesh);
+                            int w,h,c;
+                            unsigned char* img=stbi_load(mat.texturePath.c_str(),&w,&h,&c,4);
+                            glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,img);
+                            glGenerateMipmap(GL_TEXTURE_2D);
+                            stbi_image_free(img);
+                            GLuint64 text=glGetTextureHandleARB(textMesh);
+                            glMakeTextureHandleResidentARB(text);
+                            uint32_t lo=uint32_t(text & 0xFFFFFFFFull);
+                            uint32_t hi=uint32_t(text >> 32);
+                            mesh.texture[0]=lo;
+                            mesh.texture[1]=hi;
+                            mesh.padding[0]=1;
+                        }else{
+                            mesh.padding[0]=-1;
+                        }
                         M.nb=sps.size();
                         ms.push_back(mesh);
                         for(unsigned int j=0;j<bvhsYep.size();j++){

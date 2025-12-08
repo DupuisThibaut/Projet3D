@@ -1,5 +1,5 @@
 #version 430 core
-//#extension GL_ARB_bindless_texture : require
+#extension GL_ARB_bindless_texture : require
 layout(local_size_x = 16, local_size_y = 16) in;
 
 layout(rgba32f, binding = 0) uniform image2D imgOutput;
@@ -31,6 +31,8 @@ vec2 uvFinal;
 
 struct Particule{
 	vec4 position;
+	uvec2 text;
+	uvec2 padding;
 };
 layout(std430,binding=11)buffer Particules{Particule particules[];};
 
@@ -71,6 +73,10 @@ float intersectSphere(Ray rayon,vec3 center,float radius){
     if(disc<0.0)return -1.0;
     float t1=(-b-sqrt(disc))/(2.0*a);
     float t2=(-b+sqrt(disc))/(2.0*a);
+	vec3 n=normalize((ro+rd*t1)-center);
+	float theta=atan(n.z,n.x);
+	float phi=asin(n.y);
+	uvTest=vec2(0.5+(theta+PI)/(2.0*PI),0.5-phi/PI);
     if(t1>0.0 && t1<t2){
 		secondeIntersection=t2;
 		return t1;
@@ -79,10 +85,6 @@ float intersectSphere(Ray rayon,vec3 center,float radius){
 		secondeIntersection=t1;
 		return t2;
 	}
-	// vec3 n=normalize(ro+rd*t);
-	// float theta=atan(n.z,n.x);
-	// float phi=acos(n.y);
-	// uvTest=vec2((theta+PI)/(2.0*PI),phi/PI);
     return -1.0;
 }
 
@@ -286,7 +288,7 @@ intersection intersectScene(Ray rayon){
 	
     for (int i=0;i<nbSphere;++i) {
         float t=intersectSphere(rayon,spheres[i].centre,spheres[i].rayon);
-        if(t>0.0 && t<res.tmin){res.tmin=t;res.hitIndex=i;res.inter=1;finalSecondeIntersectionSphere=secondeIntersection;}
+        if(t>0.0 && t<res.tmin){res.tmin=t;res.hitIndex=i;res.inter=1;finalSecondeIntersectionSphere=secondeIntersection;uvFinal=uvTest;}
     }
 
     for (int i=0;i<nbSquare;++i) {
@@ -296,7 +298,7 @@ intersection intersectScene(Ray rayon){
 
 	for(int i=0;i<nbParticule;i++){
 		float t=intersectSphere(rayon,particules[i].position.xyz,particules[i].position.w);
-		if(t>0.0 && t<res.tmin){res.tmin=t;res.hitIndex=i;res.inter=4;finalSecondeIntersectionSphere=secondeIntersection;}
+		if(t>0.0 && t<res.tmin){res.tmin=t;res.hitIndex=i;res.inter=4;finalSecondeIntersectionSphere=secondeIntersection;uvFinal=uvTest;}
 	}
 
 	// if(intersectBVH(roLocal,rdLocal,bvhs[0].minp.xyz,bvhs[0].maxp.xyz)>0.0){
@@ -584,12 +586,12 @@ vec3 couleurSphere(Ray rayon,float tmin,int hitIndex,vec2 pix){
 	vec3 ro=rayon.origin;
 	vec3 rd=rayon.direction;
 	vec3 finalColor=vec3(1.0,1.0,1.0);
-	// if(spheres[hitIndex].padding[0]==1){
-	// 	sampler2D tex=sampler2D(spheres[hitIndex].text);
-	// 	finalColor=texture(tex,uvFinal).rgb;
-	// }else{
-	// 	finalColor=vec3(1.0,1.0,1.0);
-	// }
+	if(spheres[hitIndex].padding[0]==1){
+		sampler2D tex=sampler2D(spheres[hitIndex].text);
+		finalColor=texture(tex,uvFinal).rgb;
+	}else{
+		finalColor=vec3(1.0,1.0,1.0);
+	}
 	for(int i=0;i<nbLight;i++){
 		l=lights[i].color;
 		vec3 light=lights[i].pos;
@@ -599,6 +601,10 @@ vec3 couleurSphere(Ray rayon,float tmin,int hitIndex,vec2 pix){
 		vec3 n=(p-spheres[hitIndex].centre)/spheres[hitIndex].rayon;
 		vec3 v=ro-p;
 		L=normalize(L);
+		Ray rayonLumiere;rayonLumiere.origin=p;rayonLumiere.direction=L;
+		if(testOmbre(rayonLumiere,Ldist)){
+			return vec3(0.0);
+		}
 		v=normalize(v);
 		float cosT=max(dot(n,L),0.0);
 		vec3 r=reflect(-L,n);
@@ -620,21 +626,25 @@ vec3 couleurSquare(Ray rayon,float tmin,int hitIndex,vec2 pix){
 	vec3 ro=rayon.origin;
 	vec3 rd=rayon.direction;
 	vec3 finalColor=vec3(1.0,1.0,1.0);
-	// if(squares[hitIndex].padding[0]==1){
-	// 	sampler2D tex=sampler2D(squares[hitIndex].text);
-	// 	finalColor=texture(tex,uvFinal).rgb;
-	// }else{
-	// 	finalColor=vec3(1.0,1.0,1.0);
-	// }
+	if(squares[hitIndex].padding[0]==1){
+		sampler2D tex=sampler2D(squares[hitIndex].text);
+		finalColor=texture(tex,uvFinal).rgb;
+	}else{
+		finalColor=vec3(1.0,1.0,1.0);
+	}
 	for(int i=0;i<nbLight;i++){
 		l=lights[i].color;
 		vec3 light=lights[i].pos;
 		vec3 p=ro+rd*tmin;
 		vec3 L=light-p;
 		float Ldist=length(L);
+		L=normalize(L);
+		Ray rayonLumiere;rayonLumiere.origin=p+vec3(0.001);rayonLumiere.direction=L;
+		if(testOmbre(rayonLumiere,Ldist)){
+			return vec3(0.0);
+		}
 		vec3 n=squares[hitIndex].m_normal.xyz;
 		vec3 v=ro-p;
-		L=normalize(L);
 		v=normalize(v);
 		float cosT=max(dot(n,L),0.0);
 		vec3 r=reflect(-L,n);
@@ -656,22 +666,26 @@ vec3 couleurMesh(Ray rayon,float tmin,int hitIndex,vec2 pix){
 	vec3 ro=rayon.origin;
 	vec3 rd=rayon.direction;
 	vec3 finalColor=vec3(1.0,1.0,1.0);
-	// if(meshes[hitIndex].padding[0]==1){
-	// 	sampler2D tex=sampler2D(meshes[hitIndex].text);
-	// 	finalColor=texture(tex,uvFinal).rgb;
-	// 	// return finalColor;
-	// }else{
-	// 	finalColor=vec3(1.0,1.0,1.0);
-	// }
+	if(meshes[hitIndex].padding[0]==1){
+		sampler2D tex=sampler2D(meshes[hitIndex].text);
+		finalColor=texture(tex,uvFinal).rgb;
+		// return finalColor;
+	}else{
+		finalColor=vec3(1.0,1.0,1.0);
+	}
 	for(int i=0;i<nbLight;i++){
 		l=lights[i].color;
 		vec3 light=lights[i].pos;
 		vec3 p=ro+rd*tmin;
 		vec3 L=light-p;
 		float Ldist=length(L);
+		L=normalize(L);
+		Ray rayonLumiere;rayonLumiere.origin=p;rayonLumiere.direction=L;
+		if(testOmbre(rayonLumiere,Ldist)){
+			return vec3(0.0);
+		}
 		vec3 n=normalTriangleFinal;
 		vec3 v=ro-p;
-		L=normalize(L);
 		v=normalize(v);
 		float cosT=max(dot(n,L),0.0);
 		vec3 r=reflect(-L,n);
@@ -685,6 +699,17 @@ vec3 couleurMesh(Ray rayon,float tmin,int hitIndex,vec2 pix){
 		finalColor[1]*=l[1]*ambient[1]+l[1]*diffuse[1]*cosT+l[1]*specular[1]*pow(cosA,shininess);
 		finalColor[2]*=l[2]*ambient[2]+l[2]*diffuse[2]*cosT+l[2]*specular[2]*pow(cosA,shininess);
 		// finalColor*=ombre(p,n,pix,light);
+	}
+	return finalColor;
+}
+
+vec3 couleurParticule(int hitIndex){
+	vec3 finalColor=vec3(1.0,1.0,1.0);
+	if(particules[hitIndex].padding[0]==1){
+		sampler2D tex=sampler2D(particules[hitIndex].text);
+		finalColor=texture(tex,uvFinal).rgb;
+	}else{
+		finalColor=vec3(0.0,0.6,1.0);
 	}
 	return finalColor;
 }
@@ -831,11 +856,20 @@ vec3 couleur(Ray rayon,ivec2 pix,uint seed){
 		}else if(interObjet==4){
 			vec3 p=ro+rd*tmin;
 			vec3 n=(p-particules[hitIndex].position.xyz)/particules[hitIndex].position.w;
-			testColor*=vec3(0.0,0.6,1.0);
-			testRayon=computeRefraction(testRayon,n,p,pix,0.99,4,hitIndex);
-			testRayon.origin=ro+rd*finalSecondeIntersectionSphere;
+			testColor*=couleurParticule(hitIndex);
+			if(particules[hitIndex].padding[1]==1){
+				testRayon=computeReflection(rd,n,p,pix);
+			}else if(particules[hitIndex].padding[1]==2){
+				testRayon=computeRefraction(testRayon,n,p,pix,0.99,4,hitIndex);
+				testRayon.origin=ro+rd*finalSecondeIntersectionSphere;
+			}else if(particules[hitIndex].padding[1]==3){
+				
+			}
 			// finalColor*=vec3(0.0,1.0,1.0);
-			// break;
+			else{
+				finalColor*=testColor;
+				break;
+			}
 		}else{
 			finalColor*=vec3(0.68,0.85,0.90);
 			break;

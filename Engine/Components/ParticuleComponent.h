@@ -11,6 +11,7 @@
 struct ParticuleComponent {
     int nb = 100;
     std::string path = "";
+    std::string texture = "";
     std::vector<glm::vec3> pos;
     std::vector<glm::vec3> posAvant;
     std::vector<glm::vec3> velocity;
@@ -21,6 +22,7 @@ struct ParticuleComponent {
     glm::vec3 position = glm::vec3(0.0f);
     glm::vec3 offset = glm::vec3(0.0f);
     float bouncingFactor = 0.2f;
+    int particularite=0;
 
     void loadFromFile(const nlohmann::json& entityData, uint32_t entityId, const std::string& gameFolder){
         if(entityData.contains("particule")){
@@ -82,6 +84,16 @@ struct ParticuleComponent {
             }
             if(entityData["particule"].contains("bouncing")){
                 bouncingFactor=entityData["particule"]["bouncing"];
+            }
+            if(entityData["particule"].contains("texture")){
+                std::string texturePath = gameFolder + "/" + entityData["particule"]["texture"].get<std::string>();
+                texture=texturePath;
+            }if(entityData["particule"].contains("reflection")){
+                particularite=1;
+            }if(entityData["particule"].contains("refraction")){
+                particularite=2;
+            }if(entityData["particule"].contains("metallicite")){
+                particularite=2;
             }
             firstFrame = std::vector<bool>(nb, true);
         }
