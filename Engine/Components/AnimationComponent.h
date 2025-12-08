@@ -363,10 +363,22 @@ struct AnimationComponent {
                 boneWeights[v] = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
             }
         }
+                // DEBUG: verify bone distribution
+        std::map<int, int> boneUsageCount;
+        for (const auto& ids : boneIDs) {
+            for (int k = 0; k < 4; ++k) {
+                if (ids[k] >= 0) boneUsageCount[ids[k]]++;
+            }
+        }
+        std::cout << "[BoneDistribution] Bones used:\n";
+        int shown = 0;
+        for (const auto& [boneID, count] : boneUsageCount) {
+            std::cout << "  Bone " << boneID << ": " << count << " vertices\n";
+            if (++shown >= 10) break; // limite à 10 pour ne pas spammer
+        }
 
         
         if (!boneIDs.empty()) {
-            setupBoneVBOs();
             std::cout << "AnimationComponent: Created VBOs for " << boneIDs.size() << " vertices" << std::endl;
             std::cout << "AnimationComponent: Loaded " << bones.size() << " bones" << std::endl;
         }
@@ -453,35 +465,30 @@ struct AnimationComponent {
                   << bones.size() << " bones from FBX" << std::endl;
         return true;
     }
-    void setupBoneVBOs() {
+    void setupBoneVBOs(GLuint meshVAO) {
         if (boneIDs.empty() || boneWeights.empty()) return;
+        glBindVertexArray(meshVAO);
         
-        if (boneIDVBO != 0) glDeleteBuffers(1, &boneIDVBO);
-        if (boneWeightVBO != 0) glDeleteBuffers(1, &boneWeightVBO);
-        if (bonesSSBO != 0) glDeleteBuffers(1, &bonesSSBO);
-        
+        glGetVertexAttribiv(5, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, (GLint*)&boneIDVBO);
+        glGetVertexAttribiv(6, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, (GLint*)&boneWeightVBO);
+
+        glBindVertexArray(0);
+
+        glBindBuffer(GL_ARRAY_BUFFER, boneIDVBO);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, boneIDs.size() * sizeof(glm::ivec4), boneIDs.data());
+        glBindBuffer(GL_ARRAY_BUFFER, boneWeightVBO);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, boneWeights.size() * sizeof(glm::vec4), boneWeights.data());
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
         // Créer le SSBO pour les matrices (vide pour l'instant)
         glGenBuffers(1, &bonesSSBO);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, bonesSSBO);
         glBufferData(GL_SHADER_STORAGE_BUFFER, bones.size() * sizeof(glm::mat4), nullptr, GL_DYNAMIC_DRAW);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-        
-        // VBO des boneIDs
-        glGenBuffers(1, &boneIDVBO);
-        glBindBuffer(GL_ARRAY_BUFFER, boneIDVBO);
-        glBufferData(GL_ARRAY_BUFFER, boneIDs.size() * sizeof(glm::ivec4), boneIDs.data(), GL_STATIC_DRAW);
 
-        
-        // VBO des weights
-        glGenBuffers(1, &boneWeightVBO);
-        glBindBuffer(GL_ARRAY_BUFFER, boneWeightVBO);
-        glBufferData(GL_ARRAY_BUFFER, boneWeights.size() * sizeof(glm::vec4), boneWeights.data(), GL_STATIC_DRAW);
-        
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        
         std::cout << "AnimationComponent: VBO IDs - BoneIDs: " << boneIDVBO 
                 << ", BoneWeights: " << boneWeightVBO 
                 << ", SSBO: " << bonesSSBO << std::endl;
+       
     }
 
     bool loadFromJson(const nlohmann::json& entityData, const std::string& folder) {

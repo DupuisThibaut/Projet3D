@@ -30,6 +30,8 @@ struct MeshComponent {
     GLuint normalVBO = 0;
     GLuint uvVBO = 0;
     GLuint vertexCount = 0;
+    GLuint boneIDVBO = 0;
+    GLuint boneWeightVBO = 0;
     
     PrimitiveType type;
     std::string meshFilePath;
@@ -203,6 +205,7 @@ struct MeshComponent {
         glGenBuffers(1, &uvVBO);
         glGenBuffers(1, &normalVBO);
 
+
         glBindVertexArray(VAO);
 
         // positions
@@ -226,6 +229,7 @@ struct MeshComponent {
         // indices
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned short), indices.data(), GL_STATIC_DRAW);
+
 
         glBindVertexArray(0);
     }
@@ -294,6 +298,8 @@ struct MeshComponent {
         glGenBuffers(1, &EBO);
         glGenBuffers(1, &uvVBO);
         glGenBuffers(1, &normalVBO);
+        glGenBuffers(1, &boneIDVBO);
+        glGenBuffers(1, &boneWeightVBO);
 
         glBindVertexArray(VAO);
 
@@ -314,8 +320,21 @@ struct MeshComponent {
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned short), indices.data(), GL_STATIC_DRAW);
+        // BoneIDs
+        glBindBuffer(GL_ARRAY_BUFFER, boneIDVBO);
+        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::ivec4), nullptr, GL_STATIC_DRAW);
+        glVertexAttribIPointer(5, 4, GL_INT, 0, (void*)0);
+        glEnableVertexAttribArray(5);
+
+        // BoneWeights
+        glBindBuffer(GL_ARRAY_BUFFER, boneWeightVBO);
+        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec4), nullptr, GL_STATIC_DRAW);
+        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 0, (void*)0);
+        glEnableVertexAttribArray(6);
+
 
         glBindVertexArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 
     void loadPrimitive(const std::string& primitiveType, glm::vec3 right_vector=glm::vec3(1.0,0.0,0.0), glm::vec3 up_vector=glm::vec3(0.0,0.0,1.0), float rayon=1.0f) {

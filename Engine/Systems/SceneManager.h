@@ -171,6 +171,8 @@ public:
             if(entityData.contains("animation")){
                 AnimationComponent animation;
                 animation.loadFromJson(entityData, gameFolder);
+                auto& meshComp = entityManager->GetComponent<MeshComponent>(e.id);
+                animation.setupBoneVBOs(meshComp.VAO);
                 entityManager->AddComponent<AnimationComponent>(e.id, animation);
             }
         }

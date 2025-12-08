@@ -89,50 +89,52 @@ public:
                 const MeshComponent& mesh = meshIt->second;
                 const TransformComponent& transform = transformIt->second;
                 const MaterialComponent& material = materialIt->second;
-
+                
                 glm::mat4 modelMatrix = entityManager->GetComponent<TransformComponent>(entity.id).worldMatrix;
                 glm::mat4 model = modelMatrix;
-
+                
                 material.bind(shaderProgram);
-
+                
                 GLint selectedLoc = glGetUniformLocation(shaderProgram, "selected");
                 glUniform1i(selectedLoc, entity.id == entityManager->selected);
-
+                
                 GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
                 glUniformMatrix4fv(modelLoc, 1, GL_FALSE, &model[0][0]);
+                
                 glBindVertexArray(mesh.VAO);
+
                 GLint isAnimLoc = glGetUniformLocation(shaderProgram, "isAnimated");
                 glUniform1i(isAnimLoc, 0);
+
                 if (entityManager->HasComponent<AnimationComponent>(entity.id)) {
                     auto& animComp = entityManager->GetComponent<AnimationComponent>(entity.id);
-                    if (entityManager->GetComponent<AnimationComponent>(entity.id).isPlaying) {
+                    if (animComp.isPlaying) {
                         glUniform1i(isAnimLoc, 1);
                     }
-                    // SSBO with final bone matrices (binding must match shader)
-                    if (animComp.bonesSSBO) {
-                        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, animComp.bonesSSBO); // binding=3
-                        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, animComp.bones.size() * sizeof(glm::mat4), animComp.finalBoneMatrices.data());
-                        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-                    }
 
-                    // Bone IDs attribute (location 5)
-                    if (animComp.boneIDVBO) {
-                        glBindBuffer(GL_ARRAY_BUFFER, animComp.boneIDVBO);
-                        glEnableVertexAttribArray(5);
-                        glVertexAttribIPointer(5, 4, GL_INT, sizeof(glm::ivec4), (void*)0);
+                    if (animComp.bonesSSBO != 0) {
+                        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, animComp.bonesSSBO);
                     }
-
-                    // Bone Weights attribute (location 6)
-                    if (animComp.boneWeightVBO) {
-                        glBindBuffer(GL_ARRAY_BUFFER, animComp.boneWeightVBO);
-                        glEnableVertexAttribArray(6);
-                        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (void*)0);
+                    
+                }                 // DEBUG: verify attributes are enabled
+                if (entity.id == 1) {
+                    GLint enabled5 = 0, enabled6 = 0;
+                    glGetVertexAttribiv(5, GL_VERTEX_ATTRIB_ARRAY_ENABLED, &enabled5);
+                    glGetVertexAttribiv(6, GL_VERTEX_ATTRIB_ARRAY_ENABLED, &enabled6);
+                    
+                    GLint buffer5 = 0, buffer6 = 0;
+                    glGetVertexAttribiv(5, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &buffer5);
+                    glGetVertexAttribiv(6, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &buffer6);
+                    
+                    static int debugCount = 0;
+                    if (++debugCount % 60 == 0) {
+                        std::cout << "[AttrDebug] attr5 enabled=" << enabled5 << " buffer=" << buffer5 << "\n";
+                        std::cout << "[AttrDebug] attr6 enabled=" << enabled6 << " buffer=" << buffer6 << "\n";
                     }
-
-                    // Unbind array buffer to avoid leaking state
-                    glBindBuffer(GL_ARRAY_BUFFER, 0);
                 }
                 glDrawElements(GL_TRIANGLES, mesh.vertexCount, GL_UNSIGNED_SHORT, 0);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+                glBindVertexArray(0);                
             }
         }
     }

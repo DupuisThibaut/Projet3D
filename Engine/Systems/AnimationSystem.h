@@ -18,16 +18,22 @@ class AnimationSystem {
 public:
     EntityManager* entityManager = nullptr;
 
+
     AnimationSystem() = default;
     explicit AnimationSystem(EntityManager* em) : entityManager(em) {}
 
     void update(float deltaTime) {
         if (!entityManager) return;
-
+        static int frameCount = 0;
+        
         const auto& comps = entityManager->GetComponents<AnimationComponent>();
         for (const auto& [entity, _] : comps) {
             auto& animComp = entityManager->GetComponent<AnimationComponent>(entity);
-
+            if (++frameCount % 60 == 0) {
+                std::cout << "[AnimUpdate] Called, deltaTime=" << deltaTime << "\n";
+                std::cout << "[AnimUpdate] entity=" << entity << " isPlaying=" << animComp.isPlaying 
+                  << " time=" << animComp.animationTime << "\n";
+            }
             if (!animComp.isPlaying || animComp.animations.empty()) continue;
             if (animComp.currentAnimation < 0 || animComp.currentAnimation >= (int)animComp.animations.size()) continue;
 
@@ -93,7 +99,8 @@ private:
     void UpdateFullAnimation(AnimationComponent& animComp, float deltaTime) {
         const auto& anim = animComp.animations[animComp.currentAnimation];
 
-        animComp.animationTime += deltaTime * animComp.animationSpeed * (float)anim.ticksPerSecond;
+        float tickIncrement = deltaTime * animComp.animationSpeed * (float)anim.ticksPerSecond;
+        animComp.animationTime += tickIncrement;
 
         if (animComp.animationTime > (float)anim.duration) {
             if (animComp.loop) {
@@ -137,6 +144,14 @@ private:
                             animComp.finalBoneMatrices.size() * sizeof(glm::mat4),
                             animComp.finalBoneMatrices.data());
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, animComp.bonesSSBO); // binding must match shader
+            // DEBUG: verify first bone matrix uploaded
+           static int uploadCount = 0;
+            if (++uploadCount % 60 == 0) {
+                const glm::mat4& m = animComp.finalBoneMatrices[0];
+                std::cout << "[BoneUpload] frame=" << uploadCount 
+                          << " bone[0]=" << m[0][0] << "," << m[1][1] << "," << m[2][2] << "\n";
+            }
+            
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
         }
     }
@@ -164,7 +179,7 @@ private:
         if (it != animComp.boneMapping.end()) {
             int idx = it->second;
             if (idx >= 0 && idx < (int)animComp.bones.size()) {
-                animComp.finalBoneMatrices[idx] = global * animComp.bones[idx].offsetMatrix;
+                animComp.finalBoneMatrices[idx] = anim.globalInverseTransform * global * animComp.bones[idx].offsetMatrix;
             }
         }
 

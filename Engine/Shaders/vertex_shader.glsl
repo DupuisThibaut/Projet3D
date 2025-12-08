@@ -10,7 +10,7 @@ layout(std430, binding = 3) readonly buffer BonesBuffer {
     mat4 boneMatrices[];
 };
 
-uniform bool isAnimated;
+uniform int isAnimated;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -25,7 +25,7 @@ void main(){
     vec4 totalPosition;
     vec3 totalNormal;
 
-    if (isAnimated) {
+    if (isAnimated == 1) {
         vec4 skinnedPosition = vec4(0.0);
         vec3 skinnedNormal   = vec3(0.0);
         float sumW = 0.0;

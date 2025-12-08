@@ -62,14 +62,14 @@
           0.0
         ],
         "rotation": [
-          -90.0,
           0.0,
+          45.0,
           0.0
         ],
         "scale": [
-          0.009999999776482582,
-          0.009999999776482582,
-          0.009999999776482582
+          0.001,
+          0.001,
+          0.001
         ]
       },
       "collider": {
@@ -78,6 +78,14 @@
       },
       "rigidbody": {
 
+      },
+      "animation": {
+        "is_playing": true,
+        "clips":[
+            {"name": "jump","start_frame":0,"end_frame":57},
+            {"name": "walk","start_frame":65,"end_frame":96},
+            {"name": "idle","start_frame":105,"end_frame":355}
+        ]
       }
     },
     {
