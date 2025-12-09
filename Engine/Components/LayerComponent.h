@@ -13,6 +13,19 @@ struct LayerComponent {
             id = entityData["entities"][entityId]["layer"]["id"];
         }
     }
+
+    void renderEditor(){
+        if (ImGui::CollapsingHeader("Layer Component", ImGuiTreeNodeFlags_DefaultOpen)) {
+            char layerNameBuffer[256];
+            strncpy(layerNameBuffer, name.c_str(), sizeof(layerNameBuffer));
+            layerNameBuffer[sizeof(layerNameBuffer) - 1] = '\0';
+
+            if (ImGui::InputText("Layer Name", layerNameBuffer, sizeof(layerNameBuffer))) {
+                name = std::string(layerNameBuffer);
+            }
+            ImGui::InputInt("Layer ID", &id);
+        }
+    }
 };
 
 #endif // LAYER_COMPONENT_H

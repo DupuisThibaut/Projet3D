@@ -116,21 +116,6 @@ public:
                         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, animComp.bonesSSBO);
                     }
                     
-                }                 // DEBUG: verify attributes are enabled
-                if (entity.id == 1) {
-                    GLint enabled5 = 0, enabled6 = 0;
-                    glGetVertexAttribiv(5, GL_VERTEX_ATTRIB_ARRAY_ENABLED, &enabled5);
-                    glGetVertexAttribiv(6, GL_VERTEX_ATTRIB_ARRAY_ENABLED, &enabled6);
-                    
-                    GLint buffer5 = 0, buffer6 = 0;
-                    glGetVertexAttribiv(5, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &buffer5);
-                    glGetVertexAttribiv(6, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &buffer6);
-                    
-                    static int debugCount = 0;
-                    if (++debugCount % 60 == 0) {
-                        std::cout << "[AttrDebug] attr5 enabled=" << enabled5 << " buffer=" << buffer5 << "\n";
-                        std::cout << "[AttrDebug] attr6 enabled=" << enabled6 << " buffer=" << buffer6 << "\n";
-                    }
                 }
                 glDrawElements(GL_TRIANGLES, mesh.vertexCount, GL_UNSIGNED_SHORT, 0);
                 glBindBuffer(GL_ARRAY_BUFFER, 0);

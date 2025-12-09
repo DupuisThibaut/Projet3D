@@ -557,6 +557,7 @@ int main( int argc, char* argv[] )
             editorSystem->renderHierarchy();
             editorSystem->renderInspector();
             editorSystem->renderStats(deltaTime);
+            editorSystem->renderContentBrowser();
     
             editorSystem->configureViewport(viewportX,viewportWidth,viewportHeight,viewportWidthInt,viewportHeightInt);
         }

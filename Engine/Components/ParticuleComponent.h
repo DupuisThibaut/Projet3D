@@ -109,6 +109,39 @@ struct ParticuleComponent {
         firstFrame[i] = true;
     }
     
+    void renderEditor(){
+        if(ImGui::CollapsingHeader("Particule Component")){
+            ImGui::InputInt("Nombre de particules", &nb);
+            ImGui::InputFloat3("Offset", &offset[0]);
+            ImGui::InputFloat3("Position Emission", &position[0]);
+            ImGui::InputFloat("Age Max", &ageMax[0]);
+            ImGui::InputFloat3("Velocity", &velocity[0][0]);
+            ImGui::InputFloat("Bouncing Factor", &bouncingFactor);
+            ImGui::InputInt("Particularite", &particularite);
+            ImGui::Separator();
+            ImGui::Text("Texture:");
+            ImGui::BeginChild("ParticuleTextureDropZone", ImVec2(0, 40), true, ImGuiWindowFlags_NoScrollbar);
+            ImGui::TextWrapped("%s", path.empty() ? "Drag & drop a texture file here" : path.c_str());
+            ImGui::EndChild();
+            if (ImGui::BeginDragDropTarget()) {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
+                    const char* droppedPath = (const char*)payload->Data;
+                    std::string ext = droppedPath;
+                    ext = ext.substr(ext.find_last_of('.') + 1);
+                    if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp" || ext == "tga" ||
+                        ext == "PNG" || ext == "JPG" || ext == "JPEG" || ext == "BMP" || ext == "TGA") {
+                        path = std::string(droppedPath);
+                    }
+                }
+                ImGui::EndDragDropTarget();
+            }
+            char texturePathBuffer[256];
+            strncpy(texturePathBuffer, path.c_str(), sizeof(texturePathBuffer));
+            texturePathBuffer[sizeof(texturePathBuffer) - 1] = '\0';
+            ImGui::InputText("Texture Path", texturePathBuffer, sizeof(texturePathBuffer));
+            path = std::string(texturePathBuffer);
+        }
+    }
 
 };
 #endif // PARTICULE_COMPONENT_H

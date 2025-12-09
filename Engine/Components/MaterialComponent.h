@@ -105,15 +105,15 @@ struct MaterialComponent {
                 glBindTexture(GL_TEXTURE_2D, texture);
                 GLint texLoc = glGetUniformLocation(shaderProgram, "materialType");
                 if (texLoc >= 0) glUniform1i(texLoc, 0);
-
-
             }
         } else if (type == Type::Color) {
+            glBindTexture(GL_TEXTURE_2D, 0);
             GLint colorLoc = glGetUniformLocation(shaderProgram, "color");
             if (colorLoc >= 0) glUniform3fv(colorLoc, 1, &color[0]);
             GLint texLoc = glGetUniformLocation(shaderProgram, "materialType");
             if (texLoc >= 0) glUniform1i(texLoc, 1);
         } else {
+            glBindTexture(GL_TEXTURE_2D, 0);
             GLint colorLoc = glGetUniformLocation(shaderProgram, "color");
             if (colorLoc >= 0) {
                 glm::vec3 zero(0.0f);
@@ -183,6 +183,164 @@ struct MaterialComponent {
                 } else {
                     // Default material
                     setColor(glm::vec3(1.0f, 1.0f, 1.0f),glm::vec3(1.0f, 1.0f, 1.0f),glm::vec3(1.0f, 1.0f, 1.0f),glm::vec3(1.0f, 1.0f, 1.0f),1.0f);
+                }
+            }
+        }
+    }
+
+    void renderEditor(){
+        if(ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen)) {
+            const char* materialTypes[] = { "None", "Texture", "Color" };
+            int currentType = static_cast<int>(type);
+            if (ImGui::Combo("Material Type", &currentType, materialTypes, IM_ARRAYSIZE(materialTypes))) {
+                type = static_cast<Type>(currentType);
+            }
+            ImGui::Separator();
+                        if (type == Type::Texture) {
+                ImGui::Text("Texture Settings");
+                ImVec2 dropZoneSize(256, 128);
+                ImGui::BeginChild("TextureDropZone", dropZoneSize, true, ImGuiWindowFlags_NoScrollbar);
+                if (texture != 0) {
+                    ImGui::Image((void*)(intptr_t)texture, ImVec2(dropZoneSize.x - 16, dropZoneSize.y - 16));
+                } else {
+                    ImGui::SetCursorPosY(dropZoneSize.y * 0.5f - 20);
+                    ImGui::TextWrapped("Drag & Drop a texture file here\nor click to browse");
+                }
+                
+                ImGui::EndChild();
+                if (ImGui::BeginDragDropTarget()) {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
+                        const char* droppedPath = (const char*)payload->Data;
+                        texturePath = std::string(droppedPath);
+                        setTexture(texturePath);
+                        if (loadTexture()) {
+                            std::cout << "Loaded texture via drag & drop: " << texturePath << std::endl;
+                        } else {
+                            std::cerr << "Failed to load texture: " << texturePath << std::endl;
+                        }
+                    }
+                    ImGui::EndDragDropTarget();
+                }
+                if (!texturePath.empty()) {
+                    ImGui::Text("Path: %s", texturePath.c_str());
+                    ImGui::SameLine();
+                    if (ImGui::SmallButton("Clear")) {
+                        texture = 0;
+                        texturePath.clear();
+                    }
+                }
+                ImGui::Separator();
+                ImGui::Text("Or enter path manually:");
+                char texturePathBuffer[512];
+                strncpy(texturePathBuffer, texturePath.c_str(), sizeof(texturePathBuffer));
+                texturePathBuffer[sizeof(texturePathBuffer) - 1] = '\0';
+                
+                if (ImGui::InputText("##TexturePath", texturePathBuffer, sizeof(texturePathBuffer))) {
+                    texturePath = std::string(texturePathBuffer);
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Load")) {
+                    if (!texturePath.empty()) {
+                        setTexture(texturePath);
+                        if (loadTexture()) {
+                            std::cout << "Loaded texture: " << texturePath << std::endl;
+                        }
+                    }
+                }
+            }
+            else if (type == Type::Color) {
+                ImGui::Text("Color Settings");
+                bool needsUpdate = false;
+                needsUpdate |= ImGui::ColorEdit3("Color", &color.x);
+                needsUpdate |= ImGui::ColorEdit3 ("Ambient", &ambient_material.x);
+                needsUpdate |= ImGui::ColorEdit3 ("Diffuse", &diffuse_material.x);
+                needsUpdate |= ImGui::ColorEdit3 ("Specular", &specular_material.x);
+                needsUpdate |= ImGui::SliderFloat("Shininess", &shininess, 1.0f, 128.0f);
+                if (needsUpdate) {
+                    std::cout << "Material color updated" << std::endl;
+                }
+                if (ImGui::Button("Reset Material")) {
+                    setColor(
+                        glm::vec3(1.0f, 1.0f, 1.0f), 
+                        glm::vec3(0.8f, 0.8f, 0.8f), 
+                        glm::vec3(1.0f, 1.0f, 1.0f), 
+                        glm::vec3(0.2f, 0.2f, 0.2f), 
+                        32.0f                         
+                    );
+                    std::cout << "Material reset to default" << std::endl;
+                }
+                ImGui::Separator();
+                ImGui::Text("Quick Presets:");
+                if (ImGui::Button("Gold")) {
+                    setColor(
+                        glm::vec3(1.0f, 0.84f, 0.0f),    
+                        glm::vec3(0.25f, 0.20f, 0.07f), 
+                        glm::vec3(0.75f, 0.61f, 0.23f),  
+                        glm::vec3(0.63f, 0.56f, 0.37f),  
+                        51.2f                            
+                    );
+                    std::cout << "Applied gold material preset" << std::endl;
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Silver")) {
+                    setColor(
+                        glm::vec3(0.75f, 0.75f, 0.75f), 
+                        glm::vec3(0.19f, 0.19f, 0.19f), 
+                        glm::vec3(0.51f, 0.51f, 0.51f),  
+                        glm::vec3(0.51f, 0.51f, 0.51f),  
+                        51.2f                             
+                    );
+                    std::cout << "Applied silver material preset" << std::endl;
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Bronze")) {
+                    setColor(
+                        glm::vec3(0.71f, 0.40f, 0.11f),  
+                        glm::vec3(0.21f, 0.13f, 0.05f), 
+                        glm::vec3(0.71f, 0.43f, 0.18f), 
+                        glm::vec3(0.39f, 0.27f, 0.17f), 
+                        25.6f                             
+                    );
+                    std::cout << "Applied bronze material preset" << std::endl;
+                }
+                if (ImGui::Button("Emerald")) {
+                    setColor(
+                        glm::vec3(0.07f, 0.61f, 0.08f),  
+                        glm::vec3(0.02f, 0.17f, 0.02f), 
+                        glm::vec3(0.63f, 0.73f, 0.63f), 
+                        glm::vec3(0.63f, 0.73f, 0.63f), 
+                        76.8f                             
+                    );
+                    std::cout << "Applied emerald material preset" << std::endl;
+                }
+                if(ImGui::Button("Ruby")) {
+                    setColor(
+                        glm::vec3(0.61f, 0.04f, 0.04f), 
+                        glm::vec3(0.17f, 0.01f, 0.01f),  
+                        glm::vec3(0.73f, 0.06f, 0.06f),  
+                        glm::vec3(0.73f, 0.06f, 0.06f),  
+                        76.8f                           
+                    );
+                    std::cout << "Applied ruby material preset" << std::endl;
+                }
+                ImGui::Separator();
+                if(particularite == 1){
+                    ImGui::Text("Material Particularity: Reflection");
+                }
+                else if(particularite == 2){
+                    ImGui::Text("Material Particularity: Refraction");
+                }
+                bool isReflection = (particularite == 1);
+                bool isRefraction = (particularite == 2);
+                
+                if (ImGui::Checkbox("Reflection", &isReflection)) {
+                    particularite = isReflection ? 1 : 0;
+                    if (isReflection) isRefraction = false;
+                }
+                ImGui::SameLine();
+                if (ImGui::Checkbox("Refraction", &isRefraction)) {
+                    particularite = isRefraction ? 2 : 0;
+                    if (isRefraction) isReflection = false;
                 }
             }
         }

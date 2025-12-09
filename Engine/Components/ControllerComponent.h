@@ -22,7 +22,16 @@ struct ControllerComponent {
             if (entityData["entities"][entityId]["controller"].contains("zoom_speed")) this->zoomSpeed = entityData["entities"][entityId]["controller"]["zoom_speed"];
             if (entityData["entities"][entityId]["controller"].contains("sensitivity")) this->sensitivity = entityData["entities"][entityId]["controller"]["sensitivity"];
         }
-        
+    }
+
+    void renderEditor(){
+        if(ImGui::CollapsingHeader("Controller", ImGuiTreeNodeFlags_DefaultOpen)) {
+            ImGui::Text("Controller Component");
+            ImGui::Separator();
+            ImGui::DragFloat("Move Speed", &moveSpeed, 0.1f);
+            ImGui::DragFloat("Zoom Speed", &zoomSpeed, 0.01f);
+            ImGui::DragFloat("Sensitivity", &sensitivity, 0.01f);
+        }
     }
 };
 

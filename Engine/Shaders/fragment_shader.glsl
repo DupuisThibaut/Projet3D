@@ -64,8 +64,9 @@ vec3 albedo;
             // texCol=col;
         }
     } 
+    vec4 highlight = vec4(1.0, 0.4824, 0.0, 1.0);
     if(selected){
-        texCol=vec4(1.0, 0.4824, 0.0, 1.0);
+        texCol = mix(texCol, highlight, 0.5);
     }
 
     FragColor = texCol;

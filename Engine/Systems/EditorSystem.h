@@ -10,6 +10,7 @@
 #include "../Entities/Entity.h"
 #include <iostream>
 #include <filesystem>
+#include <dirent.h> 
 
 #if defined(__APPLE__) || defined(__MACH__)
     #define PLATFORM_MACOS
@@ -205,6 +206,127 @@ public:
         }
         ImGui::End();
     }
+
+    void renderContentBrowser() {
+        if(!showContentBrowser) return;
+        float browserHeight = 200.0f;
+        float hierarchyWidthPx = hierarchyWidth * windowWidth;
+        float inspectorWidthPx = inspectorWidth * windowWidth;
+        float browserWidth = windowWidth - hierarchyWidthPx - inspectorWidthPx;
+        ImGui::SetNextWindowPos(ImVec2(hierarchyWidthPx, windowHeight - browserHeight), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(hierarchyWidthPx, menuBarHeight), ImGuiCond_Always);
+        if (!ImGui::Begin("Content Browser", nullptr,
+            ImGuiWindowFlags_NoMove | 
+            ImGuiWindowFlags_NoResize | 
+            ImGuiWindowFlags_NoCollapse)) {
+            ImGui::End();
+            return;
+        }
+        if (currentBrowserPath.empty()) {
+            currentBrowserPath = GameFolder;
+            pathHistory.push_back(currentBrowserPath);
+            historyIndex = 0;
+        }
+        if (ImGui::ArrowButton("##back", ImGuiDir_Left)) {
+            if (historyIndex > 0) {
+                historyIndex--;
+                currentBrowserPath = pathHistory[historyIndex];
+            }
+        }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Go back");
+        ImGui::SameLine();
+        if (ImGui::ArrowButton("##forward", ImGuiDir_Right)) {
+            if (historyIndex < (int)pathHistory.size() - 1) {
+                historyIndex++;
+                currentBrowserPath = pathHistory[historyIndex];
+            }
+        }
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("Go forward");
+        ImGui::SameLine();
+        std::string relativePath = getRelativePath(currentBrowserPath, GameFolder);
+        if (relativePath.empty()) relativePath = "/";
+        ImGui::Text("Path: %s", relativePath.c_str());
+        ImGui::Separator();
+        DIR* dir = opendir(currentBrowserPath.c_str());
+        if (dir) {
+            std::vector<std::pair<std::string, bool>> items;
+            struct dirent* entry;
+            while ((entry = readdir(dir)) != nullptr) {
+                std::string filename = entry->d_name;
+                if (filename == "." || filename == "..") continue;
+                std::string fullPath = currentBrowserPath + "/" + filename;
+                struct stat fileStat;
+                if (stat(fullPath.c_str(), &fileStat) == 0) {
+                    bool isDirectory = S_ISDIR(fileStat.st_mode);
+                    items.push_back({filename, isDirectory});
+                }
+            }
+            closedir(dir);
+            std::sort(items.begin(), items.end(), [](const auto& a, const auto& b) {
+                if (a.second != b.second) return a.second > b.second;
+                return a.first < b.first;
+            });
+            ImGui::BeginChild("FileList", ImVec2(0, 0), true);
+            for (const auto& [filename, isDirectory] : items) {
+                std::string fullPath = currentBrowserPath + "/" + filename;
+                std::string icon = isDirectory ? "[DIR] " : "[FILE] ";
+                if (isDirectory) {
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.8f, 0.2f, 1.0f)); // Jaune
+                } else {
+                    std::string ext = "";
+                    size_t dotPos = filename.find_last_of('.');
+                    if (dotPos != std::string::npos) {
+                        ext = filename.substr(dotPos + 1);
+                    }
+                    if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp" || ext == "tga" ||
+                        ext == "PNG" || ext == "JPG" || ext == "JPEG" || ext == "BMP" || ext == "TGA") {
+                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 1.0f, 0.5f, 1.0f)); // Vert (images)
+                    } else if (ext == "lua" || ext == "LUA") {
+                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.7f, 1.0f, 1.0f)); // Bleu (scripts)
+                    } else if (ext == "wav" || ext == "mp3" || ext == "ogg" || ext == "WAV" || ext == "MP3" || ext == "OGG") {
+                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.5f, 1.0f, 1.0f)); // Magenta (audio)
+                    } else if (ext == "fbx" || ext == "obj" || ext == "off" || ext == "FBX" || ext == "OBJ" || ext == "OFF") {
+                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.8f, 1.0f)); // Gris (3D models)
+                    } else {
+                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f)); // Gris clair (autres)
+                    }
+                }
+                ImGui::Selectable((icon + filename).c_str());
+                ImGui::PopStyleColor();
+                if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
+                    if (isDirectory) {
+                        navigateTo(fullPath);
+                    }
+                }
+                if (!isDirectory && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+                    ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", 
+                                            fullPath.c_str(), 
+                                            fullPath.size() + 1);
+                    ImGui::Text("Dragging: %s", filename.c_str());
+                    ImGui::EndDragDropSource();
+                }
+                if (ImGui::IsItemHovered()) {
+                    ImGui::BeginTooltip();
+                    ImGui::Text("%s", filename.c_str());
+                    ImGui::Separator();
+                    struct stat fileStat;
+                    if (stat(fullPath.c_str(), &fileStat) == 0) {
+                        if (isDirectory) {
+                            ImGui::Text("Type: Directory");
+                        } else {
+                            ImGui::Text("Type: File");
+                            ImGui::Text("Size: %.2f KB", fileStat.st_size / 1024.0f);
+                        }
+                    }
+                    ImGui::EndTooltip();
+                }
+            }
+            ImGui::EndChild();
+        } else {
+            ImGui::TextColored(ImVec4(1, 0, 0, 1), "Failed to open directory: %s", currentBrowserPath.c_str());
+        }
+        ImGui::End();
+    }
     void renderInspector(){
         if (!showInspector) return;
         float inspectorX = windowWidth - inspectorWidth * windowWidth;
@@ -220,39 +342,73 @@ public:
             ImGui::Separator();
             // Transform
             if (entityManager->HasComponent<TransformComponent>(selectedEntityId)) {
-                renderTransformComponent(selectedEntityId);
+                auto& transform = entityManager->GetComponent<TransformComponent>(selectedEntityId);
+                transform.renderEditor();
             }
             // Camera
             if (entityManager->HasComponent<CameraComponent>(selectedEntityId)) {
-                renderCameraComponent(selectedEntityId);
+                auto& camera = entityManager->GetComponent<CameraComponent>(selectedEntityId);
+                camera.renderEditor();
             }
             // Light
             if (entityManager->HasComponent<LightComponent>(selectedEntityId)) {
-                renderLightComponent(selectedEntityId);
+                auto& light = entityManager->GetComponent<LightComponent>(selectedEntityId);
+                light.renderEditor();
             }
             // Material
             if (entityManager->HasComponent<MaterialComponent>(selectedEntityId)) {
-                renderMaterialComponent(selectedEntityId);
+                auto& material = entityManager->GetComponent<MaterialComponent>(selectedEntityId);
+                material.renderEditor();
             }
             // Mesh
             if (entityManager->HasComponent<MeshComponent>(selectedEntityId)) {
-                renderMeshComponent(selectedEntityId);
+                auto& mesh = entityManager->GetComponent<MeshComponent>(selectedEntityId);
+                mesh.renderEditor();
             }
             // Audio
             if (entityManager->HasComponent<MyAudioComponent>(selectedEntityId)) {
-                renderAudioComponent(selectedEntityId);
+                auto& audio = entityManager->GetComponent<MyAudioComponent>(selectedEntityId);
+                audio.renderEditor();
             }
             // Script
             if (entityManager->HasComponent<LuaScriptComponent>(selectedEntityId)) {
-                renderLuaScriptComponent(selectedEntityId);
+                auto& script = entityManager->GetComponent<LuaScriptComponent>(selectedEntityId);
+                script.renderEditor();
             }
             // Tag
             if (entityManager->HasComponent<TagComponent>(selectedEntityId)) {
-                renderTagComponent(selectedEntityId);
+                auto& tagComponent = entityManager->GetComponent<TagComponent>(selectedEntityId);
+                tagComponent.renderEditor();
             }
             // Layer
             if (entityManager->HasComponent<LayerComponent>(selectedEntityId)) {
-                renderLayerComponent(selectedEntityId);
+                auto& layer = entityManager->GetComponent<LayerComponent>(selectedEntityId);
+                layer.renderEditor();
+            }
+            //Collider
+            if( entityManager->HasComponent<ColliderComponent>(selectedEntityId)) {
+                auto& collider = entityManager->GetComponent<ColliderComponent>(selectedEntityId);
+                collider.renderEditor();
+            }
+            // Controller
+            if( entityManager->HasComponent<ControllerComponent>(selectedEntityId)) {
+                auto& controller = entityManager->GetComponent<ControllerComponent>(selectedEntityId);
+                controller.renderEditor();
+            }
+            // Particule
+            if( entityManager->HasComponent<ParticuleComponent>(selectedEntityId)) {
+                auto& particule = entityManager->GetComponent<ParticuleComponent>(selectedEntityId);
+                particule.renderEditor();
+            }
+            //RigidBody
+            if( entityManager->HasComponent<RigidBodyComponent>(selectedEntityId)) {
+                auto& rigidbody = entityManager->GetComponent<RigidBodyComponent>(selectedEntityId);
+                rigidbody.renderEditor();
+            }
+            // Texture2D
+            if (entityManager->HasComponent<TextureComponent>(selectedEntityId)) {
+                auto& texture = entityManager->GetComponent<TextureComponent>(selectedEntityId);
+                texture.renderEditor();
             }
         } else {
             ImGui::TextDisabled("No entity selected");
@@ -329,6 +485,41 @@ public:
                         ImGui::CloseCurrentPopup();
                     }
                 }
+                if(!entityManager->HasComponent<ColliderComponent>(selectedEntityId)){
+                    if(ImGui::MenuItem("Collider Component")){
+                        ColliderComponent collider;
+                        entityManager->AddComponent<ColliderComponent>(selectedEntityId, std::move(collider));
+                        ImGui::CloseCurrentPopup();
+                    }
+                }
+                if(!entityManager->HasComponent<ControllerComponent>(selectedEntityId)){
+                    if(ImGui::MenuItem("Controller Component")){
+                        ControllerComponent controller;
+                        entityManager->AddComponent<ControllerComponent>(selectedEntityId, controller);
+                        ImGui::CloseCurrentPopup();
+                    }
+                }
+                if(!entityManager->HasComponent<ParticuleComponent>(selectedEntityId)){
+                    if(ImGui::MenuItem("Particule Component")){
+                        ParticuleComponent particule;
+                        entityManager->AddComponent<ParticuleComponent>(selectedEntityId, particule);
+                        ImGui::CloseCurrentPopup();
+                    }
+                }
+                if(!entityManager->HasComponent<RigidBodyComponent>(selectedEntityId)){
+                    if(ImGui::MenuItem("RigidBody Component")){
+                        RigidBodyComponent rigidbody;
+                        entityManager->AddComponent<RigidBodyComponent>(selectedEntityId, rigidbody);
+                        ImGui::CloseCurrentPopup();
+                    }
+                }
+                if(!entityManager->HasComponent<TextureComponent>(selectedEntityId)){
+                    if(ImGui::MenuItem("Texture Component")){
+                        TextureComponent texture;
+                        entityManager->AddComponent<TextureComponent>(selectedEntityId, texture);
+                        ImGui::CloseCurrentPopup();
+                    }
+                }
                 ImGui::EndPopup();
             }
 
@@ -355,6 +546,7 @@ public:
                 ImGui::MenuItem("Hierarchy", nullptr, &showHierarchy);
                 ImGui::MenuItem("Inspector", nullptr, &showInspector);
                 ImGui::MenuItem("Stats", nullptr, &showStats);
+                ImGui::MenuItem("Content Browser", nullptr, &showContentBrowser);
                 ImGui::EndMenu();
             }
             if(ImGui::BeginMenu("Theme")){
@@ -583,10 +775,11 @@ public:
     void configureViewport(float& viewportX, float& viewportWidth, float& viewportHeight, unsigned int& width, unsigned int& height){
         float float_hierarchyWidth = showHierarchy ? (windowWidth * hierarchyWidth) : 0.0f;
         float float_inspectorWidth = showInspector ? (windowWidth * inspectorWidth) : 0.0f;
+        float float_browserHeight = 200.0f;
         
         viewportX = float_hierarchyWidth;
         viewportWidth = windowWidth - float_hierarchyWidth - float_inspectorWidth;
-        viewportHeight = windowHeight - menuBarHeight;
+        viewportHeight = windowHeight - menuBarHeight - float_browserHeight;
         width = static_cast<unsigned int>(viewportWidth);
         height = static_cast<unsigned int>(viewportHeight);
         
@@ -657,6 +850,20 @@ private:
     bool fontReloadRequested = false;
     std::string pendingFontPath = "";
     float pendingFontSize = 16.0f;
+
+    std::string currentBrowserPath;
+    std::vector<std::string> pathHistory;
+    int historyIndex = -1;
+    bool showContentBrowser = true;
+
+    void navigateTo(const std::string& path) {
+        currentBrowserPath = path;
+        
+        // Ajoute à l'historique (supprime tout ce qui vient après l'index actuel)
+        pathHistory.erase(pathHistory.begin() + historyIndex + 1, pathHistory.end());
+        pathHistory.push_back(path);
+        historyIndex = pathHistory.size() - 1;
+    }
 
     std::vector<std::string> getSystemFontPaths(){
         std::vector<std::string> fontDirs;
@@ -741,8 +948,6 @@ private:
 
     void loadCustomFont(const char* fontPath = nullptr, float fontSize = 16.0f){
         ImGuiIO& io = ImGui::GetIO();
-        
-        // ✅ Vérifie que l'atlas n'est pas verrouillé
         if (io.Fonts->Locked) {
             std::cerr << "Cannot load font: ImFontAtlas is locked!" << std::endl;
             return;
@@ -753,12 +958,10 @@ private:
         }
         
         if (fontPath == nullptr) {
-            // Police par défaut
             io.Fonts->AddFontDefault();
             currentFontPath = "";
             std::cout << "Loaded default font (size: " << fontSize << ")" << std::endl;
         } else {
-            // Vérifie si le fichier existe
             if (std::ifstream(fontPath).good()) {
                 ImFont* font = io.Fonts->AddFontFromFileTTF(fontPath, fontSize);
                 if (font != nullptr) {
@@ -776,11 +979,7 @@ private:
                 currentFontPath = "";
             }
         }
-        
-        // ✅ Reconstruit l'atlas de polices
         io.Fonts->Build();
-        
-        // ✅ Recrée la texture OpenGL
         ImGui_ImplOpenGL3_DestroyFontsTexture();
         ImGui_ImplOpenGL3_CreateFontsTexture();
     }
@@ -797,509 +996,16 @@ private:
         } else {
             label = "Entity " + std::to_string(entity.id);
         }
-
         if (ImGui::Selectable(label.c_str(), selectedEntityId == entity.id)) {
-            // Distinguish mouse activation vs keyboard/nav activation
-            if (ImGui::IsItemClicked(0)) { // left mouse click on the selectable
-                // toggle selection only if hierarchy is focused OR ImGui isn't capturing mouse/keyboard
-                if (isHierarchyFocused || (!io.WantCaptureMouse && !io.WantCaptureKeyboard)) {
-                    if (selectedEntityId == entity.id) {
-                        selectedEntityId = UINT32_MAX;
-                        entityManager->selected = UINT32_MAX;
-                    } else {
-                        selectedEntityId = entity.id;
-                        entityManager->selected = entity.id;
-                    }
-                }
+            // Toggle selection on click
+            if (selectedEntityId == entity.id) {
+                // Deselect if already selected
+                selectedEntityId = UINT32_MAX;
+                entityManager->selected = UINT32_MAX;
             } else {
-                // activated by keyboard / nav: only select (don't toggle) when hierarchy focused
-                if (isHierarchyFocused) {
-                    selectedEntityId = entity.id;
-                    entityManager->selected = entity.id;
-                }
-            }
-        }
-    }
-
-    void renderTransformComponent(uint32_t entityId){
-        if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
-            auto& transform = const_cast<TransformComponent&>(
-                entityManager->GetComponent<TransformComponent>(entityId)
-            );
-            ImGui::Text("Hierarchy");
-            ImGui::Separator();        
-            std::string parentLabel = "None";
-            if (transform.parent != UINT32_MAX) {
-                parentLabel = "Entity " + std::to_string(transform.parent);
-            }
-            // ImGui::Text("Parent: %s", parentLabel.c_str());
-            // ImGui::SameLine();        
-            // if (ImGui::Button("Change##parent")) {
-            //     ImGui::OpenPopup("SelectParentPopup");
-            // }        
-            // if (ImGui::BeginPopup("SelectParentPopup")) {
-            //     ImGui::Text("Select Parent Entity");
-            //     ImGui::Separator();            
-            //     if (ImGui::Selectable("None", transform.parentId == UINT32_MAX)) {
-            //         setParent(entityId, UINT32_MAX);
-            //         ImGui::CloseCurrentPopup();
-            //     }            
-            //     for (const auto& entity : *entities) {
-            //         if (entity.id == entityId) continue;               
-            //         if (isDescendant(entity.id, entityId)) continue;
-            //         std::string label = "Entity " + std::to_string(entity.id);
-            //         bool isSelected = (transform.parentId == entity.id);
-                    
-            //         if (ImGui::Selectable(label.c_str(), isSelected)) {
-            //             setParent(entityId, entity.id);
-            //             ImGui::CloseCurrentPopup();
-            //         }
-            //     }
-                
-            //     ImGui::EndPopup();
-            // }        
-            // if (!transform.childrenIds.empty()) {
-            //     ImGui::Text("Children (%zu):", transform.childrenIds.size());
-            //     ImGui::Indent();
-            //     for (uint32_t childId : transform.childrenIds) {
-            //         ImGui::Text("- Entity %u", childId);
-            //         ImGui::SameLine();
-            //         if (ImGui::SmallButton(("Select##" + std::to_string(childId)).c_str())) {
-            //             selectedEntityId = childId;
-            //         }
-            //     }
-            //     ImGui::Unindent();
-            // }
-            ImGui::Separator();
-            ImGui::Text("Local Transform");
-            ImGui::DragFloat3("Position", &transform.position.x, 0.1f);
-            ImGui::DragFloat3("Rotation", &transform.rotation.x, 1.0f);
-            ImGui::DragFloat3("Scale", &transform.scale.x, 0.01f, 0.001f, 100.0f);
-            if (ImGui::Button("Reset Transform")) {
-                transform.position = glm::vec3(0.0f);
-                transform.rotation = glm::vec3(0.0f);
-                transform.scale = glm::vec3(1.0f);
-            }
-        }
-    }
-    void renderCameraComponent(uint32_t entityId){
-        if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
-            auto& camera = const_cast<CameraComponent&>(
-                entityManager->GetComponent<CameraComponent>(entityId)
-            );
-            
-            ImGui::Checkbox("Active", &camera.isActive);
-            ImGui::DragFloat("FOV", &camera.fov, 0.1f, 1.0f, 179.0f);
-            ImGui::DragFloat("Near Plane", &camera.nearPlane, 0.01f, 0.01f, 1000.0f);
-            ImGui::DragFloat("Far Plane", &camera.farPlane, 1.0f, 1.0f, 10000.0f);
-            ImGui::Text("Aspect Ratio: %.2f", camera.aspectRatio);
-        }
-    }
-    void renderLightComponent(uint32_t entityId){
-        if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen)) {
-            auto& light = const_cast<LightComponent&>(
-                entityManager->GetComponent<LightComponent>(entityId)
-            );
-            
-            ImGui::DragFloat("Intensity", &light.intensity, 0.1f, 0.0f, 100.0f);
-        }
-    }
-
-    void renderMaterialComponent(uint32_t entityId){
-        if (ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen)) {
-            auto& material = const_cast<MaterialComponent&>(
-                entityManager->GetComponent<MaterialComponent>(entityId)
-            );
-            
-            const char* materialTypes[] = { "None", "Texture", "Color" };
-            int currentType = static_cast<int>(material.type);
-            
-            if (ImGui::Combo("Material Type", &currentType, materialTypes, IM_ARRAYSIZE(materialTypes))) {
-                material.type = static_cast<MaterialComponent::Type>(currentType);
-            }
-            
-            ImGui::Separator();
-
-            if (material.type == MaterialComponent::Type::Texture) {
-                ImGui::Text("Texture Settings");
-                
-                // Affiche le chemin de la texture actuelle
-                if (!material.texturePath.empty()) {
-                    ImGui::Text("Current: %s", material.texturePath.c_str());
-                } else {
-                    ImGui::TextDisabled("No texture loaded");
-                }
-                
-                // Input pour le chemin de la texture
-                char texturePathBuffer[256];
-                strncpy(texturePathBuffer, getRelativePath(material.texturePath,GameFolder).c_str(), sizeof(texturePathBuffer));
-                texturePathBuffer[sizeof(texturePathBuffer) - 1] = '\0';
-                
-                if (ImGui::InputText("Texture Path", texturePathBuffer, sizeof(texturePathBuffer))) {
-                    material.texturePath = std::string(texturePathBuffer);
-                }
-                
-                // Bouton pour charger la texture
-                if (ImGui::Button("Load Texture")) {
-                    if (!material.texturePath.empty()) {
-                        material.setTexture(GameFolder + material.texturePath);
-                        if (material.loadTexture()) {
-                            std::cout << "Loaded texture: " << material.texturePath << std::endl;
-                        } else {
-                            std::cerr << "Failed to load texture: " << material.texturePath << std::endl;
-                        }
-                    } else {
-                        std::cerr << "No texture path specified" << std::endl;
-                    }
-                }
-                
-                // Affiche l'ID de la texture OpenGL
-                if (material.texture != 0) {
-                    ImGui::Text("Texture ID: %u", material.texture);
-                    ImGui::Text("Preview:");
-                    ImVec2 previewSize(128, 128);
-                    ImGui::Image((void*)(intptr_t)material.texture, previewSize);
-                }
-            }
-            
-            else if (material.type == MaterialComponent::Type::Color) {
-                ImGui::Text("Color Settings");
-                
-                bool needsUpdate = false;
-                
-                needsUpdate |= ImGui::ColorEdit3("Color", &material.color.x);
-                needsUpdate |= ImGui::ColorEdit3("Ambient", &material.ambient_material.x);
-                needsUpdate |= ImGui::ColorEdit3("Diffuse", &material.diffuse_material.x);
-                needsUpdate |= ImGui::ColorEdit3("Specular", &material.specular_material.x);
-                needsUpdate |= ImGui::SliderFloat("Shininess", &material.shininess, 1.0f, 128.0f);
-                
-                // Bouton pour appliquer les modifications
-                if (needsUpdate) {
-                    std::cout << "Material color updated" << std::endl;
-                }
-                
-                // Bouton pour réinitialiser
-                if (ImGui::Button("Reset Material")) {
-                    material.setColor(
-                        glm::vec3(1.0f, 1.0f, 1.0f), // color
-                        glm::vec3(0.8f, 0.8f, 0.8f), // diffuse
-                        glm::vec3(1.0f, 1.0f, 1.0f), // specular
-                        glm::vec3(0.2f, 0.2f, 0.2f), // ambient
-                        32.0f                         // shininess
-                    );
-                    std::cout << "Material reset to default" << std::endl;
-                }
-            }
-
-            else {
-                ImGui::TextDisabled("No material applied");
-                
-                if (ImGui::Button("Set Default Color")) {
-                    material.setColor(
-                        glm::vec3(1.0f, 1.0f, 1.0f),
-                        glm::vec3(0.8f, 0.8f, 0.8f),
-                        glm::vec3(1.0f, 1.0f, 1.0f),
-                        glm::vec3(0.2f, 0.2f, 0.2f),
-                        32.0f
-                    );
-                    std::cout << "Applied default color material" << std::endl;
-                }
-            }
-            
-            ImGui::Separator();
-            
-            ImGui::Text("Quick Presets:");
-            
-            if (ImGui::Button("Gold")) {
-                material.setColor(
-                    glm::vec3(1.0f, 0.84f, 0.0f),    // color
-                    glm::vec3(0.75f, 0.61f, 0.23f),  // diffuse
-                    glm::vec3(0.63f, 0.56f, 0.37f),  // specular
-                    glm::vec3(0.25f, 0.20f, 0.07f),  // ambient
-                    51.2f                             // shininess
-                );
-                std::cout << "Applied gold material preset" << std::endl;
-            }
-            ImGui::SameLine();
-            
-            if (ImGui::Button("Silver")) {
-                material.setColor(
-                    glm::vec3(0.75f, 0.75f, 0.75f),  // color
-                    glm::vec3(0.51f, 0.51f, 0.51f),  // diffuse
-                    glm::vec3(0.51f, 0.51f, 0.51f),  // specular
-                    glm::vec3(0.19f, 0.19f, 0.19f),  // ambient
-                    51.2f                             // shininess
-                );
-                std::cout << "Applied silver material preset" << std::endl;
-            }
-            ImGui::SameLine();
-            
-            if (ImGui::Button("Bronze")) {
-                material.setColor(
-                    glm::vec3(0.71f, 0.40f, 0.11f),  // color
-                    glm::vec3(0.71f, 0.43f, 0.18f),  // diffuse
-                    glm::vec3(0.39f, 0.27f, 0.17f),  // specular
-                    glm::vec3(0.21f, 0.13f, 0.05f),  // ambient
-                    25.6f                             // shininess
-                );
-                std::cout << "Applied bronze material preset" << std::endl;
-            }
-            
-            if (ImGui::Button("Emerald")) {
-                material.setColor(
-                    glm::vec3(0.07f, 0.61f, 0.08f),  // color
-                    glm::vec3(0.63f, 0.73f, 0.63f),  // diffuse
-                    glm::vec3(0.63f, 0.73f, 0.63f),  // specular
-                    glm::vec3(0.02f, 0.17f, 0.02f),  // ambient
-                    76.8f                             // shininess
-                );
-                std::cout << "Applied emerald material preset" << std::endl;
-            }
-            ImGui::SameLine();
-            
-            if (ImGui::Button("Ruby")) {
-                material.setColor(
-                    glm::vec3(0.61f, 0.04f, 0.04f),  // color
-                    glm::vec3(0.73f, 0.03f, 0.03f),  // diffuse
-                    glm::vec3(0.73f, 0.63f, 0.63f),  // specular
-                    glm::vec3(0.17f, 0.01f, 0.01f),  // ambient
-                    76.8f                             // shininess
-                );
-                std::cout << "Applied ruby material preset" << std::endl;
-            }
-            ImGui::SameLine();
-            
-            if (ImGui::Button("Plastic")) {
-                material.setColor(
-                    glm::vec3(0.8f, 0.8f, 0.8f),     // color
-                    glm::vec3(0.55f, 0.55f, 0.55f),  // diffuse
-                    glm::vec3(0.70f, 0.70f, 0.70f),  // specular
-                    glm::vec3(0.0f, 0.0f, 0.0f),     // ambient
-                    32.0f                             // shininess
-                );
-                std::cout << "Applied plastic material preset" << std::endl;
-            }
-        }
-    }
-
-    void renderAudioComponent(uint32_t entityId){
-        if (ImGui::CollapsingHeader("Audio", ImGuiTreeNodeFlags_DefaultOpen)) {
-            auto& audio = const_cast<MyAudioComponent&>(
-                entityManager->GetComponent<MyAudioComponent>(entityId)
-            );
-            
-            ImGui::SliderFloat("Volume", &audio.volume, 0.0f, 1.0f);
-            ImGui::Checkbox("Loop", &audio.loop);
-            ImGui::Checkbox("Play on Awake", &audio.playOnStart);
-            ImGui::Checkbox("IsPlaying", &audio.isPlaying);
-            char audioPathBuffer[256];
-            strncpy(audioPathBuffer, audio.audioFilePath.c_str(), sizeof(audioPathBuffer));
-            audioPathBuffer[sizeof(audioPathBuffer) - 1] = '\0';
-            ImGui::InputText("Audio File", audioPathBuffer, sizeof(audioPathBuffer));
-            audio.audioFilePath = std::string(audioPathBuffer);
-        }
-    }
-
-    void renderLuaScriptComponent(uint32_t entityId){
-        if (ImGui::CollapsingHeader("Lua Script", ImGuiTreeNodeFlags_DefaultOpen)) {
-            auto& script = const_cast<LuaScriptComponent&>(
-                entityManager->GetComponent<LuaScriptComponent>(entityId)
-            );
-            
-            char scriptPathBuffer[256];
-            strncpy(scriptPathBuffer, script.luaScriptPath.c_str(), sizeof(scriptPathBuffer));
-            scriptPathBuffer[sizeof(scriptPathBuffer) - 1] = '\0';
-            
-            if (ImGui::InputText("Script File", scriptPathBuffer, sizeof(scriptPathBuffer))) {
-                script.luaScriptPath = std::string(scriptPathBuffer);
-            }
-        }
-    }
-
-    void renderMeshComponent(uint32_t entityId){
-        if (ImGui::CollapsingHeader("Mesh", ImGuiTreeNodeFlags_DefaultOpen)) {
-            auto& mesh = const_cast<MeshComponent&>(
-                entityManager->GetComponent<MeshComponent>(entityId)
-            );
-        
-            const char* primitiveTypes[] = { "PLANE", "CUBE", "SPHERE", "CYLINDER", "MESH" };
-            int currentType = static_cast<int>(mesh.type);
-            
-            if (ImGui::Combo("Type", &currentType, primitiveTypes, IM_ARRAYSIZE(primitiveTypes))) {
-                mesh.type = static_cast<PrimitiveType>(currentType);
-            }
-            
-            ImGui::Separator();
-            
-            bool needsRebuild = false;
-            
-            switch(mesh.type) {
-                case PrimitiveType::PLANE:
-                    ImGui::Text("Plane Settings");
-                    needsRebuild |= ImGui::DragFloat("Width", &mesh.width, 0.1f, 0.1f, 100.0f);
-                    needsRebuild |= ImGui::DragFloat("Height", &mesh.height, 0.1f, 0.1f, 100.0f);
-                    needsRebuild |= ImGui::DragFloat("Subdivisions", &mesh.subdivisions, 1.0f, 1.0f, 200.0f);
-                    needsRebuild |= ImGui::DragFloat3("Right Vector", &mesh.m_right_vector.x, 0.01f);
-                    needsRebuild |= ImGui::DragFloat3("Up Vector", &mesh.m_up_vector.x, 0.01f);
-                    break;
-                    
-                case PrimitiveType::SPHERE:
-                    ImGui::Text("Sphere Settings");
-                    needsRebuild |= ImGui::DragFloat("Radius", &mesh.rayon, 0.1f, 0.1f, 100.0f);
-                    needsRebuild |= ImGui::DragFloat("Subdivisions", &mesh.subdivisions, 1.0f, 4.0f, 100.0f);
-                    break;
-                    
-                case PrimitiveType::CYLINDER:
-                    ImGui::Text("Cylinder Settings");
-                    needsRebuild |= ImGui::DragFloat("Radius", &mesh.width, 0.1f, 0.1f, 100.0f);
-                    needsRebuild |= ImGui::DragFloat("Height", &mesh.height, 0.1f, 0.1f, 100.0f);
-                    needsRebuild |= ImGui::DragFloat("Subdivisions", &mesh.subdivisions, 1.0f, 3.0f, 100.0f);
-                    break;
-                    
-                case PrimitiveType::CUBE:
-                    ImGui::Text("Cube (no parameters)");
-                    break;
-                    
-                case PrimitiveType::MESH:
-                    ImGui::Text("Custom Mesh");
-                    
-                    // Bouton pour charger un fichier OFF
-                    static char offPathBuffer[256] = "";
-                    ImGui::InputText("OFF File Path", offPathBuffer, sizeof(offPathBuffer));
-                    
-                    if (ImGui::Button("Load OFF File")) {
-                        if (strlen(offPathBuffer) > 0) {
-                            mesh.load_OFF(offPathBuffer);
-                            std::cout << "Loaded OFF file: " << offPathBuffer << std::endl;
-                        }
-                    }
-                    break;
-            }
-            
-            ImGui::Separator();
-            
-            ImGui::Text("Quick Load:");
-            
-            if (ImGui::Button("Load Cube")) {
-                mesh.loadPrimitive("BOX");
-                mesh.type = PrimitiveType::CUBE;
-                std::cout << "Loaded cube primitive" << std::endl;
-            }
-            ImGui::SameLine();
-            
-            if (ImGui::Button("Load Sphere")) {
-                mesh.loadPrimitive("SPHERE", glm::vec3(1,0,0), glm::vec3(0,1,0), 1.0f);
-                mesh.type = PrimitiveType::SPHERE;
-                mesh.rayon = 1.0f;
-                mesh.subdivisions = 20.0f;
-                std::cout << "Loaded sphere primitive" << std::endl;
-            }
-            ImGui::SameLine();
-            
-            if (ImGui::Button("Load Plane")) {
-                mesh.loadPrimitive("PLANE", glm::vec3(1,0,0), glm::vec3(0,1,0), 1.0f);
-                mesh.type = PrimitiveType::PLANE;
-                mesh.m_right_vector = glm::vec3(1,0,0);
-                mesh.m_up_vector = glm::vec3(0,1,0);
-                mesh.width = 1.0f;
-                mesh.height = 1.0f;
-                mesh.subdivisions = 10.0f;
-                std::cout << "Loaded plane primitive" << std::endl;
-            }
-            
-            if (ImGui::Button("Load Cylinder")) {
-                mesh.loadPrimitive("CYLINDER");
-                mesh.type = PrimitiveType::CYLINDER;
-                mesh.width = 1.0f;
-                mesh.height = 2.0f;
-                mesh.subdivisions = 20.0f;
-                std::cout << "Loaded cylinder primitive" << std::endl;
-            }
-            ImGui::SameLine();
-            
-            if (ImGui::Button("Load Cone")) {
-                mesh.loadPrimitive("CONE");
-                mesh.type = PrimitiveType::MESH;
-                mesh.width = 1.0f;
-                mesh.height = 2.0f;
-                mesh.subdivisions = 20.0f;
-                std::cout << "Loaded cone primitive" << std::endl;
-            }
-            ImGui::SameLine();
-            
-            if (ImGui::Button("Load Capsule")) {
-                mesh.loadPrimitive("CAPSULE");
-                mesh.type = PrimitiveType::MESH;
-                mesh.width = 0.5f;
-                mesh.height = 2.0f;
-                mesh.subdivisions = 20.0f;
-                std::cout << "Loaded capsule primitive" << std::endl;
-            }
-            
-            ImGui::Separator();
-            
-            if (needsRebuild) {
-                std::cout << "Rebuilding mesh with new parameters..." << std::endl;
-                
-                switch(mesh.type) {
-                    case PrimitiveType::PLANE:
-                        mesh.loadPrimitive("PLANE", mesh.m_right_vector, mesh.m_up_vector, 1.0f);
-                        break;
-                    case PrimitiveType::SPHERE:
-                        mesh.loadPrimitive("SPHERE", glm::vec3(1,0,0), glm::vec3(0,1,0), mesh.rayon);
-                        break;
-                    case PrimitiveType::CYLINDER:
-                        mesh.loadPrimitive("CYLINDER");
-                        break;
-                    default:
-                        break;
-                }
-            }
-            
-            ImGui::Separator();
-            
-            ImGui::Text("Mesh Statistics:");
-            ImGui::Text("Vertices: %zu", mesh.vertices.size());
-            ImGui::Text("Indices: %zu", mesh.indices.size());
-            ImGui::Text("Triangles: %zu", mesh.indices.size() / 3);
-            ImGui::Text("VAO: %u", mesh.VAO);
-            
-            if (mesh.type != PrimitiveType::MESH) {
-                ImGui::Text("Bounding Sphere Center: (%.2f, %.2f, %.2f)", 
-                    mesh.boundingSphereFrustrumCulling.center.x,
-                    mesh.boundingSphereFrustrumCulling.center.y,
-                    mesh.boundingSphereFrustrumCulling.center.z);
-                ImGui::Text("Bounding Sphere Radius: %.2f", mesh.boundingSphereFrustrumCulling.radius);
-            }
-        }
-    }
-
-    void renderLayerComponent(uint32_t entityId){
-        if (ImGui::CollapsingHeader("Layer", ImGuiTreeNodeFlags_DefaultOpen)) {
-            auto& layer = const_cast<LayerComponent&>(
-                entityManager->GetComponent<LayerComponent>(entityId)
-            );
-            char layerNameBuffer[256];
-            strncpy(layerNameBuffer, layer.name.c_str(), sizeof(layerNameBuffer));
-            layerNameBuffer[sizeof(layerNameBuffer) - 1] = '\0';
-            
-            if (ImGui::InputText("Layer Name", layerNameBuffer, sizeof(layerNameBuffer))) {
-                layer.name = std::string(layerNameBuffer);
-            }
-            ImGui::InputInt("Layer ID", &layer.id);
-        }
-    }
-    void renderTagComponent(uint32_t entityId){
-        if (ImGui::CollapsingHeader("Tag", ImGuiTreeNodeFlags_DefaultOpen)) {
-            auto& tag = const_cast<TagComponent&>(
-                entityManager->GetComponent<TagComponent>(entityId)
-            );
-            char tagBuffer[256];
-            strncpy(tagBuffer, tag.tag.c_str(), sizeof(tagBuffer));
-            tagBuffer[sizeof(tagBuffer) - 1] = '\0';
-            
-            if (ImGui::InputText("Tag", tagBuffer, sizeof(tagBuffer))) {
-                tag.tag = std::string(tagBuffer);
+                // Select if not selected
+                selectedEntityId = entity.id;
+                entityManager->selected = entity.id;
             }
         }
     }

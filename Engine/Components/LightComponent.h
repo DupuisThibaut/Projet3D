@@ -14,6 +14,12 @@ struct LightComponent {
             intensity = entityData["entities"][id]["light"]["intensity"];
         }
     }
+
+    void renderEditor(){
+        if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen)) {
+            ImGui::DragFloat("Intensity", &intensity, 0.1f, 0.0f, 100.0f);
+        }
+    }
 };
 
 #endif // LIGHT_COMPONENT_H

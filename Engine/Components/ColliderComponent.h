@@ -165,6 +165,19 @@ struct ColliderComponent {
         }
     }
 
+    void renderEditor(){
+        if(ImGui::CollapsingHeader("Collider", ImGuiTreeNodeFlags_DefaultOpen)) {
+            ImGui::Text("Collider Component");
+            ImGui::Separator();
+            const char* colliderTypes[] = { "AABB", "OBB", "SPHERE", "PLANE", "MESH", "NONE" };
+            int currentType = static_cast<int>(type);
+            if (ImGui::Combo("Collider Type", &currentType, colliderTypes, IM_ARRAYSIZE(colliderTypes))) {
+                type = static_cast<ColliderType>(currentType);
+            }
+            ImGui::Checkbox("Is Trigger", &isTrigger);
+        }
+    }
+
 
     ~ColliderComponent() = default;
 };

@@ -414,5 +414,191 @@ struct MeshComponent {
         glBindVertexArray(0);
 
     }
+
+    void clearGLBuffers() {
+        if (VAO) glDeleteVertexArrays(1, &VAO);
+        if (VBO) glDeleteBuffers(1, &VBO);
+        if (EBO) glDeleteBuffers(1, &EBO);
+        if (uvVBO) glDeleteBuffers(1, &uvVBO);
+        if (normalVBO) glDeleteBuffers(1, &normalVBO);
+        if (boneIDVBO) glDeleteBuffers(1, &boneIDVBO);
+        if (boneWeightVBO) glDeleteBuffers(1, &boneWeightVBO);
+        VAO = VBO = EBO = uvVBO = normalVBO = boneIDVBO = boneWeightVBO = 0;
+    }
+
+    void renderEditor(){
+        if(ImGui::CollapsingHeader("Mesh Component", ImGuiTreeNodeFlags_DefaultOpen)) {
+            bool needsRebuild = false;
+            
+            switch(type) {
+                case PrimitiveType::PLANE:
+                    ImGui::Text("Plane Settings");
+                    needsRebuild |= ImGui::DragFloat("Width", &width, 0.1f, 0.1f, 100.0f);
+                    needsRebuild |= ImGui::DragFloat("Height", &height, 0.1f, 0.1f, 100.0f);
+                    needsRebuild |= ImGui::DragFloat("Subdivisions", &subdivisions, 1.0f, 1.0f, 200.0f);
+                    needsRebuild |= ImGui::DragFloat3("Right Vector", &m_right_vector.x, 0.01f);
+                    needsRebuild |= ImGui::DragFloat3("Up Vector", &m_up_vector.x, 0.01f);
+                    break;
+                    
+                case PrimitiveType::SPHERE:
+                    ImGui::Text("Sphere Settings");
+                    needsRebuild |= ImGui::DragFloat("Radius", &rayon, 0.1f, 0.1f, 100.0f);
+                    needsRebuild |= ImGui::DragFloat("Subdivisions", &subdivisions, 1.0f, 4.0f, 100.0f);
+                    break;
+                    
+                case PrimitiveType::CYLINDER:
+                    ImGui::Text("Cylinder Settings");
+                    needsRebuild |= ImGui::DragFloat("Radius", &width, 0.1f, 0.1f, 100.0f);
+                    needsRebuild |= ImGui::DragFloat("Height", &height, 0.1f, 0.1f, 100.0f);
+                    needsRebuild |= ImGui::DragFloat("Subdivisions", &subdivisions, 1.0f, 3.0f, 100.0f);
+                    break;
+                    
+                case PrimitiveType::CUBE:
+                    ImGui::Text("Cube (no parameters)");
+                    break;
+                    
+                case PrimitiveType::MESH:
+                    ImGui::Text("Mesh File (OFF/FBX):");
+                    ImGui::BeginChild("MeshDropZone", ImVec2(0, 40), true, ImGuiWindowFlags_NoScrollbar);
+                    ImGui::TextWrapped("%s", meshFilePath.empty() ? "Drag & drop a mesh file (.off/.fbx) here" : meshFilePath.c_str());
+                    ImGui::EndChild();
+
+                    if (ImGui::BeginDragDropTarget()) {
+                        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
+                            const char* droppedPath = (const char*)payload->Data;
+                            std::string ext = droppedPath;
+                            ext = ext.substr(ext.find_last_of('.') + 1);
+                            if (ext == "off" || ext == "OFF") {
+                                meshFilePath = std::string(droppedPath);
+                                load_OFF(meshFilePath);
+                                type = PrimitiveType::MESH;
+                                std::cout << "Loaded OFF file: " << meshFilePath << std::endl;
+                            } else if (ext == "fbx" || ext == "FBX") {
+                                meshFilePath = std::string(droppedPath);
+                                loadFBX(meshFilePath);
+                                type = PrimitiveType::MESH;
+                                std::cout << "Loaded FBX file: " << meshFilePath << std::endl;
+                            }
+                        }
+                        ImGui::EndDragDropTarget();
+                    }
+                    static char meshPathBuffer[256] = "";
+                    strncpy(meshPathBuffer, meshFilePath.c_str(), sizeof(meshPathBuffer));
+                    meshPathBuffer[sizeof(meshPathBuffer) - 1] = '\0';
+                    ImGui::InputText("Mesh File Path", meshPathBuffer, sizeof(meshPathBuffer));
+                    if (ImGui::Button("Load Mesh File")) {
+                        std::string ext = meshPathBuffer;
+                        ext = ext.substr(ext.find_last_of('.') + 1);
+                        clearGLBuffers();
+                        meshFilePath = std::string(meshPathBuffer);
+                        if (ext == "off" || ext == "OFF") {
+                            load_OFF(meshFilePath);
+                            type = PrimitiveType::MESH;
+                            std::cout << "Loaded OFF file: " << meshFilePath << std::endl;
+                        } else if (ext == "fbx" || ext == "FBX") {
+                            loadFBX(meshFilePath);
+                            type = PrimitiveType::MESH;
+                            std::cout << "Loaded FBX file: " << meshFilePath << std::endl;
+                        }
+                    }
+                    break;
+                default:
+                    ImGui::Text("Unknown Primitive Type");
+            }
+            ImGui::Separator();
+            ImGui::Text("Quick Load:");
+            // if (ImGui::Button("Load Cube")) {
+            //     loadPrimitive("BOX");
+            //     type = PrimitiveType::CUBE;
+            //     std::cout << "Loaded cube primitive" << std::endl;
+            // }
+            // ImGui::SameLine();
+            
+            if (ImGui::Button("Load Sphere")) {
+                clearGLBuffers();
+                loadPrimitive("SPHERE", glm::vec3(1,0,0), glm::vec3(0,1,0), 1.0f);
+                type = PrimitiveType::SPHERE;
+                rayon = 1.0f;
+                subdivisions = 20.0f;
+                std::cout << "Loaded sphere primitive" << std::endl;
+            }
+            ImGui::SameLine();
+            
+            if (ImGui::Button("Load Plane")) {
+                clearGLBuffers();
+                loadPrimitive("PLANE", glm::vec3(1,0,0), glm::vec3(0,1,0), 1.0f);
+                type = PrimitiveType::PLANE;
+                m_right_vector = glm::vec3(1,0,0);
+                m_up_vector = glm::vec3(0,1,0);
+                width = 1.0f;
+                height = 1.0f;
+                subdivisions = 10.0f;
+                std::cout << "Loaded plane primitive" << std::endl;
+            }
+            
+            // if (ImGui::Button("Load Cylinder")) {
+            //     loadPrimitive("CYLINDER");
+            //     type = PrimitiveType::CYLINDER;
+            //     width = 1.0f;
+            //     height = 2.0f;
+            //     subdivisions = 20.0f;
+            //     std::cout << "Loaded cylinder primitive" << std::endl;
+            // }
+            // ImGui::SameLine();
+            
+            // if (ImGui::Button("Load Cone")) {
+            //     loadPrimitive("CONE");
+            //     type = PrimitiveType::MESH;
+            //     width = 1.0f;
+            //     height = 2.0f;
+            //     subdivisions = 20.0f;
+            //     std::cout << "Loaded cone primitive" << std::endl;
+            // }
+            // ImGui::SameLine();
+            
+            // if (ImGui::Button("Load Capsule")) {
+            //     loadPrimitive("CAPSULE");
+            //     type = PrimitiveType::MESH;
+            //     width = 0.5f;
+            //     height = 2.0f;
+            //     subdivisions = 20.0f;
+            //     std::cout << "Loaded capsule primitive" << std::endl;
+            // }
+            
+            ImGui::Separator();
+            
+            if (needsRebuild) {
+                std::cout << "Rebuilding mesh with new parameters..." << std::endl;
+                
+                switch(type) {
+                    case PrimitiveType::PLANE:
+                        clearGLBuffers();
+                        loadPrimitive("PLANE", m_right_vector, m_up_vector, 1.0f);
+                        break;
+                    case PrimitiveType::SPHERE:
+                        
+                        loadPrimitive("SPHERE", glm::vec3(1,0,0), glm::vec3(0,1,0), rayon);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            ImGui::Separator();
+            ImGui::Text("Mesh Statistics:");
+            ImGui::Text("Type: %s", 
+                type == PrimitiveType::PLANE ? "PLANE" :
+                // type == PrimitiveType::CUBE ? "CUBE" :
+                type == PrimitiveType::SPHERE ? "SPHERE" :
+                // type == PrimitiveType::CYLINDER ? "CYLINDER" :
+                type == PrimitiveType::MESH ? "MESH" : "UNKNOWN"
+            );
+            ImGui::Text("Mesh File Path: %s", meshFilePath.c_str());
+            ImGui::Text("Vertices: %zu", vertices.size());
+            ImGui::Text("Indices: %zu", indices.size());
+            ImGui::Text("Triangles: %zu", indices.size() / 3);
+            ImGui::Text("VAO: %u", VAO);
+
+        }
+    }
 };
 #endif // MESH_COMPONENT_H

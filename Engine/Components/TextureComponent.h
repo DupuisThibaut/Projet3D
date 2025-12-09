@@ -57,6 +57,20 @@ struct TextureComponent {
             }
         }
     }
+
+    void renderEditor(){
+        if(ImGui::CollapsingHeader("Texture Component")){
+            ImGui::InputText("Path", &path[0], 256);
+            ImGui::InputFloat("Position X", &positionX);
+            ImGui::InputFloat("Position Y", &positionY);
+            ImGui::InputFloat("Width", &width);
+            ImGui::InputFloat("Height", &height);
+            ImGui::InputInt("Numero", &numero);
+            ImGui::InputText("Texte", &texte[0], 256);
+            ImGui::InputInt("Taille", &taille);
+            ImGui::InputText("Police", &police[0], 256);
+        }
+    }
 };
 
 #endif // TEXTURE_COMPONENT_H

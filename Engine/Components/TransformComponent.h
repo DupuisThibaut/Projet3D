@@ -36,6 +36,21 @@ struct TransformComponent {
         }
         
     }
+
+    void renderEditor(){
+        if(ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
+            ImGui::Text("Transform Component");
+            ImGui::Separator();
+            ImGui::DragFloat3("Position", &position.x, 0.1f);
+            ImGui::DragFloat3("Rotation", &rotation.x, 1.0f);
+            ImGui::DragFloat3("Scale", &scale.x, 0.01f, 0.001f, 100.0f);
+            if (ImGui::Button("Reset Transform")) {
+                position = glm::vec3(0.0f);
+                rotation = glm::vec3(0.0f);
+                scale = glm::vec3(1.0f);
+            }
+        }
+    }
 };
 
 #endif // TRANSFORM_COMPONENT_H

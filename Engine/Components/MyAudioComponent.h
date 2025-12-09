@@ -38,5 +38,45 @@ struct MyAudioComponent {
         playOnStart = entityData["entities"][entityId]["audio"].value("play_on_start", false);
         isPlaying = playOnStart;
     }
+
+    void renderEditor() {
+        if(ImGui::CollapsingHeader("Audio Component", ImGuiTreeNodeFlags_DefaultOpen)) {
+            ImGui::SliderFloat("Volume", &volume, 0.0f, 1.0f);
+            ImGui::Checkbox("Loop", &loop);
+            ImGui::Checkbox("Play on Start", &playOnStart);
+            ImGui::Checkbox("Is Playing", &isPlaying);
+
+            // Zone de drag & drop
+            ImGui::Text("Audio File:");
+            ImGui::BeginChild("AudioDropZone", ImVec2(0, 40), true, ImGuiWindowFlags_NoScrollbar);
+            ImGui::TextWrapped("%s", audioFilePath.empty() ? "Drag & drop an audio file here" : audioFilePath.c_str());
+            ImGui::EndChild();
+
+            if (ImGui::BeginDragDropTarget()) {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
+                    const char* droppedPath = (const char*)payload->Data;
+                    std::string ext = droppedPath;
+                    ext = ext.substr(ext.find_last_of('.') + 1);
+                    // Vérifie si c'est un fichier audio
+                    if (ext == "wav" || ext == "mp3" || ext == "ogg" || ext == "WAV" || ext == "MP3" || ext == "OGG") {
+                        audioFilePath = std::string(droppedPath);
+                    }
+                }
+                ImGui::EndDragDropTarget();
+            }
+
+            char audioPathBuffer[256];
+            strncpy(audioPathBuffer, audioFilePath.c_str(), sizeof(audioPathBuffer));
+            audioPathBuffer[sizeof(audioPathBuffer) - 1] = '\0';
+            ImGui::InputText("Audio File Path", audioPathBuffer, sizeof(audioPathBuffer));
+            audioFilePath = std::string(audioPathBuffer);
+
+            const char* audioTypes[] = { "NONE", "MUSIC", "SFX", "SPATIAL" };
+            int currentType = static_cast<int>(type);
+            if (ImGui::Combo("Audio Type", &currentType, audioTypes, IM_ARRAYSIZE(audioTypes))) {
+                type = static_cast<AudioType>(currentType);
+            }
+        }
+    }
 };
 #endif // MYAUDIOCOMPONENT_H
