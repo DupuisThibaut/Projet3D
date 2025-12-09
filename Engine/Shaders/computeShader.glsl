@@ -601,9 +601,11 @@ vec3 couleurSphere(Ray rayon,float tmin,int hitIndex,vec2 pix){
 		vec3 n=(p-spheres[hitIndex].centre)/spheres[hitIndex].rayon;
 		vec3 v=ro-p;
 		L=normalize(L);
-		Ray rayonLumiere;rayonLumiere.origin=p;rayonLumiere.direction=L;
-		if(testOmbre(rayonLumiere,Ldist)){
-			return vec3(0.0);
+		if(bool(blinn)){
+			Ray rayonLumiere;rayonLumiere.origin=p;rayonLumiere.direction=L;
+			if(testOmbre(rayonLumiere,Ldist)){
+				return vec3(0.0);
+			}
 		}
 		v=normalize(v);
 		float cosT=max(dot(n,L),0.0);
@@ -639,9 +641,11 @@ vec3 couleurSquare(Ray rayon,float tmin,int hitIndex,vec2 pix){
 		vec3 L=light-p;
 		float Ldist=length(L);
 		L=normalize(L);
-		Ray rayonLumiere;rayonLumiere.origin=p+vec3(0.001);rayonLumiere.direction=L;
-		if(testOmbre(rayonLumiere,Ldist)){
-			return vec3(0.0);
+		if(bool(blinn)){
+			Ray rayonLumiere;rayonLumiere.origin=p+vec3(0.001);rayonLumiere.direction=L;
+			if(testOmbre(rayonLumiere,Ldist)){
+				return vec3(0.0);
+			}
 		}
 		vec3 n=squares[hitIndex].m_normal.xyz;
 		vec3 v=ro-p;
@@ -680,9 +684,11 @@ vec3 couleurMesh(Ray rayon,float tmin,int hitIndex,vec2 pix){
 		vec3 L=light-p;
 		float Ldist=length(L);
 		L=normalize(L);
-		Ray rayonLumiere;rayonLumiere.origin=p;rayonLumiere.direction=L;
-		if(testOmbre(rayonLumiere,Ldist)){
-			return vec3(0.0);
+		if(bool(blinn)){
+			Ray rayonLumiere;rayonLumiere.origin=p;rayonLumiere.direction=L;
+			if(testOmbre(rayonLumiere,Ldist)){
+				return vec3(0.0);
+			}
 		}
 		vec3 n=normalTriangleFinal;
 		vec3 v=ro-p;
@@ -776,7 +782,9 @@ vec3 couleur(Ray rayon,ivec2 pix,uint seed){
 	vec3 finalColor=vec3(1.0,1.0,1.0);
 	int nbRayons=3;
 	Ray testRayon=rayon;
+	int nb=0;
 	for(int i=0;i<nbRayons;i++){
+		nb++;
 		intersection inter=intersectScene(testRayon);
 		vec3 ro=testRayon.origin;
 		vec3 rd=testRayon.direction;

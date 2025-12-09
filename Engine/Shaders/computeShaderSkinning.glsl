@@ -27,27 +27,37 @@ layout(std430, binding = 4) writeonly buffer OutAnimVerts {
     Vertex verticesOut[];
 };
 
+struct World{
+	mat4 modelMat;
+	mat4 invModelMatrix;
+	mat3 normalMat;
+	vec4 testSphere;
+};
+layout(std430,binding=8)buffer Worlds{World worlds[];};
+
+uniform mat4 view;
+uniform mat4 projection;
+
 void main() {
     uint id = gl_GlobalInvocationID.x;
-    
-    if(id == 0) {
-        // Write a marker position to see if shader runs
-        verticesOut[0].position = vec4(9999.0, 9999.0, 9999.0, 1.0);
-    }
 
     // Lire depuis le buffer d'entrée
     vec3 pos = verticesIn[id].position.xyz;
     vec3 nor = verticesIn[id].normal.xyz;
 
     ivec4 ids = boneIDs[id];
-    vec4  w   = weights[id];
+    vec4  ws   = weights[id];
 
     vec4 skinnedPos = vec4(0.0);
     vec3 skinnedNor = vec3(0.0);
+    float sumW = 0.0;
+
+    vec4 totalPosition;
+    vec3 totalNormal;
 
     for(int i = 0; i < 4; i++) {
         int bid = ids[i];
-        float ww = w[i];
+        float ww = ws[i];
         if (bid < 0 || ww <= 0.0) continue;
 
         mat4 B = boneMatrices[bid];
@@ -55,7 +65,16 @@ void main() {
         skinnedPos += (B * vec4(pos, 1.0)) * ww;
         skinnedNor += (mat3(B) * nor) * ww;
     }
+    if (sumW > 0.0) {
+        totalPosition = skinnedPos;
+        totalNormal   = normalize(skinnedNor);
+    } else {
+        totalPosition = vec4(pos,1.0); // fallback T-pose
+        totalNormal   = vertexNormal_modelspace;
+    }
 
-    verticesOut[id].position = skinnedPos;
-    verticesOut[id].normal   = vec4(normalize(skinnedNor), 0.0);
+    verticesOut[id].position.xyz = vec3(worlds[0].modelMat*totalPosition);
+    verticesOut[id].position.w=pos.w;
+    verticesOut[id].normal   = mat3(transpose(worlds[0].invModelMatrix))*totalNormal;
+    verticesOut[id].normal.w=nor.w;
 }

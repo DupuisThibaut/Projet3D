@@ -283,30 +283,6 @@
         "shininess":16.0,
         "reflection":1
       }
-    },
-    {
-      "id": 11,
-      "texture": {
-        "numero":0,
-        "path":"./textures/grass.png",
-        "positionX":0.1,
-        "positionY":0.1,
-        "width":0.1,
-        "height":0.1
-      }
-    },
-    {
-      "id": 12,
-      "texture": {
-        "numero":1,
-        "texte":"sinj",
-        "positionX":0.1,
-        "positionY":0.1,
-        "width":0.1,
-        "height":0.1,
-        "taille":32,
-        "police":"./texture/COMICATE.TTF"
-      }
     }
   ]
 }
