@@ -21,6 +21,7 @@
 #include <unordered_map>
 #include <algorithm>
 
+
 extern "C" {
 #include "lua.h"
 #include "lauxlib.h"
@@ -1149,6 +1150,28 @@ private:
         return 0;
     }
 
+    static int lua_play_animation(lua_State* L) {
+        lua_getfield(L, LUA_REGISTRYINDEX, REGISTRY_SCRIPTSYS_KEY);
+        ScriptSystem* sys = (ScriptSystem*)lua_touserdata(L, -1);
+        lua_pop(L, 1);
+        if (!sys || !sys->entityManager) return 0;
+        EntityID id = (EntityID)luaL_checkinteger(L, 1);
+        const char* animName = luaL_checkstring(L, 2);
+        if (sys->entityManager->HasComponent<AnimationComponent>(id)) {
+            AnimationComponent& animComp = sys->entityManager->GetComponent<AnimationComponent>(id);
+            int idx = 0;
+            for(auto& clip : animComp.clips) {
+                if(clip.name == std::string(animName)) {
+                    animComp.currentClip = idx;
+                    animComp.isPlaying = true;
+                    break;
+                }
+                idx++;
+            }
+        }
+        return 0;
+    }
+
 public:
     void initScript(LuaScriptComponent& script, uint32_t entityId) {
         script.L = luaL_newstate(); luaL_openlibs(script.L);
@@ -1170,6 +1193,7 @@ public:
         lua_pushcfunction(script.L, lua_set_global); lua_setglobal(script.L, "set_global");
         lua_pushcfunction(script.L, lua_get_global); lua_setglobal(script.L, "get_global");
         lua_pushcfunction(script.L, lua_change_scene); lua_setglobal(script.L, "change_scene");
+        lua_pushcfunction(script.L, lua_play_animation); lua_setglobal(script.L, "play_animation");
         if (luaL_dofile(script.L, script.luaScriptPath.c_str()) != LUA_OK) { std::cerr << "Erreur Lua : " << lua_tostring(script.L, -1) << std::endl; return; }
 
         // Build 'this' table for the script's entity

@@ -238,8 +238,8 @@ void StartSystems(GLuint programID){
     std::cout << "--- Starting idle animation ---" << std::endl;
     if (entityManager.HasComponent<AnimationComponent>(1)) {
         auto& animComp = entityManager.GetComponent<AnimationComponent>(1);
-        animationSystem->PlayClip(animComp, "jump");
-        std::cout << "Started 'walk' animation on entity 1" << std::endl;
+        animationSystem->PlayClip(animComp, "idle");
+        std::cout << "Started 'idle' animation on entity 1" << std::endl;
     }
     
     std::cout << "--- Systems initialized. ---" << std::endl;

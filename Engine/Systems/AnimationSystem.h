@@ -24,16 +24,10 @@ public:
 
     void update(float deltaTime) {
         if (!entityManager) return;
-        static int frameCount = 0;
         
         const auto& comps = entityManager->GetComponents<AnimationComponent>();
         for (const auto& [entity, _] : comps) {
             auto& animComp = entityManager->GetComponent<AnimationComponent>(entity);
-            if (++frameCount % 60 == 0) {
-                std::cout << "[AnimUpdate] Called, deltaTime=" << deltaTime << "\n";
-                std::cout << "[AnimUpdate] entity=" << entity << " isPlaying=" << animComp.isPlaying 
-                  << " time=" << animComp.animationTime << "\n";
-            }
             if (!animComp.isPlaying || animComp.animations.empty()) continue;
             if (animComp.currentAnimation < 0 || animComp.currentAnimation >= (int)animComp.animations.size()) continue;
 
@@ -117,14 +111,6 @@ private:
         if (animComp.currentAnimation < 0 || animComp.currentAnimation >= (int)animComp.animations.size()) return;
 
         Animation& anim = animComp.animations[animComp.currentAnimation];
-        static bool printed = false;
-        if (!printed) {
-            std::cout << "[Anim] boneMapping size=" << animComp.boneMapping.size() << "\n";
-            int n=0; for (auto& kv: animComp.boneMapping) { if(n++>10) break; std::cout << "  map: " << kv.first << "\n"; }
-            const Animation& anim = animComp.animations[animComp.currentAnimation];
-            n=0; for (auto& ch: anim.boneAnimations) { if(n++>10) break; std::cout << "  chan: " << ch.boneName << "\n"; }
-            printed = true;
-        }
         // Ensure final buffer size
         if (animComp.finalBoneMatrices.size() != animComp.bones.size()) {
             animComp.finalBoneMatrices.assign(animComp.bones.size(), glm::mat4(1.0f));
@@ -144,13 +130,6 @@ private:
                             animComp.finalBoneMatrices.size() * sizeof(glm::mat4),
                             animComp.finalBoneMatrices.data());
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, animComp.bonesSSBO); // binding must match shader
-            // DEBUG: verify first bone matrix uploaded
-           static int uploadCount = 0;
-            if (++uploadCount % 60 == 0) {
-                const glm::mat4& m = animComp.finalBoneMatrices[0];
-                std::cout << "[BoneUpload] frame=" << uploadCount 
-                          << " bone[0]=" << m[0][0] << "," << m[1][1] << "," << m[2][2] << "\n";
-            }
             
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
         }

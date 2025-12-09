@@ -139,6 +139,11 @@ struct MeshComponent {
 
     void load_OFF(const std::string& filename) {
         type=PrimitiveType::MESH;
+        vertices.clear();
+        indices.clear();
+        triangles.clear();
+        uvs.clear();
+        normals.clear();
 
         if (!loadOFF(filename, vertices, indices, triangles)) {
             std::cerr << "Failed to load OFF file: " << filename << std::endl;
@@ -338,6 +343,10 @@ struct MeshComponent {
     }
 
     void loadPrimitive(const std::string& primitiveType, glm::vec3 right_vector=glm::vec3(1.0,0.0,0.0), glm::vec3 up_vector=glm::vec3(0.0,0.0,1.0), float rayon=1.0f) {
+        vertices.clear();
+        indices.clear();
+        uvs.clear();
+        normals.clear();
         if (primitiveType == "PLANE"){
             type=PrimitiveType::PLANE;
             centre=glm::vec3(0,0,0);
@@ -351,29 +360,29 @@ struct MeshComponent {
             type=PrimitiveType::SPHERE;
             Sphere sphere(rayon);
             centre=glm::vec3(0,0,0);
-            rayon=rayon;
+            this->rayon=rayon;
             sphere.build_arrays(subdivisions, subdivisions, vertices, normals, uvs, indices);
         }
-        else if (primitiveType == "BOX"){
-            type=PrimitiveType::MESH;
-            Box box;
-            box.build_arrays(vertices, normals, uvs, indices);
-        }
-        else if (primitiveType == "CYLINDER"){
-            type=PrimitiveType::CYLINDER;
-            Cylinder cylinder;
-            cylinder.build_arrays(vertices, normals, uvs, indices, width, height, subdivisions);
-        }
-        else if (primitiveType == "CONE"){
-            type=PrimitiveType::MESH;
-            Cone cone;
-            cone.build_arrays(vertices, normals, uvs, indices, width, height, subdivisions);
-        }
-        else if (primitiveType == "CAPSULE"){
-            type=PrimitiveType::MESH;
-            Capsule capsule;
-            capsule.build_arrays(vertices, normals, uvs, indices, width, height, subdivisions);
-        }
+        // else if (primitiveType == "BOX"){
+        //     type=PrimitiveType::MESH;
+        //     Box box;
+        //     box.build_arrays(vertices, normals, uvs, indices);
+        // }
+        // else if (primitiveType == "CYLINDER"){
+        //     type=PrimitiveType::CYLINDER;
+        //     Cylinder cylinder;
+        //     cylinder.build_arrays(vertices, normals, uvs, indices, width, height, subdivisions);
+        // }
+        // else if (primitiveType == "CONE"){
+        //     type=PrimitiveType::MESH;
+        //     Cone cone;
+        //     cone.build_arrays(vertices, normals, uvs, indices, width, height, subdivisions);
+        // }
+        // else if (primitiveType == "CAPSULE"){
+        //     type=PrimitiveType::MESH;
+        //     Capsule capsule;
+        //     capsule.build_arrays(vertices, normals, uvs, indices, width, height, subdivisions);
+        // }
         else {
             std::cerr << "Unknown primitive type: " << primitiveType << std::endl;
             return;
@@ -429,6 +438,29 @@ struct MeshComponent {
     void renderEditor(){
         if(ImGui::CollapsingHeader("Mesh Component", ImGuiTreeNodeFlags_DefaultOpen)) {
             bool needsRebuild = false;
+            int meshTypeIdx = static_cast<int>(type);
+            const char* meshTypes[] = { "PLANE", "CUBE", "SPHERE", "CYLINDER", "MESH" };
+            if (ImGui::Combo("Type de mesh", &meshTypeIdx, meshTypes, IM_ARRAYSIZE(meshTypes))) {
+                type = static_cast<PrimitiveType>(meshTypeIdx);
+                clearGLBuffers();
+                vertices.clear();
+                indices.clear();
+                normals.clear();
+                uvs.clear();
+                triangles.clear();
+                meshFilePath.clear();
+                switch(type) {
+                    case PrimitiveType::PLANE:
+                        loadPrimitive("PLANE", m_right_vector, m_up_vector, 1.0f);
+                        break;
+                    case PrimitiveType::SPHERE:
+                        loadPrimitive("SPHERE", glm::vec3(1,0,0), glm::vec3(0,0,1), rayon);
+                        break;
+                    case PrimitiveType::MESH:
+                        break;
+                }
+            }
+            ImGui::Separator();
             
             switch(type) {
                 case PrimitiveType::PLANE:
@@ -470,13 +502,13 @@ struct MeshComponent {
                             ext = ext.substr(ext.find_last_of('.') + 1);
                             if (ext == "off" || ext == "OFF") {
                                 meshFilePath = std::string(droppedPath);
-                                load_OFF(meshFilePath);
                                 type = PrimitiveType::MESH;
+                                load_OFF(meshFilePath);
                                 std::cout << "Loaded OFF file: " << meshFilePath << std::endl;
                             } else if (ext == "fbx" || ext == "FBX") {
                                 meshFilePath = std::string(droppedPath);
-                                loadFBX(meshFilePath);
                                 type = PrimitiveType::MESH;
+                                loadFBX(meshFilePath);
                                 std::cout << "Loaded FBX file: " << meshFilePath << std::endl;
                             }
                         }
@@ -515,8 +547,7 @@ struct MeshComponent {
             // ImGui::SameLine();
             
             if (ImGui::Button("Load Sphere")) {
-                clearGLBuffers();
-                loadPrimitive("SPHERE", glm::vec3(1,0,0), glm::vec3(0,1,0), 1.0f);
+                needsRebuild=true;
                 type = PrimitiveType::SPHERE;
                 rayon = 1.0f;
                 subdivisions = 20.0f;
@@ -525,11 +556,10 @@ struct MeshComponent {
             ImGui::SameLine();
             
             if (ImGui::Button("Load Plane")) {
-                clearGLBuffers();
-                loadPrimitive("PLANE", glm::vec3(1,0,0), glm::vec3(0,1,0), 1.0f);
+                needsRebuild=true;
                 type = PrimitiveType::PLANE;
                 m_right_vector = glm::vec3(1,0,0);
-                m_up_vector = glm::vec3(0,1,0);
+                m_up_vector = glm::vec3(0,0,1);
                 width = 1.0f;
                 height = 1.0f;
                 subdivisions = 10.0f;
@@ -576,8 +606,11 @@ struct MeshComponent {
                         loadPrimitive("PLANE", m_right_vector, m_up_vector, 1.0f);
                         break;
                     case PrimitiveType::SPHERE:
-                        
-                        loadPrimitive("SPHERE", glm::vec3(1,0,0), glm::vec3(0,1,0), rayon);
+                        clearGLBuffers();
+                        loadPrimitive("SPHERE", glm::vec3(1,0,0), glm::vec3(0,0,1), rayon);
+                        std::cout << "Rebuilt sphere primitive" << std::endl;
+                        std::cout << "Radius: " << rayon << ", Subdivisions: " << subdivisions << std::endl;
+                        std::cout << "Vertices count: " << vertices.size() << std::endl;
                         break;
                     default:
                         break;

@@ -106,7 +106,7 @@ public:
                 GLint isAnimLoc = glGetUniformLocation(shaderProgram, "isAnimated");
                 glUniform1i(isAnimLoc, 0);
 
-                if (entityManager->HasComponent<AnimationComponent>(entity.id)) {
+                if (entityManager->HasComponent<AnimationComponent>(entity.id) && mesh.boneIDVBO != 0 && mesh.boneWeightVBO != 0) {
                     auto& animComp = entityManager->GetComponent<AnimationComponent>(entity.id);
                     if (animComp.isPlaying) {
                         glUniform1i(isAnimLoc, 1);

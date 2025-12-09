@@ -76,9 +76,6 @@
         "type": "MESH",
         "isTrigger": false
       },
-      "rigidbody": {
-
-      },
       "animation": {
         "is_playing": true,
         "clips":[

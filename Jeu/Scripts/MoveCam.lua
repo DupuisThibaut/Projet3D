@@ -69,16 +69,23 @@ function onInput(event)
     for _, btn in ipairs(event.buttons) do
         if btn == "Forward" then 
             tr.position = add(tr.position, scale(forward, speed * event.dt))
-            -- springtrap.transform.position = add(springtrap.transform.position, scale(forward, speed * event.dt))
+            springtrap.transform.position = add(springtrap.transform.position, scale(forward, speed *event.dt))
+            play_animation(springtrap.id, "walk")
         elseif btn == "Backward" then 
             tr.position = subtract(tr.position, scale(forward, speed * event.dt))
-            -- springtrap.transform.position = subtract(springtrap.transform.position, scale(forward, speed * event.dt))
+            springtrap.transform.position = subtract(springtrap.transform.position, scale(forward, event.dt))
         elseif btn == "Right" then 
             tr.position = add(tr.position, scale(right, speed * event.dt))
-            -- springtrap.transform.position = add(springtrap.transform.position, scale(right, speed * event.dt))
+            springtrap.transform.position = add(springtrap.transform.position, scale(right, speed * event.dt))
         elseif btn == "Left" then 
             tr.position = subtract(tr.position, scale(right, speed * event.dt))
-            -- springtrap.transform.position = subtract(springtrap.transform.position, scale(right, speed * event.dt))
+            springtrap.transform.position = subtract(springtrap.transform.position, scale(right,  speed * event.dt))
+        elseif btn == "Space" then 
+            tr.position = add(tr.position, {0, speed * event.dt, 0})
+            springtrap.transform.position = add(springtrap.transform.position, {0, speed * event.dt, 0})
+            play_animation(springtrap.id, "jump")
+        else 
+            play_animation(springtrap.id, "idle")
         end
         cam.update=true
     end

@@ -34,7 +34,6 @@ struct MaterialComponent {
     int particularite;
 
     void setTexture(const std::string& path) {
-        type = Type::Texture;
         texturePath = path;
 
     }
@@ -148,6 +147,7 @@ struct MaterialComponent {
                     } 
                     if( entityData["material"].contains("path") && t == false){
                         std::string texturePath = entityData["material"]["path"].get<std::string>();
+                        type = Type::Texture;
                         setTexture(gameFolder + "/" + texturePath);
                         if (!loadTexture()) {
                             std::cerr << "Erreur de changement de la texture pour entity ID : " << entityId << std::endl;
