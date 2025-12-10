@@ -42,6 +42,12 @@ struct LuaScriptComponent {
             }
         }
     }
+
+    json toJson() {
+        nlohmann::json j;
+        j["path"] = luaScriptPath;
+        return j;
+    }
 };
 
 #endif // SCRIPT_COMPONENT_H

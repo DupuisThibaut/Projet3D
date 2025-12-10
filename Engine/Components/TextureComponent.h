@@ -71,6 +71,23 @@ struct TextureComponent {
             ImGui::InputText("Police", &police[0], 256);
         }
     }
+
+    json toJson(){
+        nlohmann::json j;
+        if(isTexture){
+            j["path"] = path;
+        }else{
+            j["texte"] = texte;
+        }
+        j["numero"] = numero;
+        j["positionX"] = positionX;
+        j["positionY"] = positionY;
+        j["width"] = width;
+        j["height"] = height;
+        j["taille"] = taille;
+        j["police"] = police;
+        return j;
+    }
 };
 
 #endif // TEXTURE_COMPONENT_H

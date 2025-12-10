@@ -72,6 +72,17 @@ struct CameraComponent {
             ImGui::DragFloat("Far Plane", &farPlane, 1.0f, 1.0f, 10000.0f);
         }
     }
+
+    json toJson() const {
+        nlohmann::json cameraData;
+        cameraData["idCam"] = id;
+        cameraData["fov"] = fov;
+        cameraData["near_plane"] = nearPlane;
+        cameraData["far_plane"] = farPlane;
+        cameraData["target"] = { target.x, target.y, target.z };
+        cameraData["up"] = { up.x, up.y, up.z };
+        return cameraData;
+    }
 };
 
 #endif // CAMERA_COMPONENT_H

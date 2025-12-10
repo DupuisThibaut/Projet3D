@@ -208,13 +208,17 @@ public:
     }
 
     void renderContentBrowser() {
-        if(!showContentBrowser) return;
-        float browserHeight = 200.0f;
+    if(!showContentBrowser) return;
+        float browserHeight = (windowHeight - menuBarHeight)*0.2f;;
         float hierarchyWidthPx = hierarchyWidth * windowWidth;
         float inspectorWidthPx = inspectorWidth * windowWidth;
         float browserWidth = windowWidth - hierarchyWidthPx - inspectorWidthPx;
-        ImGui::SetNextWindowPos(ImVec2(hierarchyWidthPx, windowHeight - browserHeight), ImGuiCond_Always);
-        ImGui::SetNextWindowPos(ImVec2(hierarchyWidthPx, menuBarHeight), ImGuiCond_Always);
+        float browserX = hierarchyWidthPx;
+        float browserY = windowHeight - browserHeight;
+
+        ImGui::SetNextWindowPos(ImVec2(browserX, browserY), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(browserWidth, browserHeight), ImGuiCond_Always);
+
         if (!ImGui::Begin("Content Browser", nullptr,
             ImGuiWindowFlags_NoMove | 
             ImGuiWindowFlags_NoResize | 
@@ -410,6 +414,11 @@ public:
                 auto& texture = entityManager->GetComponent<TextureComponent>(selectedEntityId);
                 texture.renderEditor();
             }
+            // Animation
+            if (entityManager->HasComponent<AnimationComponent>(selectedEntityId)) {
+                auto& animation = entityManager->GetComponent<AnimationComponent>(selectedEntityId);
+                animation.renderEditor();
+            }
         } else {
             ImGui::TextDisabled("No entity selected");
         }
@@ -520,6 +529,13 @@ public:
                         ImGui::CloseCurrentPopup();
                     }
                 }
+                if(!entityManager->HasComponent<AnimationComponent>(selectedEntityId)){
+                    if(ImGui::MenuItem("Animation Component")){
+                        AnimationComponent animation;
+                        entityManager->AddComponent<AnimationComponent>(selectedEntityId, animation);
+                        ImGui::CloseCurrentPopup();
+                    }
+                }
                 ImGui::EndPopup();
             }
 
@@ -608,11 +624,6 @@ public:
                     fontReloadRequested = true;
                     pendingFontPath = currentFontPath.empty() ? "" : currentFontPath;
                     pendingFontSize = currentFontSize;
-                }
-                ImGui::EndMenu();
-            }
-            if(ImGui::BeginMenu("Execute")){
-                if (ImGui::MenuItem("Play Mode")) {
                 }
                 ImGui::EndMenu();
             }
@@ -755,7 +766,6 @@ public:
             lineWidth
         );
         
-        // ✅ Zone de highlight au hover
         if (isHovered || isDraggingRightSplitter) {
             drawList->AddRectFilled(
                 ImVec2(splitterX - 2, menuBarHeight),
@@ -775,22 +785,22 @@ public:
     void configureViewport(float& viewportX, float& viewportWidth, float& viewportHeight, unsigned int& width, unsigned int& height){
         float float_hierarchyWidth = showHierarchy ? (windowWidth * hierarchyWidth) : 0.0f;
         float float_inspectorWidth = showInspector ? (windowWidth * inspectorWidth) : 0.0f;
-        float float_browserHeight = 200.0f;
-        
+        float float_browserHeight = showContentBrowser ? (windowHeight - menuBarHeight) * 0.2f : 0.0f; // Hauteur du Content Browser
+
         viewportX = float_hierarchyWidth;
         viewportWidth = windowWidth - float_hierarchyWidth - float_inspectorWidth;
-        viewportHeight = windowHeight - menuBarHeight - float_browserHeight;
+        viewportHeight = windowHeight - menuBarHeight;
         width = static_cast<unsigned int>(viewportWidth);
         height = static_cast<unsigned int>(viewportHeight);
-        
+
         ImGuiIO& io = ImGui::GetIO();
         float retinaScale = io.DisplayFramebufferScale.x;
-        
+
         int fbViewportX = static_cast<int>(viewportX * retinaScale);
-        int fbViewportY = static_cast<int>(menuBarHeight * retinaScale);
+        int fbViewportY = static_cast<int>(float_browserHeight * retinaScale);
         int fbViewportWidth = static_cast<int>(viewportWidth * retinaScale);
         int fbViewportHeight = static_cast<int>(viewportHeight * retinaScale);
-        
+
         glEnable(GL_SCISSOR_TEST);
         glScissor(fbViewportX, fbViewportY, fbViewportWidth, fbViewportHeight);
         glViewport(fbViewportX, fbViewportY, fbViewportWidth, fbViewportHeight);
@@ -827,6 +837,8 @@ private:
     bool showInspector;
     bool showStats;
     bool showMenuBar;
+    bool showContentBrowser = true;
+
     
     // Dimensions des panneaux
     float hierarchyWidth;
@@ -854,7 +866,6 @@ private:
     std::string currentBrowserPath;
     std::vector<std::string> pathHistory;
     int historyIndex = -1;
-    bool showContentBrowser = true;
 
     void navigateTo(const std::string& path) {
         currentBrowserPath = path;
@@ -1013,181 +1024,98 @@ private:
     void saveScene(){
         json sceneData;
         sceneData["entities"] = json::array();
-        
+
         for (const auto& entity : *entities) {
             json entityData;
             entityData["id"] = entity.id;
-            
-            // ════════════════════════════════════════════════════════════════
-            //  TRANSFORM COMPONENT
-            // ════════════════════════════════════════════════════════════════
+
+            // Transform
             if (entityManager->HasComponent<TransformComponent>(entity.id)) {
-                auto& transform = entityManager->GetComponent<TransformComponent>(entity.id);
-                entityData["transform"] = {
-                    {"position", {transform.position.x, transform.position.y, transform.position.z}},
-                    {"rotation", {transform.rotation.x, transform.rotation.y, transform.rotation.z}},
-                    {"scale", {transform.scale.x, transform.scale.y, transform.scale.z}},
-                    {"parent", transform.parent},
-                    {"children", transform.children}
-                };
+                auto& c = entityManager->GetComponent<TransformComponent>(entity.id);
+                entityData["transform"] = c.toJson();
             }
-            // ════════════════════════════════════════════════════════════════
-            //  MESH COMPONENT
-            // ════════════════════════════════════════════════════════════════
+            // Mesh
             if (entityManager->HasComponent<MeshComponent>(entity.id)) {
-                auto& mesh = entityManager->GetComponent<MeshComponent>(entity.id);
-                
-                switch(mesh.type) {
-                    case PrimitiveType::PLANE:
-                        entityData["mesh"] = {
-                            {"type", "primitive"},
-                            {"mesh_type", "PLANE"},
-                            {"subdivisions", mesh.subdivisions},
-                            {"normal", {mesh.normal.x, mesh.normal.y, mesh.normal.z}},
-                            {"width", mesh.width},
-                            {"height", mesh.height}
-                        };
-                        break;
-                        
-                    case PrimitiveType::SPHERE:
-                        entityData["mesh"] = {
-                            {"type", "primitive"},
-                            {"mesh_type", "SPHERE"},
-                            {"subdivisions", mesh.subdivisions}
-                        };
-                        break;
-                        
-                    case PrimitiveType::CUBE:
-                        entityData["mesh"] = {
-                            {"type", "primitive"},
-                            {"mesh_type", "BOX"}
-                        };
-                        break;
-                        case PrimitiveType::CYLINDER:
-                        entityData["mesh"] = {
-                            {"type", "primitive"},
-                            {"mesh_type", "CYLINDER"},
-                            {"subdivisions", mesh.subdivisions},
-                            {"width", mesh.width},
-                            {"height", mesh.height}
-                        };
-                        break;
-                        
-                    case PrimitiveType::MESH:
-                        // Sauvegarde le chemin du fichier OFF/OBJ
-                        entityData["mesh"] = {
-                            {"type", "file"},
-                            {"path", getRelativePath(mesh.meshFilePath,GameFolder)}
-                        };
-                        break;
-                }
+                auto& c = entityManager->GetComponent<MeshComponent>(entity.id);
+                entityData["mesh"] = c.toJson();
             }
-            // ════════════════════════════════════════════════════════════════
-            //  MATERIAL COMPONENT
-            // ════════════════════════════════════════════════════════════════
+            // Material
             if (entityManager->HasComponent<MaterialComponent>(entity.id)) {
-                auto& material = entityManager->GetComponent<MaterialComponent>(entity.id);
-                
-                if (material.type == MaterialComponent::Type::Texture) {
-                    entityData["material"] = {
-                        {"type", "texture"},
-                        {"path", getRelativePath(material.texturePath,GameFolder)}
-                    };
-                } else if (material.type == MaterialComponent::Type::Color) {
-                    entityData["material"] = {
-                        {"type", "color"},
-                        {"color", {material.color.x, material.color.y, material.color.z}},
-                        {"ambient", {material.ambient_material.x, material.ambient_material.y, material.ambient_material.z}},
-                        {"diffuse", {material.diffuse_material.x, material.diffuse_material.y, material.diffuse_material.z}},
-                        {"specular", {material.specular_material.x, material.specular_material.y, material.specular_material.z}},
-                        {"shininess", material.shininess}
-                    };
-                }
+                auto& c = entityManager->GetComponent<MaterialComponent>(entity.id);
+                entityData["material"] = c.toJson();
             }
-             // ════════════════════════════════════════════════════════════════
-            //  CAMERA COMPONENT
-            // ════════════════════════════════════════════════════════════════
+            // Camera
             if (entityManager->HasComponent<CameraComponent>(entity.id)) {
-                auto& camera = entityManager->GetComponent<CameraComponent>(entity.id);
-                entityData["camera"] = {
-                    {"idCam", camera.id},
-                    {"target", {camera.target.x, camera.target.y, camera.target.z}},
-                    {"up", {camera.up.x, camera.up.y, camera.up.z}},
-                    {"fov", camera.fov},
-                    {"near_plane", camera.nearPlane},
-                    {"far_plane", camera.farPlane}
-                };
+                auto& c = entityManager->GetComponent<CameraComponent>(entity.id);
+                entityData["camera"] = c.toJson();
             }
-            // ════════════════════════════════════════════════════════════════
-            //  LIGHT COMPONENT
-            // ════════════════════════════════════════════════════════════════
+            // Light
             if (entityManager->HasComponent<LightComponent>(entity.id)) {
-                auto& light = entityManager->GetComponent<LightComponent>(entity.id);
-                entityData["light"] = {
-                    {"intensity", light.intensity}
-                };
+                auto& c = entityManager->GetComponent<LightComponent>(entity.id);
+                entityData["light"] = c.toJson();
             }
-            
-            // ════════════════════════════════════════════════════════════════
-            //  AUDIO COMPONENT
-            // ════════════════════════════════════════════════════════════════
+            // Audio
             if (entityManager->HasComponent<MyAudioComponent>(entity.id)) {
-                auto& audio = entityManager->GetComponent<MyAudioComponent>(entity.id);
-                
-                std::string typeStr = "NONE";
-                switch(audio.type) {
-                    case AudioType::MUSIC: typeStr = "MUSIC"; break;
-                    case AudioType::SFX: typeStr = "SFX"; break;
-                    case AudioType::SPATIAL: typeStr = "SPATIAL"; break;
-                    default: typeStr = "NONE"; break;
-                }
-                
-                entityData["audio"] = {
-                    {"type", typeStr},
-                    {"path", getRelativePath(audio.audioFilePath,GameFolder)},
-                    {"volume", audio.volume},
-                    {"loop", audio.loop},
-                    {"play_on_start", audio.playOnStart},
-                    {"isPlaying", audio.isPlaying}
-                };
+                auto& c = entityManager->GetComponent<MyAudioComponent>(entity.id);
+                entityData["audio"] = c.toJson();
             }
-            // ════════════════════════════════════════════════════════════════
-            //  SCRIPT COMPONENT
-            // ════════════════════════════════════════════════════════════════
+            // Script
             if (entityManager->HasComponent<LuaScriptComponent>(entity.id)) {
-                auto& script = entityManager->GetComponent<LuaScriptComponent>(entity.id);
-                entityData["script"] = {
-                    {"type", "Lua"},
-                    {"path", getRelativePath(script.luaScriptPath,GameFolder)}
-                };
+                auto& c = entityManager->GetComponent<LuaScriptComponent>(entity.id);
+                entityData["script"] = c.toJson();
             }
-            
-            // ════════════════════════════════════════════════════════════════
-            //  CONTROLLER COMPONENT
-            // ════════════════════════════════════════════════════════════════
+            // Controller
             if (entityManager->HasComponent<ControllerComponent>(entity.id)) {
-                auto& controller = entityManager->GetComponent<ControllerComponent>(entity.id);
-                entityData["controller"] = {
-                    {"speed", controller.moveSpeed}
-                };
+                auto& c = entityManager->GetComponent<ControllerComponent>(entity.id);
+                entityData["controller"] = c.toJson();
             }
-            
+            // Tag
+            if (entityManager->HasComponent<TagComponent>(entity.id)) {
+                auto& c = entityManager->GetComponent<TagComponent>(entity.id);
+                entityData["tag"] = c.toJson();
+            }
+            // Layer
+            if (entityManager->HasComponent<LayerComponent>(entity.id)) {
+                auto& c = entityManager->GetComponent<LayerComponent>(entity.id);
+                entityData["layer"] = c.toJson();
+            }
+            // Collider
+            if (entityManager->HasComponent<ColliderComponent>(entity.id)) {
+                auto& c = entityManager->GetComponent<ColliderComponent>(entity.id);
+                entityData["collider"] = c.toJson();
+            }
+            // Particule
+            if (entityManager->HasComponent<ParticuleComponent>(entity.id)) {
+                auto& c = entityManager->GetComponent<ParticuleComponent>(entity.id);
+                entityData["particule"] = c.toJson();
+            }
+            // RigidBody
+            if (entityManager->HasComponent<RigidBodyComponent>(entity.id)) {
+                auto& c = entityManager->GetComponent<RigidBodyComponent>(entity.id);
+                entityData["rigidbody"] = c.toJson();
+            }
+            // Texture2D
+            if (entityManager->HasComponent<TextureComponent>(entity.id)) {
+                auto& c = entityManager->GetComponent<TextureComponent>(entity.id);
+                entityData["texture"] = c.toJson();
+            }
+            // Animation
+            if (entityManager->HasComponent<AnimationComponent>(entity.id)) {
+                auto& c = entityManager->GetComponent<AnimationComponent>(entity.id);
+                entityData["animation"] = c.toJson();
+            }
+
             sceneData["entities"].push_back(entityData);
         }
-        // ════════════════════════════════════════════════════════════════
-        //  ÉCRITURE DU FICHIER JSON
-        // ════════════════════════════════════════════════════════════════
+
         std::ofstream sceneFile(scenePath);
-        
         if (!sceneFile.is_open()) {
-            std::cerr << "❌ Failed to open scene file for writing: " << scenePath << std::endl;
+            std::cerr << "Failed to open scene file for writing: " << scenePath << std::endl;
             return;
         }
-        
-        sceneFile << sceneData.dump(2); // Indentation de 2 espaces
+        sceneFile << sceneData.dump(2);
         sceneFile.close();
-        
-        std::cout << "✅ Scene saved to " << scenePath << std::endl;
+        std::cout << "Scene sauvée " << scenePath << std::endl;
     }
 
 

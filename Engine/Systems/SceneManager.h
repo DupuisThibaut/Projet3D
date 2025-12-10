@@ -90,68 +90,80 @@ public:
             return;
         }
         for(const auto& entityData: sceneData["entities"]){
+            std::cout << "Loading entity ID: " << entityData["id"] << std::endl;
             Entity e{entityData["id"]};
             entityManager->CreateEntity(e.id);
             entities->push_back(e);
             if(entityData.contains("transform")){
+                std::cout << "Loading TransformComponent for entity ID: " << e.id << std::endl;
                 TransformComponent t;
                 t.loadFromFile(sceneData, e.id);
                 entityManager->AddComponent<TransformComponent>(e.id, t);
             }
             if(entityData.contains("mesh")){
+                std::cout << "Loading MeshComponent for entity ID: " << e.id << std::endl;
                 MeshComponent m;
                 m.loadFromFile(sceneData, e.id, gameFolder, entityManager->GetComponent<TransformComponent>(e.id).position);
                 entityManager->AddComponent<MeshComponent>(e.id, m);
                 std::cout << "Entity " << e.id << " mesh vertices after load: " << m.vertices.size() << std::endl;
             }
             if(entityData.contains("material")){
+                std::cout << "Loading MaterialComponent for entity ID: " << e.id << std::endl;
                 MaterialComponent mat;
                 mat.loadFromFile(entityData, e.id, gameFolder);
                 entityManager->AddComponent<MaterialComponent>(e.id, mat);
             }
             std::cout << "Entity " << e.id << " loaded." << std::endl;
             if(entityData.contains("camera")){
+                std::cout << "Loading CameraComponent for entity ID: " << e.id << std::endl;
                 CameraComponent cam;
                 cam.loadFromFile(sceneData, e.id, width, height);
                 entityManager->AddComponent<CameraComponent>(e.id, cam);
             }
             if(entityData.contains("light")){
+                std::cout << "Loading LightComponent for entity ID: " << e.id << std::endl;
                 LightComponent light;
                 light.loadFromFile(sceneData, e.id);
                 entityManager->AddComponent<LightComponent>(e.id, light);
             }
             if(entityData.contains("controller")){
+                std::cout << "Loading ControllerComponent for entity ID: " << e.id << std::endl;
                 ControllerComponent controller;
                 controller.loadFromFile(sceneData, e.id);
                 entityManager->AddComponent<ControllerComponent>(e.id, controller);
             }
             if(entityData.contains("audio")){
+                std::cout << "Loading MyAudioComponent for entity ID: " << e.id << std::endl;
                 MyAudioComponent audio;
                 audio.loadFromFile(sceneData, e.id, gameFolder);
                 entityManager->AddComponent<MyAudioComponent>(e.id, audio);
             }
-            std::cout << "Finished loading entity " << e.id << std::endl;
             if(entityData.contains("tag")){
+                std::cout << "Loading TagComponent for entity ID: " << e.id << std::endl;
                 TagComponent tag;
                 tag.loadFromFile(sceneData, e.id);
                 entityManager->AddComponent<TagComponent>(e.id, tag);
             }
             if(entityData.contains("layer")){
+                std::cout << "Loading LayerComponent for entity ID: " << e.id << std::endl;
                 LayerComponent layer;
                 layer.loadFromFile(sceneData, e.id);
                 entityManager->AddComponent<LayerComponent>(e.id, layer);
             }
             if(entityData.contains("rigidbody")){
+                std::cout << "Loading RigidBodyComponent for entity ID: " << e.id << std::endl;
                 RigidBodyComponent rigidbody;
                 rigidbody.loadFromFile(sceneData, e.id);
                 entityManager->AddComponent<RigidBodyComponent>(e.id, rigidbody);
             }
             if(entityData.contains("script")){
+                std::cout << "Loading LuaScriptComponent for entity ID: " << e.id << std::endl;
                 LuaScriptComponent luaScript;
                 luaScript.loadFromFile(sceneData, e.id, gameFolder);
                 entityManager->AddComponent<LuaScriptComponent>(e.id, luaScript);
             }
             if(entityData.contains("collider")){
+                std::cout << "Loading ColliderComponent for entity ID: " << e.id << std::endl;
                 ColliderComponent collider;
                 collider.loadFromFile(entityData, e.id, entityManager);
                 entityManager->AddComponent<ColliderComponent>(e.id, std::move(collider));
@@ -159,16 +171,19 @@ public:
                           << (entityManager->GetComponent<ColliderComponent>(e.id).collider != nullptr) << std::endl;
             }
             if(entityData.contains("texture")){
+                std::cout << "Loading TextureComponent for entity ID: " << e.id << std::endl;
                 TextureComponent texture;
                 texture.loadFromFile(entityData, e.id, gameFolder);
                 entityManager->AddComponent<TextureComponent>(e.id, texture);
             }
             if(entityData.contains("particule")){
+                std::cout << "Loading ParticuleComponent for entity ID: " << e.id << std::endl;
                 ParticuleComponent particule;
                 particule.loadFromFile(entityData, e.id, gameFolder);
                 entityManager->AddComponent<ParticuleComponent>(e.id, particule);
             }
             if(entityData.contains("animation")){
+                std::cout << "Loading AnimationComponent for entity ID: " << e.id << std::endl;
                 AnimationComponent animation;
                 animation.loadFromJson(entityData, gameFolder);
                 auto& meshComp = entityManager->GetComponent<MeshComponent>(e.id);

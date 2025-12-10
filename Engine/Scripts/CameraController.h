@@ -10,43 +10,57 @@ struct CameraController : public ScriptComponent {
     CameraComponent* camera;
     float speed = 5.0f;
     float sensitivity = 0.1f;
+    Dispatcher* dispatcher;
+    int subscriptionID = 0;
 
-    void onInput(const InputEvent& event) override {
+    CameraController(TransformComponent* t, CameraComponent* c, Dispatcher* d) : transform(t), camera(c), dispatcher(d) {
+        subscriptionID = dispatcher->subscribe([this](const InputEvent& event) {
+            std::cout << "CameraController lambda called\n";
+            this->onInput(event);
+            return false;
+        });
+        std::cout << "CameraController: Subscribed to dispatcher with ID " << subscriptionID << "\n";
+    }
+
+    void onInput(const InputEvent& event) {
+        std::cout << "CameraController: onInput called\n";
         glm::vec3 forward = glm::normalize(camera->target);
         glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0,1,0)));
         double scrollY = event.scroll;
 
         for (auto& btn : event.buttons) {
-            if (btn == "Forward") transform->position += forward * speed * event.dt;
-            if (btn == "Backward") transform->position -= forward * speed * event.dt;
-            if (btn == "Right") transform->position += right * speed * event.dt;
-            if (btn == "Left") transform->position -= right * speed * event.dt;
-            if(scrollY != 0.0f){
-                if(btn == "RightMouse"){
-                    sensitivity += scrollY * 0.01f;
-                    if(sensitivity < 0.01f) sensitivity = 0.01f;
-                    if (sensitivity > 1.0f) sensitivity = 1.0f;
-                    scrollY = 0.0f;
-                }
+            if (btn.second == STATE::PRESSED && btn.first == "Forward") transform->position += forward * speed * event.dt;
+            if (btn.second == STATE::PRESSED && btn.first == "Backward") transform->position -= forward * speed * event.dt;
+            if (btn.second == STATE::PRESSED && btn.first == "Right") transform->position += right * speed * event.dt;
+            if (btn.second == STATE::PRESSED && btn.first == "Left") transform->position -= right * speed * event.dt;
+            if(scrollY != 0.0f && btn.first == "RightMouse" && btn.second == STATE::PRESSED){
+                sensitivity += scrollY * 0.01f;
+                if(sensitivity < 0.01f) sensitivity = 0.01f;
+                if (sensitivity > 1.0f) sensitivity = 1.0f;
+                scrollY = 0.0f;
+            }
+            if (event.mouseMoved && btn.first == "RightMouse" && btn.second == STATE::PRESSED) {
+                camera->yaw   += event.mouseDeltaX * sensitivity;
+                camera->pitch += event.mouseDeltaY * sensitivity;
+    
+                if (camera->pitch > 89.0f) camera->pitch = 89.0f;
+                if (camera->pitch < -89.0f) camera->pitch = -89.0f;
+    
+                glm::vec3 direction;
+                direction.x = cos(glm::radians(camera->yaw)) * cos(glm::radians(camera->pitch));
+                direction.y = sin(glm::radians(camera->pitch));
+                direction.z = sin(glm::radians(camera->yaw)) * cos(glm::radians(camera->pitch));
+                camera->target = glm::normalize(direction);
             }
         }
 
-        if (event.mouseMoved) {
-            camera->yaw   += event.mouseDeltaX * sensitivity;
-            camera->pitch += event.mouseDeltaY * sensitivity;
 
-            if (camera->pitch > 89.0f) camera->pitch = 89.0f;
-            if (camera->pitch < -89.0f) camera->pitch = -89.0f;
+    }
 
-            glm::vec3 direction;
-            direction.x = cos(glm::radians(camera->yaw)) * cos(glm::radians(camera->pitch));
-            direction.y = sin(glm::radians(camera->pitch));
-            direction.z = sin(glm::radians(camera->yaw)) * cos(glm::radians(camera->pitch));
-            camera->target = glm::normalize(direction);
-        }
-
-        if(scrollY != 0.0f){
-            transform->position += glm::vec3(0.0f, 0.0f, -scrollY * 0.5f);
+    void unsubscribe() {
+        if (dispatcher && subscriptionID !=0) {
+            dispatcher->unsubscribe(subscriptionID);
+            subscriptionID = 0;
         }
     }
 

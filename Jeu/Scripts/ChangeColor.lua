@@ -23,19 +23,19 @@ end
 local created = false
 function onInput(event)
     for _, btn in ipairs(event.buttons) do
-        if btn == "C" and this.material then
+        if btn.name == "C" and btn.state == "PRESSED" then
             if not created then
                 --local t = create_entity()
                 --add_component(t, "Transform", { position = {-0.5, -9.0, 0.0} })
                 --local mesh = add_component(t, "Mesh", { type = "primitive", name = "SPHERE" })
                 --local m = add_component(t, "Material", { color = { 1.0,0.0,1.0 }, type = "color" })
                 --print("[Lua] Created new entity with id: " .. t)
-                change_scene("cornelBox.json")
                 created = true
+                change_scene("cornelBox.json")
             end
-            --vie = vie - 0.1
-            --if vie < 0 then vie = 0 end
-            --set_global("vie", vie)
+        end
+        if btn.name == "C" and btn.state == "RELEASED" and created then
+            created = false
         end
     end
 end

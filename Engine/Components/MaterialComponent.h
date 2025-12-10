@@ -345,6 +345,31 @@ struct MaterialComponent {
             }
         }
     }
+
+    json toJson() {
+        nlohmann::json j;
+        if (type == Type::Texture) {
+            j["type"] = "texture";
+            j["path"] = texturePath;
+        } else if (type == Type::Color) {
+            j["type"] = "color";
+            j["color"] = { color.r, color.g, color.b };
+            j["ambient"] = { ambient_material.r, ambient_material.g, ambient_material.b };
+            j["diffuse"] = { diffuse_material.r, diffuse_material.g, diffuse_material.b };
+            j["specular"] = { specular_material.r, specular_material.g, specular_material.b };
+            j["shininess"] = shininess;
+            j["path"] = texturePath;
+            if(particularite == 1){
+                j["reflection"] = true;
+            }
+            else if(particularite == 2){
+                j["refraction"] = true;
+            }
+        } else {
+            j["type"] = "none";
+        }
+        return j;
+    }
 };
 
 #endif // MATERIAL_COMPONENT_H

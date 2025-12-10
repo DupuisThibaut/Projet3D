@@ -322,14 +322,19 @@ public:
 
     }
 
-    void onInput(const InputEvent& event) {
-        if(event.buttons.empty()) return;
-        for(const auto& button : event.buttons) {
-            if(button == "B") {
-                blinn=!blinn;
-            }
+void onInput(const InputEvent& event) {
+    static bool firstClick = true;
+    if(event.buttons.empty()) return;
+    for(const auto& button : event.buttons) {
+        if(button.first == "B" && button.second == STATE::PRESSED && firstClick) {
+            blinn=!blinn;
+            std::cout<<"Blinn mode : "<<(blinn ? "ON" : "OFF")<<std::endl;
+            firstClick = false;
+        } else if(button.second == STATE::RELEASED && button.first == "B" && !firstClick) {
+            firstClick = true;
         }
     }
+}
 
     bool initialize(){
 
@@ -613,7 +618,7 @@ public:
             updateParticule=false;
             reset=true;
         }
-
+        
         // calculer et uploader les matrices + cam pos depuis la Camera actuelle
         for(auto& camera : entityManager->GetComponents<CameraComponent>()){
             GLfloat mv[16], proj[16];
@@ -622,12 +627,12 @@ public:
             glm::mat4 view = camera.second.getViewMatrix(glm::vec3(entityManager->GetComponent<TransformComponent>(camera.first).worldMatrix[3]));
             glm::mat4 projM = camera.second.getProjectionMatrix();
             glm::mat4 invVP = glm::inverse(projM * view);
-
+            
             glm::vec3 cpos = entityManager->GetComponent<TransformComponent>(camera.first).position;
             glm::vec3 camPosGLM(cpos[0], cpos[1], cpos[2]);
-
+            
             // std::cout<<"camPos : "<<camPosGLM.x<<" camPos : "<<camPosGLM.y<<" camPos : "<<camPosGLM.z<<std::endl;
-
+            
             glUseProgram(computeProg);
             // upload uniforms every frame
             GLint locRes = glGetUniformLocation(computeProg, "uResolution");

@@ -78,5 +78,29 @@ struct MyAudioComponent {
             }
         }
     }
+
+    json toJson(){
+        nlohmann::json j;
+        switch (type) {
+            case AudioType::MUSIC:
+                j["type"] = "MUSIC";
+                break;
+            case AudioType::SFX:
+                j["type"] = "SFX";
+                break;
+            case AudioType::SPATIAL:
+                j["type"] = "SPATIAL";
+                break;
+            default:
+                j["type"] = "NONE";
+                break;
+        }
+        j["path"] = audioFilePath;
+        j["volume"] = volume;
+        j["loop"] = loop;
+        j["play_on_start"] = playOnStart;
+        j["is_playing"] = isPlaying;
+        return j;
+    }
 };
 #endif // MYAUDIOCOMPONENT_H

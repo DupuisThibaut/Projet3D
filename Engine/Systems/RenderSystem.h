@@ -55,7 +55,7 @@ public:
             std::cerr << "\n";
         }
     }
-    void update(const std::vector<Entity>& entities) {
+    void update(const std::vector<Entity>& entities, CameraComponent* editorCamera = nullptr, TransformComponent* editorTransform = nullptr) {
         //debugPrintScene();
 
         glUseProgram(shaderProgram);
@@ -69,16 +69,25 @@ public:
         glUniform1i(glGetUniformLocation(shaderProgram,"nb"),nbTextures);
         glm::mat4 view;
         glm::mat4 proj;
-        for(auto& camera : entityManager->GetComponents<CameraComponent>()){
-            
-            if (camera.second.isActive == false) continue;
-            view = camera.second.getViewMatrix(glm::vec3(entityManager->GetComponent<TransformComponent>(camera.first).worldMatrix[3]));
-            proj = camera.second.getProjectionMatrix();
+        if(editorCamera && editorTransform){
+            view = editorCamera->getViewMatrix(editorTransform->position);
+            proj = editorCamera->getProjectionMatrix();
             GLint viewLoc = glGetUniformLocation(shaderProgram, "view");
             if (viewLoc >= 0) glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &view[0][0]);
             GLint projLoc = glGetUniformLocation(shaderProgram, "projection");
             if (projLoc >= 0) glUniformMatrix4fv(projLoc, 1, GL_FALSE, &proj[0][0]);
             glm::mat4 vp = proj * view;
+        } else {
+            for(auto& camera : entityManager->GetComponents<CameraComponent>()){
+                if (camera.second.isActive == false) continue;
+                view = camera.second.getViewMatrix(glm::vec3(entityManager->GetComponent<TransformComponent>(camera.first).worldMatrix[3]));
+                proj = camera.second.getProjectionMatrix();
+                GLint viewLoc = glGetUniformLocation(shaderProgram, "view");
+                if (viewLoc >= 0) glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &view[0][0]);
+                GLint projLoc = glGetUniformLocation(shaderProgram, "projection");
+                if (projLoc >= 0) glUniformMatrix4fv(projLoc, 1, GL_FALSE, &proj[0][0]);
+                glm::mat4 vp = proj * view;
+            }
         }
         for (const Entity& entity : entities) {
             //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -125,12 +134,17 @@ public:
     }
 
     void onInput(const InputEvent& event) {
+        static bool firstClick = true;
         if(event.buttons.empty()) return;
         for(const auto& button : event.buttons) {
-            if(button == "R") {
+            if(button.first == "R" && button.second == STATE::PRESSED && firstClick) {
                 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            } else if(button == "F") {
+                firstClick = false;
+            } else if(button.first == "F" && button.second == STATE::PRESSED && firstClick) {
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                firstClick = false;
+            } else if(button.second == STATE::RELEASED && (button.first == "R" || button.first == "F")) {
+                firstClick = true;
             }
         }
     }

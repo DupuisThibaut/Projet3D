@@ -33,6 +33,14 @@ struct ControllerComponent {
             ImGui::DragFloat("Sensitivity", &sensitivity, 0.01f);
         }
     }
+
+    json toJson() {
+        nlohmann::json j;
+        j["speed"] = moveSpeed;
+        j["zoom_speed"] = zoomSpeed;
+        j["sensitivity"] = sensitivity;
+        return j;
+    }
 };
 
 

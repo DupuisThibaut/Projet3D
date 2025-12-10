@@ -40,19 +40,30 @@ class Dispatcher
                 subscribers.end());
         }
 
+        void unsubscribe(Subscriber* subscriberPtr)
+        {
+            subscribers.erase(std::remove_if(subscribers.begin(), subscribers.end(),
+                [subscriberPtr](const Subscriber& subscriber) { return &subscriber == subscriberPtr; }),
+                subscribers.end());
+        }
+
+        void unsubscribeAll()
+        {
+            subscribers.clear();
+        }
+
         void dispatch(const InputEvent& event)
         {
             std::vector<SubscribersID> toRemove;
-            for (const auto& subscriber : subscribers)
-            {
-                bool handled = subscriber.callback(event);
-                if (handled && subscriber.once)
-                {
-                    toRemove.push_back(subscriber.id);
-                }
-                if (handled)
-                {
-                    break; // Stop propagation if event is handled
+            for (const auto& subscriber : subscribers) {
+                try {
+                    std::cout << "Dispatcher: Notifying subscriber ID " << subscriber.id << std::endl;
+                    bool handled = subscriber.callback(event);
+                    std::cout << "Dispatcher: Subscriber ID " << subscriber.id << " handled event: " << (handled ? "yes" : "no") << std::endl;
+                } catch (const std::exception& e) {
+                    std::cerr << "Exception in subscriber ID " << subscriber.id << ": " << e.what() << std::endl;
+                } catch (...) {
+                    std::cerr << "Unknown exception in subscriber ID " << subscriber.id << std::endl;
                 }
             }
             // Remove one-time subscribers that have handled the event

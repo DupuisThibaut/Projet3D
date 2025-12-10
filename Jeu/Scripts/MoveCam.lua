@@ -50,44 +50,64 @@ function onInput(event)
     local tr  = this.transform
     if not cam or not tr then return end
 
-    local speed = 5.0
+    local speed = 2.0
     local sensitivity = 0.1
     local forward = normalize(cam.target)
     local right = normalize(cross(forward, {0,1,0}))
     local scrollY = event.scroll
+    local once = true
 
     -- Vérifier si le bouton droit est enfoncé
     local rightMousePressed = false
     for _, btn in ipairs(event.buttons) do
-        if btn == "RightMouse" then
+        if btn.name == "RightMouse" and btn.state == "PRESSED" then
+            cam.update=true
             rightMousePressed = true
             break
-        end
-    end
-
-    -- Déplacement WASD (toujours actif)
-    for _, btn in ipairs(event.buttons) do
-        if btn == "Forward" then 
+        elseif btn.name == "Forward" and btn.state == "PRESSED" then 
             tr.position = add(tr.position, scale(forward, speed * event.dt))
             springtrap.transform.position = add(springtrap.transform.position, scale(forward, speed *event.dt))
-            play_animation(springtrap.id, "walk")
-        elseif btn == "Backward" then 
+            cam.update=true
+            if once then
+                play_animation(springtrap.id, "walk")
+                once = false
+            end
+        elseif btn.name == "Backward" and btn.state == "PRESSED" then 
             tr.position = subtract(tr.position, scale(forward, speed * event.dt))
-            springtrap.transform.position = subtract(springtrap.transform.position, scale(forward, event.dt))
-        elseif btn == "Right" then 
+            springtrap.transform.position = subtract(springtrap.transform.position, scale(forward, speed * event.dt))
+            cam.update=true
+            if once then
+                play_animation(springtrap.id, "walk")
+                once = false
+            end
+        elseif btn.name == "Right" and btn.state == "PRESSED" then 
             tr.position = add(tr.position, scale(right, speed * event.dt))
+            cam.update=true
+            if once then
+                play_animation(springtrap.id, "walk")
+                once = false
+            end
             springtrap.transform.position = add(springtrap.transform.position, scale(right, speed * event.dt))
-        elseif btn == "Left" then 
+        elseif btn.name == "Left" and btn.state == "PRESSED" then 
             tr.position = subtract(tr.position, scale(right, speed * event.dt))
+            cam.update=true
+            if once then
+                play_animation(springtrap.id, "walk")
+                once = false
+            end
             springtrap.transform.position = subtract(springtrap.transform.position, scale(right,  speed * event.dt))
-        elseif btn == "Space" then 
+        elseif btn.name == "Space" and btn.state == "PRESSED" then 
             tr.position = add(tr.position, {0, speed * event.dt, 0})
+            cam.update=true
             springtrap.transform.position = add(springtrap.transform.position, {0, speed * event.dt, 0})
-            play_animation(springtrap.id, "jump")
-        else 
+            if once then
+                play_animation(springtrap.id, "jump")
+                once = false
+            end
+        elseif btn.state == "RELEASED" and (btn.name == "Forward" or btn.name == "Backward" or btn.name == "Right" or btn.name == "Left") then
             play_animation(springtrap.id, "idle")
+            once = true
         end
-        cam.update=true
     end
 
     -- Rotation caméra : UNIQUEMENT si clic droit + mouvement souris
@@ -112,6 +132,7 @@ function onInput(event)
     -- Scroll : zoom (déplacement sur Z)
     if scrollY ~= 0 then
         tr.position = add(tr.position, scale(forward, -scrollY * 0.5))
+        cam.update=true
     end
 
     -- Modifier sensibilité avec scroll + clic droit (optionnel)

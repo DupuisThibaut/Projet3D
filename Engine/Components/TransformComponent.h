@@ -51,6 +51,18 @@ struct TransformComponent {
             }
         }
     }
+
+    json toJson(){
+        nlohmann::json j;
+        j["position"] = {position.x, position.y, position.z};
+        j["rotation"] = {rotation.x, rotation.y, rotation.z};
+        j["scale"] = {scale.x, scale.y, scale.z};
+        if(parent != UINT32_MAX){
+            j["parent"] = parent;
+        }
+        j["children"] = children;
+        return j;
+    }
 };
 
 #endif // TRANSFORM_COMPONENT_H

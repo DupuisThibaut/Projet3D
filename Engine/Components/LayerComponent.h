@@ -26,6 +26,13 @@ struct LayerComponent {
             ImGui::InputInt("Layer ID", &id);
         }
     }
+
+    json toJson(){
+        nlohmann::json j;
+        j["name"] = name;
+        j["id"] = id;
+        return j;
+    }
 };
 
 #endif // LAYER_COMPONENT_H

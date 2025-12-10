@@ -18,6 +18,13 @@ struct ScriptComponent {
             }
         }
     }
+
+    json toJson() {
+        nlohmann::json j;
+        j["name"] = scriptName;
+        j["type"] = "C++";
+        return j;
+    }
 };
 
 #endif // SCRIPT_COMPONENT_H

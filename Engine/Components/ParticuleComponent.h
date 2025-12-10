@@ -143,5 +143,29 @@ struct ParticuleComponent {
         }
     }
 
+    json toJson(){
+        nlohmann::json j;
+        j["nombre"] = nb;
+        j["path"] = path;
+        j["offset"] = { offset.x, offset.y, offset.z };
+        j["rayon"] = rayon[0];
+        j["bouncing"] = bouncingFactor;
+        j["ageMax"] = ageMax[0];
+        j["velocity"] = { velocity[0].x, velocity[0].y, velocity[0].z };
+        if(!texture.empty()){
+            j["texture"] = texture;
+        }
+        if(particularite==1){
+            j["reflection"] = true;
+        }
+        if(particularite==2){
+            j["refraction"] = true;
+        }
+        if(particularite==3){
+            j["metallicite"] = true;
+        }
+        return j;
+    }
+
 };
 #endif // PARTICULE_COMPONENT_H

@@ -34,6 +34,7 @@ public:
             }
         });
     }
+    
 
     void update(GLFWwindow* window, float dt){
         event.dt = dt;
@@ -58,17 +59,30 @@ public:
         };
         for(const auto& [key, name] : keyMap){
             if(glfwGetKey(window, key) == GLFW_PRESS)
-                event.buttons.push_back(name);
+                event.buttons.push_back({name, STATE::PRESSED});
+            if(glfwGetKey(window, key) == GLFW_RELEASE)
+                event.buttons.push_back({name, STATE::RELEASED});
+            if(glfwGetKey(window, key) == GLFW_REPEAT)
+                event.buttons.push_back({name, STATE::REPEAT});
         }
 
         // --- Toutes les touches alphanumériques (A-Z, 0-9) ---
-        for(int k = GLFW_KEY_0; k <= GLFW_KEY_9; ++k)
+        for(int k = GLFW_KEY_0; k <= GLFW_KEY_9; ++k) {
             if(glfwGetKey(window, k) == GLFW_PRESS)
-                event.buttons.push_back(std::string(1, '0' + (k - GLFW_KEY_0)));
-        for(int k = GLFW_KEY_A; k <= GLFW_KEY_Z; ++k)
+                event.buttons.push_back(std::make_pair(std::string(1, '0' + (k - GLFW_KEY_0)), STATE::PRESSED));
+            if(glfwGetKey(window, k) == GLFW_RELEASE)
+                event.buttons.push_back(std::make_pair(std::string(1, '0' + (k - GLFW_KEY_0)), STATE::RELEASED));
+            if(glfwGetKey(window, k) == GLFW_REPEAT)
+                event.buttons.push_back(std::make_pair(std::string(1, '0' + (k - GLFW_KEY_0)), STATE::REPEAT));
+        }
+        for(int k = GLFW_KEY_A; k <= GLFW_KEY_Z; ++k) {
             if(glfwGetKey(window, k) == GLFW_PRESS)
-                event.buttons.push_back(std::string(1, 'A' + (k - GLFW_KEY_A)));
-
+                event.buttons.push_back(std::make_pair(std::string(1, 'A' + (k - GLFW_KEY_A)), STATE::PRESSED));
+            if(glfwGetKey(window, k) == GLFW_RELEASE)
+                event.buttons.push_back(std::make_pair(std::string(1, 'A' + (k - GLFW_KEY_A)), STATE::RELEASED));
+            if(glfwGetKey(window, k) == GLFW_REPEAT)
+                event.buttons.push_back(std::make_pair(std::string(1, 'A' + (k - GLFW_KEY_A)), STATE::REPEAT));
+        }
         // --- Souris boutons ---
         const std::vector<std::pair<int, std::string>> mouseMap = {
             {GLFW_MOUSE_BUTTON_LEFT, "LeftMouse"},
@@ -77,7 +91,11 @@ public:
         };
         for(const auto& [btn, name] : mouseMap){
             if(glfwGetMouseButton(window, btn) == GLFW_PRESS)
-                event.buttons.push_back(name);
+                event.buttons.push_back({name, STATE::PRESSED});
+            if(glfwGetMouseButton(window, btn) == GLFW_RELEASE)
+                event.buttons.push_back({name, STATE::RELEASED});
+            if(glfwGetMouseButton(window, btn) == GLFW_REPEAT)
+                event.buttons.push_back({name, STATE::REPEAT});
         }
 
         // --- Mouvement souris (toujours détecté, même sans clic) ---
@@ -97,6 +115,7 @@ public:
     }
 
     void dispatch(const InputEvent& event){
+        std::cout << "ControllerSystem: Sending event to script\n";
         for(auto sub : subs){
             sub->onInput(event);
         }

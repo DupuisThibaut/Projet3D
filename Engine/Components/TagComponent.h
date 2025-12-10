@@ -23,6 +23,12 @@ struct TagComponent {
             }
         }
     }
+
+    json toJson(){
+        nlohmann::json j;
+        j = tag;
+        return j;
+    }
 };
 
 #endif // TAG_COMPONENT_H

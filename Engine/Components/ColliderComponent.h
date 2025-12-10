@@ -23,6 +23,7 @@ struct ColliderComponent {
     ColliderType type = ColliderType::SPHERE;
     bool isTrigger = false;
     std::unique_ptr<BaseCollider> collider;
+    float radius;
 
     ColliderComponent() = default;
 
@@ -49,6 +50,7 @@ struct ColliderComponent {
             type = ColliderType::SPHERE;
             glm::vec3 center = entityManager->GetComponent<TransformComponent>(index).position;
             float radius = entityData["collider"]["radius"];
+            this->radius = radius;
             collider = std::make_unique<SphereCollider>(center, radius);
         }
         else if(colliderType == "AABB"){
@@ -178,6 +180,33 @@ struct ColliderComponent {
         }
     }
 
+    json toJson() {
+        nlohmann::json j;
+        switch (type) {
+            case ColliderType::AABB:
+                j["type"] = "AABB";
+                break;
+            case ColliderType::OBB:
+                j["type"] = "OBB";
+                break;
+            case ColliderType::SPHERE:
+                j["type"] = "SPHERE";
+                break;
+            case ColliderType::PLANE:
+                j["type"] = "PLANE";
+                break;
+            case ColliderType::MESH:
+                j["type"] = "MESH";
+                break;
+            default:
+                j["type"] = "NONE";
+                break;
+        }
+        j["isTrigger"] = isTrigger;
+        j["radius"] = radius; // Placeholder
+        // Note: Additional collider-specific data should be added here
+        return j;
+    }
 
     ~ColliderComponent() = default;
 };

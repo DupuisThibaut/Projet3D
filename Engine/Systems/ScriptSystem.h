@@ -1224,7 +1224,17 @@ public:
             if (!script || !script->L) continue;
             lua_State* L = script->L; lua_getglobal(L, "onInput"); if (!lua_isfunction(L, -1)) { lua_pop(L,1); continue; }
             lua_newtable(L); lua_pushnumber(L, event.dt); lua_setfield(L, -2, "dt"); lua_pushnumber(L, event.scroll); lua_setfield(L, -2, "scroll"); lua_pushnumber(L, event.mouseDeltaX); lua_setfield(L, -2, "mouseDeltaX"); lua_pushnumber(L, event.mouseDeltaY); lua_setfield(L, -2, "mouseDeltaY"); lua_pushboolean(L, event.mouseMoved); lua_setfield(L, -2, "mouseMoved");
-            lua_newtable(L); int i = 1; for (const auto& btn : event.buttons) { lua_pushstring(L, btn.c_str()); lua_rawseti(L, -2, i++); } lua_setfield(L, -2, "buttons");
+            lua_newtable(L);
+            int i = 1;
+            for (const auto& btn : event.buttons) {
+                lua_newtable(L);
+                lua_pushstring(L, btn.first.c_str());
+                lua_setfield(L, -2, "name");
+                lua_pushstring(L, btn.second == STATE::PRESSED ? "PRESSED" : (btn.second == STATE::RELEASED ? "RELEASED" : "REPEAT"));
+                lua_setfield(L, -2, "state");
+                lua_rawseti(L, -2, i++);
+            }
+            lua_setfield(L, -2, "buttons");
             if (lua_pcall(L, 1, 0, 0) != LUA_OK) { std::cerr << "Erreur Lua onInput: " << lua_tostring(L, -1) << std::endl; lua_pop(L, 1); }
         }
     }

@@ -3,9 +3,15 @@
 #include <string>
 #include <vector>
 
+enum class STATE {
+    PRESSED,
+    RELEASED,
+    REPEAT
+};
+
 struct InputEvent {
     float dt;
-    std::vector<std::string> buttons;
+    std::vector<std::pair<std::string, STATE>> buttons;
     double mouseDeltaX = 0.0;
     double mouseDeltaY = 0.0;
     bool mouseMoved = false;

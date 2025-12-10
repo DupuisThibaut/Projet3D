@@ -20,6 +20,12 @@ struct LightComponent {
             ImGui::DragFloat("Intensity", &intensity, 0.1f, 0.0f, 100.0f);
         }
     }
+
+    json toJson() {
+        nlohmann::json j;
+        j["intensity"] = intensity;
+        return j;
+    }
 };
 
 #endif // LIGHT_COMPONENT_H

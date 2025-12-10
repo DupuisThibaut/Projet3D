@@ -133,6 +133,9 @@ LightSystem* lightSystem = nullptr;
 RenderSystem* renderSystem = nullptr;
 AnimationSystem* animationSystem = nullptr;
 
+CameraComponent editorCamera;
+TransformComponent editorTransform;
+CameraController* editorController = nullptr;
 SceneManager sceneManager(&entityManager, &entities);
 
 
@@ -157,6 +160,13 @@ ma_bool8 testLua(){
 void StartSystems(GLuint programID){
     // Initialisation des systèmes
     std::cout << "--- Initialization... ---" << std::endl;
+    dispatcher.unsubscribeAll();
+    if(editorController){
+        editorController->unsubscribe();
+        delete editorController;
+        editorController = nullptr;
+    }
+    editorController = new CameraController(&editorTransform, &editorCamera, &dispatcher);
     // Système de rendu
     renderSystem = new RenderSystem(&entityManager, programID, &dispatcher, entities);
 
@@ -168,26 +178,28 @@ void StartSystems(GLuint programID){
     scriptSystem.registerEntityManager(&entityManager);
     scriptSystem.registerSceneManager(&sceneManager);
     // Système de script
-    for(const auto& kv : entityManager.GetComponents<LuaScriptComponent>()){
-        uint32_t id = kv.first;
-        // get non-const reference to the component
-        LuaScriptComponent& comp = entityManager.GetComponent<LuaScriptComponent>(id);
-        if (comp.luaScriptPath.empty()) {
-            std::cerr << "Script component for entity " << id << " has empty path, skipping\n";
-            continue;
+    if(!EditorMode){
+        for(const auto& kv : entityManager.GetComponents<LuaScriptComponent>()){
+            uint32_t id = kv.first;
+            // get non-const reference to the component
+            LuaScriptComponent& comp = entityManager.GetComponent<LuaScriptComponent>(id);
+            if (comp.luaScriptPath.empty()) {
+                std::cerr << "Script component for entity " << id << " has empty path, skipping\n";
+                continue;
+            }
+            std::cout << "Loading script for entity " << id << ": " << comp.luaScriptPath << std::endl;
+            if (!std::filesystem::exists(comp.luaScriptPath)) {
+                std::cerr << "Script introuvable (skip): " << comp.luaScriptPath << std::endl;
+                continue;
+            }
+            scriptSystem.registerLuaScript(id, &comp);
+            scriptSystem.initScript(comp, id);
         }
-        std::cout << "Loading script for entity " << id << ": " << comp.luaScriptPath << std::endl;
-        if (!std::filesystem::exists(comp.luaScriptPath)) {
-            std::cerr << "Script introuvable (skip): " << comp.luaScriptPath << std::endl;
-            continue;
-        }
-        scriptSystem.registerLuaScript(id, &comp);
-        scriptSystem.initScript(comp, id);
+        std::cout<< "--- Scripts loaded. ---" <<std::endl;
+        scriptSystem.registerDispatcher(&dispatcher);
+        scriptSystem.registerEntities(&entities);
+        std::cout<< "--- Script system initialized. ---" <<std::endl;
     }
-    std::cout<< "--- Scripts loaded. ---" <<std::endl;
-    scriptSystem.registerDispatcher(&dispatcher);
-    scriptSystem.registerEntities(&entities);
-    std::cout<< "--- Script system initialized. ---" <<std::endl;
 
     // Système de lumière
     std::cout << "--- Initializing Light System... ---" << std::endl;
@@ -445,17 +457,19 @@ int main( int argc, char* argv[] )
     }
     std::cout << "--- Scene loaded. ---" << std::endl;
 
-    bool anyActiveCamera = false;
-    for (const auto &kv : entityManager.GetComponents<CameraComponent>()){
-        if (kv.second.isActive) {
-            anyActiveCamera = true;
-            break;
+    if(!EditorMode){
+        bool anyActiveCamera = false;
+        for (const auto &kv : entityManager.GetComponents<CameraComponent>()){
+            if (kv.second.isActive) {
+                anyActiveCamera = true;
+                break;
+            }
         }
-    }
-    if(!anyActiveCamera){
-        uint32_t camEntityId = UINT32_MAX;
-        for (const auto &kv : entityManager.GetComponents<CameraComponent>()) if (kv.first < camEntityId) camEntityId = kv.first;
-        entityManager.GetComponent<CameraComponent>(camEntityId).isActive = true;
+        if(!anyActiveCamera){
+            uint32_t camEntityId = UINT32_MAX;
+            for (const auto &kv : entityManager.GetComponents<CameraComponent>()) if (kv.first < camEntityId) camEntityId = kv.first;
+            entityManager.GetComponent<CameraComponent>(camEntityId).isActive = true;
+        }
     }
 
     glfwSetWindowPos(window, x + 100, y + 100);
@@ -488,17 +502,19 @@ int main( int argc, char* argv[] )
         if(!systemsInitialized){
             std::cerr << "Main: Starting systems (first time)\n";
             StartSystems(programID);
-            bool anyActiveCamera = false;
-            for (const auto &kv : entityManager.GetComponents<CameraComponent>()){
-                if (kv.second.isActive) {
-                    anyActiveCamera = true;
-                    break;
+            if(!EditorMode){            
+                bool anyActiveCamera = false;
+                for (const auto &kv : entityManager.GetComponents<CameraComponent>()){
+                    if (kv.second.isActive) {
+                        anyActiveCamera = true;
+                        break;
+                    }
                 }
-            }
-            if(!anyActiveCamera){
-                uint32_t camEntityId = UINT32_MAX;
-                for (const auto &kv : entityManager.GetComponents<CameraComponent>()) if (kv.first < camEntityId) camEntityId = kv.first;
-                entityManager.GetComponent<CameraComponent>(camEntityId).isActive = true;
+                if(!anyActiveCamera){
+                    uint32_t camEntityId = UINT32_MAX;
+                    for (const auto &kv : entityManager.GetComponents<CameraComponent>()) if (kv.first < camEntityId) camEntityId = kv.first;
+                    entityManager.GetComponent<CameraComponent>(camEntityId).isActive = true;
+                }
             }
             systemsInitialized = true;
         }
@@ -571,7 +587,8 @@ int main( int argc, char* argv[] )
         if(mode == "-r" || mode2 == "-r"){
             rayTracerSystem->update(entities);
         } else {
-            renderSystem->update(entities);
+            if(!EditorMode){renderSystem->update(entities);}
+            else renderSystem->update(entities, &editorCamera, &editorTransform);
         }
         #endif
         // ════════════════════════════════════════════════════════════════
@@ -592,6 +609,11 @@ int main( int argc, char* argv[] )
     if(editorSystem){
         editorSystem->shutdown();
         delete editorSystem;
+    }
+    if(editorController){
+        editorController->unsubscribe();
+        delete editorController;
+        editorController = nullptr;
     }
     // Close OpenGL window and terminate GLFW
     glfwTerminate();

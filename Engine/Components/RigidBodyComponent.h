@@ -47,6 +47,15 @@ struct RigidBodyComponent {
             ImGui::DragFloat("Mass", &mass, 0.1f, 0.0f, 1000.0f);
         }
     }
+
+    json toJson(){
+        nlohmann::json j;
+        j["mass"] = mass;
+        j["gravity"] = {gravity.x, gravity.y, gravity.z};
+        j["friction"] = friction;
+        j["bounce"] = bounce;
+        return j;
+    }
 };
 
 #endif // RIGIDBODY_COMPONENT_H

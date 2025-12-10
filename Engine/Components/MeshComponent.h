@@ -633,5 +633,27 @@ struct MeshComponent {
 
         }
     }
+
+    json toJson() const {
+        json j;
+        j["type"] = (type == PrimitiveType::PLANE || type == PrimitiveType::CUBE || type == PrimitiveType::SPHERE || type == PrimitiveType::CYLINDER) ? "primitive" : "file";
+        if (type == PrimitiveType::PLANE) {
+            j["mesh_type"] = "PLANE";
+        } else if (type == PrimitiveType::CUBE) {
+            j["mesh_type"] = "CUBE";
+        } else if (type == PrimitiveType::SPHERE) {
+            j["mesh_type"] = "SPHERE";
+        } else if (type == PrimitiveType::CYLINDER) {
+            j["mesh_type"] = "CYLINDER";
+        } else if (type == PrimitiveType::MESH) {
+            j["mesh_type"] = "MESH";
+        }
+        j["path"] = meshFilePath;
+        j["width"] = width;
+        j["height"] = height;
+        j["subdivisions"] = subdivisions;
+        j["normal"] = { normal.x, normal.y, normal.z };
+        return j;
+    }
 };
 #endif // MESH_COMPONENT_H

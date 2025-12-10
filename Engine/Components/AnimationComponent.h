@@ -510,6 +510,74 @@ struct AnimationComponent {
         if (boneIDVBO != 0) glDeleteBuffers(1, &boneIDVBO);
         if (boneWeightVBO != 0) glDeleteBuffers(1, &boneWeightVBO);
     }
+
+
+    void renderEditor() {
+        if (ImGui::CollapsingHeader("Animation Component")) {
+            ImGui::Text("Is Playing: %s", isPlaying ? "Yes" : "No");
+            ImGui::Text("Animation Speed: %.2f", animationSpeed);
+            ImGui::Text("Loop: %s", loop ? "Yes" : "No");
+            ImGui::Text("Current Animation: %d", currentAnimation);
+            ImGui::Text("Current Clip: %d", currentClip);
+            ImGui::Separator();
+
+            ImGui::Text("Clips:");
+            for (size_t i = 0; i < clips.size(); ++i) {
+                ImGui::PushID((int)i);
+                ImGui::Separator();
+                char nameBuf[128];
+                strncpy(nameBuf, clips[i].name.c_str(), sizeof(nameBuf));
+                if (ImGui::InputText("Name", nameBuf, sizeof(nameBuf))) {
+                    clips[i].name = std::string(nameBuf);
+                }
+                ImGui::InputInt("Start Frame", &clips[i].start_frame);
+                ImGui::InputInt("End Frame", &clips[i].end_frame);
+
+                if (ImGui::Button("Supprimer ce clip")) {
+                    clips.erase(clips.begin() + i);
+                    ImGui::PopID();
+                    break;
+                }
+                ImGui::PopID();
+            }
+
+            if (ImGui::Button("Ajouter un clip")) {
+                AnimationClip newClip;
+                newClip.name = "NewClip";
+                newClip.start_frame = 0;
+                newClip.end_frame = 0;
+                newClip.duration = 0.0f;
+                newClip.fbxPath = "";
+                newClip.animationIndex = 0;
+                clips.push_back(newClip);
+            }
+        }
+    }
+
+    json toJson() {
+        nlohmann::json animData;
+        animData["current_animation"] = currentAnimation;
+        animData["current_clip"] = currentClip;
+        animData["is_playing"] = isPlaying;
+        animData["speed"] = animationSpeed;
+        animData["loop"] = loop;
+
+        nlohmann::json clipsJson = nlohmann::json::array();
+        for (const auto& clip : clips) {
+            nlohmann::json clipJson;
+            clipJson["name"] = clip.name;
+            clipJson["start_frame"] = clip.start_frame;
+            clipJson["end_frame"] = clip.end_frame;
+            if (!clip.fbxPath.empty()) {
+                clipJson["fbx_path"] = clip.fbxPath.substr(gameFolder.length() + 1); // relative path
+                clipJson["animation_index"] = clip.animationIndex;
+            }
+            clipsJson.push_back(clipJson);
+        }
+        animData["clips"] = clipsJson;
+
+        return animData;
+    }
 };
 
 #endif // ANIMATION_COMPONENT_H
