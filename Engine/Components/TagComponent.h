@@ -13,7 +13,6 @@ struct TagComponent {
     }
 
     void renderEditor(){
-        if (ImGui::CollapsingHeader("Tag Component", ImGuiTreeNodeFlags_DefaultOpen)) {
             char tagBuffer[256];
             strncpy(tagBuffer, tag.c_str(), sizeof(tagBuffer));
             tagBuffer[sizeof(tagBuffer) - 1] = '\0';
@@ -21,7 +20,6 @@ struct TagComponent {
             if (ImGui::InputText("Tag", tagBuffer, sizeof(tagBuffer))) {
                 tag = std::string(tagBuffer);
             }
-        }
     }
 
     json toJson(){

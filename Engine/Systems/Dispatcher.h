@@ -57,9 +57,7 @@ class Dispatcher
             std::vector<SubscribersID> toRemove;
             for (const auto& subscriber : subscribers) {
                 try {
-                    std::cout << "Dispatcher: Notifying subscriber ID " << subscriber.id << std::endl;
                     bool handled = subscriber.callback(event);
-                    std::cout << "Dispatcher: Subscriber ID " << subscriber.id << " handled event: " << (handled ? "yes" : "no") << std::endl;
                 } catch (const std::exception& e) {
                     std::cerr << "Exception in subscriber ID " << subscriber.id << ": " << e.what() << std::endl;
                 } catch (...) {

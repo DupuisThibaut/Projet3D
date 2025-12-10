@@ -17,8 +17,10 @@ struct MyAudioComponent {
     bool loop = false;
     bool playOnStart = false;
     bool isPlaying = false;
+    std::string GameFolder;
 
     void loadFromFile(const nlohmann::json& entityData, uint32_t entityId, const std::string& gameFolder) {
+        GameFolder = gameFolder;
         if(entityData["entities"][entityId]["audio"].contains("type")){
             std::string typeStr = entityData["entities"][entityId]["audio"]["type"].get<std::string>();
             // lowercase for robust comparison
@@ -40,7 +42,6 @@ struct MyAudioComponent {
     }
 
     void renderEditor() {
-        if(ImGui::CollapsingHeader("Audio Component", ImGuiTreeNodeFlags_DefaultOpen)) {
             ImGui::SliderFloat("Volume", &volume, 0.0f, 1.0f);
             ImGui::Checkbox("Loop", &loop);
             ImGui::Checkbox("Play on Start", &playOnStart);
@@ -76,7 +77,6 @@ struct MyAudioComponent {
             if (ImGui::Combo("Audio Type", &currentType, audioTypes, IM_ARRAYSIZE(audioTypes))) {
                 type = static_cast<AudioType>(currentType);
             }
-        }
     }
 
     json toJson(){
@@ -95,7 +95,15 @@ struct MyAudioComponent {
                 j["type"] = "NONE";
                 break;
         }
-        j["path"] = audioFilePath;
+        std::string relativePath = audioFilePath;
+        size_t pos = audioFilePath.find(GameFolder + "/");
+        if (pos != std::string::npos) {
+            relativePath = audioFilePath.substr(pos + GameFolder.length() + 1);
+        }
+        else {
+            relativePath = audioFilePath; // keep as is if not under GameFolder
+        }
+        j["path"] = relativePath;
         j["volume"] = volume;
         j["loop"] = loop;
         j["play_on_start"] = playOnStart;

@@ -569,7 +569,7 @@ int main( int argc, char* argv[] )
                 editorSystem->processFontReload();
             }
             editorSystem->beginFrame();
-            editorSystem->renderMenuBar();
+            editorSystem->renderMenuBar(sceneManager);
             editorSystem->renderHierarchy();
             editorSystem->renderInspector();
             editorSystem->renderStats(deltaTime);

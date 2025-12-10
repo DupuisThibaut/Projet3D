@@ -65,12 +65,10 @@ struct CameraComponent {
     }
 
     void renderEditor(){
-        if(ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
             ImGui::Checkbox("Active", &isActive);
             ImGui::DragFloat("FOV", &fov, 0.1f, 1.0f, 179.0f);
             ImGui::DragFloat("Near Plane", &nearPlane, 0.01f, 0.01f, 1000.0f);
             ImGui::DragFloat("Far Plane", &farPlane, 1.0f, 1.0f, 10000.0f);
-        }
     }
 
     json toJson() const {

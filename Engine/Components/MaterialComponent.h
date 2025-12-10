@@ -22,6 +22,7 @@ struct MaterialComponent {
     // Pour le cas des textures
     GLuint texture = 0;
     std::string texturePath;
+    std::string GameFolder;
 
     // Pour le cas des couleurs
     glm::vec3 color = glm::vec3(1.0f);
@@ -124,6 +125,7 @@ struct MaterialComponent {
     }
 
     void loadFromFile(const nlohmann::json& entityData, uint32_t entityId, const std::string& gameFolder) {
+        GameFolder = gameFolder;
         bool isFBX = false;
         std::string meshPath;
         if(entityData.contains("mesh") && entityData["mesh"].contains("type") && entityData["mesh"]["type"] == "file") {
@@ -189,7 +191,6 @@ struct MaterialComponent {
     }
 
     void renderEditor(){
-        if(ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen)) {
             const char* materialTypes[] = { "None", "Texture", "Color" };
             int currentType = static_cast<int>(type);
             if (ImGui::Combo("Material Type", &currentType, materialTypes, IM_ARRAYSIZE(materialTypes))) {
@@ -343,14 +344,20 @@ struct MaterialComponent {
                     if (isRefraction) isReflection = false;
                 }
             }
-        }
     }
 
     json toJson() {
         nlohmann::json j;
+        std::string relativePath = texturePath;
+        size_t pos = texturePath.find(GameFolder+"/");
+        if (pos != std::string::npos) {
+            relativePath = texturePath.substr(pos + GameFolder.length() + 1);
+        } else {
+            relativePath = texturePath;
+        }
         if (type == Type::Texture) {
             j["type"] = "texture";
-            j["path"] = texturePath;
+            j["path"] = relativePath;
         } else if (type == Type::Color) {
             j["type"] = "color";
             j["color"] = { color.r, color.g, color.b };
@@ -358,7 +365,7 @@ struct MaterialComponent {
             j["diffuse"] = { diffuse_material.r, diffuse_material.g, diffuse_material.b };
             j["specular"] = { specular_material.r, specular_material.g, specular_material.b };
             j["shininess"] = shininess;
-            j["path"] = texturePath;
+            j["path"] = relativePath;
             if(particularite == 1){
                 j["reflection"] = true;
             }

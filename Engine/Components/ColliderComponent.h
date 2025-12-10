@@ -48,10 +48,9 @@ struct ColliderComponent {
         if(entityData["collider"].contains("isTrigger")) isTrigger = entityData["collider"]["isTrigger"];
         if(colliderType == "SPHERE"){
             type = ColliderType::SPHERE;
-            glm::vec3 center = entityManager->GetComponent<TransformComponent>(index).position;
-            float radius = entityData["collider"]["radius"];
-            this->radius = radius;
-            collider = std::make_unique<SphereCollider>(center, radius);
+            auto transform = entityManager->GetComponent<TransformComponent>(index);
+            glm::vec3 center = transform.position;
+            collider = std::make_unique<SphereCollider>(center, std::max({transform.scale.x, transform.scale.y, transform.scale.z}));
         }
         else if(colliderType == "AABB"){
             type = ColliderType::AABB;
@@ -168,7 +167,6 @@ struct ColliderComponent {
     }
 
     void renderEditor(){
-        if(ImGui::CollapsingHeader("Collider", ImGuiTreeNodeFlags_DefaultOpen)) {
             ImGui::Text("Collider Component");
             ImGui::Separator();
             const char* colliderTypes[] = { "AABB", "OBB", "SPHERE", "PLANE", "MESH", "NONE" };
@@ -177,7 +175,6 @@ struct ColliderComponent {
                 type = static_cast<ColliderType>(currentType);
             }
             ImGui::Checkbox("Is Trigger", &isTrigger);
-        }
     }
 
     json toJson() {
@@ -203,8 +200,6 @@ struct ColliderComponent {
                 break;
         }
         j["isTrigger"] = isTrigger;
-        j["radius"] = radius; // Placeholder
-        // Note: Additional collider-specific data should be added here
         return j;
     }
 

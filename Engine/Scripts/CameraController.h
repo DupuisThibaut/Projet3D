@@ -15,7 +15,6 @@ struct CameraController : public ScriptComponent {
 
     CameraController(TransformComponent* t, CameraComponent* c, Dispatcher* d) : transform(t), camera(c), dispatcher(d) {
         subscriptionID = dispatcher->subscribe([this](const InputEvent& event) {
-            std::cout << "CameraController lambda called\n";
             this->onInput(event);
             return false;
         });
@@ -23,7 +22,6 @@ struct CameraController : public ScriptComponent {
     }
 
     void onInput(const InputEvent& event) {
-        std::cout << "CameraController: onInput called\n";
         glm::vec3 forward = glm::normalize(camera->target);
         glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0,1,0)));
         double scrollY = event.scroll;

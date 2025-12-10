@@ -208,7 +208,26 @@ public:
     }
 
     void renderContentBrowser() {
-    if(!showContentBrowser) return;
+        if(!showContentBrowser) return;
+        if (currentTheme == 0) { // Dark
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.10f, 0.10f, 0.10f, 1.00f));
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.00f, 1.00f, 1.00f, 1.00f));
+        } else if (currentTheme == 1) { // Light
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.95f, 0.95f, 0.95f, 1.00f));
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.10f, 0.10f, 0.10f, 1.00f));
+        } else if (currentTheme == 2) { // Unity
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.20f, 0.20f, 0.20f, 1.00f));
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.90f, 0.90f, 0.90f, 1.00f));
+        } else if (currentTheme == 3) { // Unreal
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.06f, 0.06f, 0.06f, 1.00f));
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.00f, 0.50f, 0.00f, 1.00f));
+        } else if (currentTheme == 4) { // Dracula
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.16f, 0.16f, 0.21f, 1.00f));
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.95f, 0.95f, 0.95f, 1.00f));
+        } else if (currentTheme == 5) { // Nord
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.18f, 0.20f, 0.25f, 1.00f));
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.92f, 0.93f, 0.95f, 1.00f));
+        }
         float browserHeight = (windowHeight - menuBarHeight)*0.2f;;
         float hierarchyWidthPx = hierarchyWidth * windowWidth;
         float inspectorWidthPx = inspectorWidth * windowWidth;
@@ -330,6 +349,7 @@ public:
             ImGui::TextColored(ImVec4(1, 0, 0, 1), "Failed to open directory: %s", currentBrowserPath.c_str());
         }
         ImGui::End();
+        ImGui::PopStyleColor(2);
     }
     void renderInspector(){
         if (!showInspector) return;
@@ -347,77 +367,305 @@ public:
             // Transform
             if (entityManager->HasComponent<TransformComponent>(selectedEntityId)) {
                 auto& transform = entityManager->GetComponent<TransformComponent>(selectedEntityId);
-                transform.renderEditor();
+                ImGui::PushID("TransformComponent");
+                bool open = ImGui::CollapsingHeader("Transform component", ImGuiTreeNodeFlags_DefaultOpen);
+
+                // Attache le popup contextuel au header
+                if (ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight)) {
+                    if (ImGui::MenuItem("Supprimer ce composant")) {
+                        entityManager->RemoveComponent<TransformComponent>(selectedEntityId);
+                        ImGui::EndPopup();
+                        ImGui::PopID();
+                        return;
+                    }
+                    ImGui::EndPopup();
+                }
+
+                if (open) {
+                    transform.renderEditor();
+                }
+                ImGui::PopID();
+                ImGui::Separator();
             }
             // Camera
             if (entityManager->HasComponent<CameraComponent>(selectedEntityId)) {
                 auto& camera = entityManager->GetComponent<CameraComponent>(selectedEntityId);
-                camera.renderEditor();
+                ImGui::PushID("CameraComponent");
+                bool open = ImGui::CollapsingHeader("Camera component", ImGuiTreeNodeFlags_DefaultOpen);
+                if( ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight)) {
+                    if (ImGui::MenuItem("Supprimer ce composant")) {
+                        entityManager->RemoveComponent<CameraComponent>(selectedEntityId);
+                        ImGui::EndPopup();
+                        ImGui::PopID();
+                        return;
+                    }
+                    ImGui::EndPopup();
+                }
+                if (open) {
+                    camera.renderEditor();
+                }
+                ImGui::PopID();
+                ImGui::Separator();
             }
             // Light
             if (entityManager->HasComponent<LightComponent>(selectedEntityId)) {
                 auto& light = entityManager->GetComponent<LightComponent>(selectedEntityId);
-                light.renderEditor();
+                ImGui::PushID("LightComponent");
+                bool open = ImGui::CollapsingHeader("Light component", ImGuiTreeNodeFlags_DefaultOpen);
+                if( ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight)) {
+                    if (ImGui::MenuItem("Supprimer ce composant")) {
+                        entityManager->RemoveComponent<LightComponent>(selectedEntityId);
+                        ImGui::EndPopup();
+                        ImGui::PopID();
+                        return;
+                    }
+                    ImGui::EndPopup();
+                }
+                if (open) {
+                    light.renderEditor();
+                }
+                ImGui::PopID();
+                ImGui::Separator();
             }
             // Material
             if (entityManager->HasComponent<MaterialComponent>(selectedEntityId)) {
                 auto& material = entityManager->GetComponent<MaterialComponent>(selectedEntityId);
-                material.renderEditor();
+                ImGui::PushID("MaterialComponent");
+                bool open = ImGui::CollapsingHeader("Material component", ImGuiTreeNodeFlags_DefaultOpen);
+                if( ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight)) {
+                    if (ImGui::MenuItem("Supprimer ce composant")) {
+                        entityManager->RemoveComponent<MaterialComponent>(selectedEntityId);
+                        ImGui::EndPopup();
+                        ImGui::PopID();
+                        return;
+                    }
+                    ImGui::EndPopup();
+                }
+                if (open) {
+                    material.renderEditor();
+                }
+                ImGui::PopID();
+                ImGui::Separator();
             }
             // Mesh
             if (entityManager->HasComponent<MeshComponent>(selectedEntityId)) {
                 auto& mesh = entityManager->GetComponent<MeshComponent>(selectedEntityId);
-                mesh.renderEditor();
+                ImGui::PushID("MeshComponent");
+                bool open = ImGui::CollapsingHeader("Mesh component", ImGuiTreeNodeFlags_DefaultOpen);
+                if( ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight)) {
+                    if (ImGui::MenuItem("Supprimer ce composant")) {
+                        entityManager->RemoveComponent<MeshComponent>(selectedEntityId);
+                        ImGui::EndPopup();
+                        ImGui::PopID();
+                        return;
+                    }
+                    ImGui::EndPopup();
+                }
+                if (open) {
+                    mesh.renderEditor();
+                }
+                ImGui::PopID();
+                ImGui::Separator();
             }
             // Audio
             if (entityManager->HasComponent<MyAudioComponent>(selectedEntityId)) {
                 auto& audio = entityManager->GetComponent<MyAudioComponent>(selectedEntityId);
-                audio.renderEditor();
+                ImGui::PushID("MyAudioComponent");
+                bool open = ImGui::CollapsingHeader("Audio component", ImGuiTreeNodeFlags_DefaultOpen);
+                if( ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight)) {
+                    if (ImGui::MenuItem("Supprimer ce composant")) {
+                        entityManager->RemoveComponent<MyAudioComponent>(selectedEntityId);
+                        ImGui::EndPopup();
+                        ImGui::PopID();
+                        return;
+                    }
+                    ImGui::EndPopup();
+                }
+                if (open) {
+                    audio.renderEditor();
+                }
+                ImGui::PopID();
+                ImGui::Separator();
             }
             // Script
             if (entityManager->HasComponent<LuaScriptComponent>(selectedEntityId)) {
                 auto& script = entityManager->GetComponent<LuaScriptComponent>(selectedEntityId);
-                script.renderEditor();
+                ImGui::PushID("LuaScriptComponent");
+                bool open = ImGui::CollapsingHeader("Script component", ImGuiTreeNodeFlags_DefaultOpen);
+                if( ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight)) {
+                    if (ImGui::MenuItem("Supprimer ce composant")) {
+                        entityManager->RemoveComponent<LuaScriptComponent>(selectedEntityId);
+                        ImGui::EndPopup();
+                        ImGui::PopID();
+                        return;
+                    }
+                    ImGui::EndPopup();
+                }
+                if (open) {
+                    script.renderEditor();
+                }
+                ImGui::PopID();
+                ImGui::Separator();
             }
             // Tag
             if (entityManager->HasComponent<TagComponent>(selectedEntityId)) {
                 auto& tagComponent = entityManager->GetComponent<TagComponent>(selectedEntityId);
-                tagComponent.renderEditor();
+                ImGui::PushID("TagComponent");
+                bool open = ImGui::CollapsingHeader("Tag component", ImGuiTreeNodeFlags_DefaultOpen);
+                if( ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight)) {
+                    if (ImGui::MenuItem("Supprimer ce composant")) {
+                        entityManager->RemoveComponent<TagComponent>(selectedEntityId);
+                        ImGui::EndPopup();
+                        ImGui::PopID();
+                        return;
+                    }
+                    ImGui::EndPopup();
+                }
+                if (open) {
+                    tagComponent.renderEditor();
+                }
+                ImGui::PopID();
+                ImGui::Separator();
             }
             // Layer
             if (entityManager->HasComponent<LayerComponent>(selectedEntityId)) {
                 auto& layer = entityManager->GetComponent<LayerComponent>(selectedEntityId);
-                layer.renderEditor();
+                ImGui::PushID("LayerComponent");
+                bool open = ImGui::CollapsingHeader("Layer component", ImGuiTreeNodeFlags_DefaultOpen);
+                if( ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight)) {
+                    if (ImGui::MenuItem("Supprimer ce composant")) {
+                        entityManager->RemoveComponent<LayerComponent>(selectedEntityId);
+                        ImGui::EndPopup();
+                        ImGui::PopID();
+                        return;
+                    }
+                    ImGui::EndPopup();
+                }
+                if (open) {
+                    layer.renderEditor();
+                }
+                ImGui::PopID();
+                ImGui::Separator();
             }
             //Collider
             if( entityManager->HasComponent<ColliderComponent>(selectedEntityId)) {
                 auto& collider = entityManager->GetComponent<ColliderComponent>(selectedEntityId);
-                collider.renderEditor();
+                ImGui::PushID("ColliderComponent");
+                bool open = ImGui::CollapsingHeader("Collider component", ImGuiTreeNodeFlags_DefaultOpen);
+                if( ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight)) {
+                    if (ImGui::MenuItem("Supprimer ce composant")) {
+                        entityManager->RemoveComponent<ColliderComponent>(selectedEntityId);
+                        ImGui::EndPopup();
+                        ImGui::PopID();
+                        return;
+                    }
+                    ImGui::EndPopup();
+                }
+                if (open) {
+                    collider.renderEditor();
+                }
+                ImGui::PopID();
+                ImGui::Separator();
             }
             // Controller
             if( entityManager->HasComponent<ControllerComponent>(selectedEntityId)) {
                 auto& controller = entityManager->GetComponent<ControllerComponent>(selectedEntityId);
-                controller.renderEditor();
+                ImGui::PushID("ControllerComponent");
+                bool open = ImGui::CollapsingHeader("Controller component", ImGuiTreeNodeFlags_DefaultOpen);
+                if( ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight)) {
+                    if (ImGui::MenuItem("Supprimer ce composant")) {
+                        entityManager->RemoveComponent<ControllerComponent>(selectedEntityId);
+                        ImGui::EndPopup();
+                        ImGui::PopID();
+                        return;
+                    }
+                    ImGui::EndPopup();
+                }
+                if (open) {
+                    controller.renderEditor();
+                }
+                ImGui::PopID();
+                ImGui::Separator();
             }
             // Particule
             if( entityManager->HasComponent<ParticuleComponent>(selectedEntityId)) {
                 auto& particule = entityManager->GetComponent<ParticuleComponent>(selectedEntityId);
-                particule.renderEditor();
+                ImGui::PushID("ParticuleComponent");
+                bool open = ImGui::CollapsingHeader("Particule component", ImGuiTreeNodeFlags_DefaultOpen);
+                if( ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight)) {
+                    if (ImGui::MenuItem("Supprimer ce composant")) {
+                        entityManager->RemoveComponent<ParticuleComponent>(selectedEntityId);
+                        ImGui::EndPopup();
+                        ImGui::PopID();
+                        return;
+                    }
+                    ImGui::EndPopup();
+                }
+                if (open) {
+                    particule.renderEditor();
+                }
+                ImGui::PopID();
+                ImGui::Separator();
             }
             //RigidBody
             if( entityManager->HasComponent<RigidBodyComponent>(selectedEntityId)) {
                 auto& rigidbody = entityManager->GetComponent<RigidBodyComponent>(selectedEntityId);
-                rigidbody.renderEditor();
+                ImGui::PushID("RigidBodyComponent");
+                bool open = ImGui::CollapsingHeader("RigidBody component", ImGuiTreeNodeFlags_DefaultOpen);
+                if( ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight)) {
+                    if (ImGui::MenuItem("Supprimer ce composant")) {
+                        entityManager->RemoveComponent<RigidBodyComponent>(selectedEntityId);
+                        ImGui::EndPopup();
+                        ImGui::PopID();
+                        return;
+                    }
+                    ImGui::EndPopup();
+                }
+                if (open) {
+                    rigidbody.renderEditor();
+                }
+                ImGui::PopID();
+                ImGui::Separator();
             }
             // Texture2D
             if (entityManager->HasComponent<TextureComponent>(selectedEntityId)) {
                 auto& texture = entityManager->GetComponent<TextureComponent>(selectedEntityId);
-                texture.renderEditor();
+                ImGui::PushID("TextureComponent");
+                bool open = ImGui::CollapsingHeader("Texture component", ImGuiTreeNodeFlags_DefaultOpen);
+                if( ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight)) {
+                    if (ImGui::MenuItem("Supprimer ce composant")) {
+                        entityManager->RemoveComponent<TextureComponent>(selectedEntityId);
+                        ImGui::EndPopup();
+                        ImGui::PopID();
+                        return;
+                    }
+                    ImGui::EndPopup();
+                }
+                if (open) {
+                    texture.renderEditor();
+                }
+                ImGui::PopID();
+                ImGui::Separator();
             }
             // Animation
             if (entityManager->HasComponent<AnimationComponent>(selectedEntityId)) {
                 auto& animation = entityManager->GetComponent<AnimationComponent>(selectedEntityId);
-                animation.renderEditor();
+                ImGui::PushID("AnimationComponent");
+                bool open = ImGui::CollapsingHeader("Animation component", ImGuiTreeNodeFlags_DefaultOpen);
+                if( ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight)) {
+                    if (ImGui::MenuItem("Supprimer ce composant")) {
+                        entityManager->RemoveComponent<AnimationComponent>(selectedEntityId);
+                        ImGui::EndPopup();
+                        ImGui::PopID();
+                        return;
+                    }
+                    ImGui::EndPopup();
+                }
+                if (open) {
+                    animation.renderEditor();
+                }
+                ImGui::PopID();
+                ImGui::Separator();
             }
         } else {
             ImGui::TextDisabled("No entity selected");
@@ -542,15 +790,33 @@ public:
         }
         ImGui::End();
     }
-    void renderMenuBar(){
+
+    bool openNewScenePopup = false;
+    bool openOpenScenePopup = false;
+    void renderMenuBar(SceneManager& sceneManager){
+        if (openNewScenePopup) {
+            ImGui::OpenPopup("NewScenePopup");
+            openNewScenePopup = false;
+        }
+        if (openOpenScenePopup) {
+            ImGui::OpenPopup("OpenScenePopup");
+            openOpenScenePopup = false;
+        }
+
         if (!showMenuBar){
             menuBarHeight = 0.0f;
             return;
         }
         if (ImGui::BeginMainMenuBar()) {
             if(ImGui::BeginMenu("File")){
-                if (ImGui::MenuItem("Save Scene", "CTRL+S")) {
+                if (ImGui::MenuItem("Save Scene")) {
                     saveScene();
+                }
+                if (ImGui::MenuItem("New Scene")) {
+                    openNewScenePopup = true;
+                }
+                if (ImGui::MenuItem("Open Scene...")) {
+                    openOpenScenePopup = true;
                 }
                 ImGui::Separator();
                 if (ImGui::MenuItem("Exit")) {
@@ -629,6 +895,46 @@ public:
             }
             menuBarHeight = ImGui::GetWindowSize().y;
             ImGui::EndMainMenuBar();
+        }
+
+        // === POPUPS MODALES (en dehors du menu) ===
+        if (ImGui::BeginPopupModal("NewScenePopup", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+            static char newSceneName[128] = "nouvelle_scene.json";
+            ImGui::InputText("Scene Name", newSceneName, sizeof(newSceneName));
+            if (ImGui::Button("Create")) {
+                entities->clear();
+                *entityManager = EntityManager();
+                Entity newEntity;
+                newEntity.id = entityManager->CreateEntity();
+                entityManager->AddComponent<TransformComponent>(newEntity.id, TransformComponent());
+                entities->push_back(newEntity);
+                selectedEntityId = newEntity.id;
+                scenePath = GameFolder + "/" + std::string(newSceneName);
+                saveScene();
+                sceneManager.changeScene(scenePath);
+                ImGui::CloseCurrentPopup();
+                std::cout << "Nouvelle scène créée : " << scenePath << std::endl;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel")) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+
+        if (ImGui::BeginPopupModal("OpenScenePopup", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+            static char pathBuffer[256] = "";
+            ImGui::InputText("Scene Path", pathBuffer, sizeof(pathBuffer));
+            if (ImGui::Button("Open")) {
+                scenePath = std::string(pathBuffer);
+                sceneManager.changeScene(scenePath);
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel")) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
         }
     }
     void renderStats(float deltaTime){

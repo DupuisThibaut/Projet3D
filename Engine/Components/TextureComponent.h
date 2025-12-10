@@ -59,7 +59,6 @@ struct TextureComponent {
     }
 
     void renderEditor(){
-        if(ImGui::CollapsingHeader("Texture Component")){
             ImGui::InputText("Path", &path[0], 256);
             ImGui::InputFloat("Position X", &positionX);
             ImGui::InputFloat("Position Y", &positionY);
@@ -69,7 +68,6 @@ struct TextureComponent {
             ImGui::InputText("Texte", &texte[0], 256);
             ImGui::InputInt("Taille", &taille);
             ImGui::InputText("Police", &police[0], 256);
-        }
     }
 
     json toJson(){

@@ -1,61 +1,129 @@
 {
   "entities": [
     {
-      "id": 0,
-      "transform": {
-        "position": [0, -9.5, 0.0],
-        "rotation": [0.0, 0.0, 0.0],
-        "scale": [10.0, 10.0, 10.0],
-        "parent": -1,
-        "children": []
-      },
-      "tag": "Ground",
-      "mesh": {
-        "type": "primitive",
-        "mesh_type": "PLANE",
-        "subdivisions": 100,
-        "normal": [0.0, 1.0, 0.0],
-        "height": 2.0,
-        "width": 0.4
-      },
-      "material":{
-        "type":"color",
-        "color":[1.0, 1.0, 1.0],
-        "ambient":[0.0, 0.0, 0.0],
-        "diffuse":[1.0, 1.0, 1.0],
-        "specular":[1.0, 1.0, 1.0],
-        "shininess":16.0,
-        "path":"./texture/grass.png"
-      },
       "audio": {
-        "type": "SPATIAL",
-        "path": "audios/SoundTrack/Super Mario 64 - Main Theme Music - Bob-Omb Battlefield.wav",
-        "volume": 1.0,
-        "play_on_start": true,
+        "is_playing": true,
         "loop": true,
-        "isPlaying": true
+        "path": "audios/SoundTrack/Super Mario 64 - Inside Peachs Castle Music.wav",
+        "play_on_start": true,
+        "type": "SPATIAL",
+        "volume": 1.0
       },
       "collider": {
+        "isTrigger": false,
         "type": "PLANE"
+      },
+      "id": 0,
+      "material": {
+        "ambient": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "color": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "diffuse": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "path": "texture/grass.png",
+        "shininess": 16.0,
+        "specular": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "type": "color"
+      },
+      "mesh": {
+        "height": 1.0,
+        "mesh_type": "PLANE",
+        "normal": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "path": "",
+        "subdivisions": 100.0,
+        "type": "primitive",
+        "width": 1.0
+      },
+      "tag": "Ground",
+      "transform": {
+        "children": [],
+        "position": [
+          0.0,
+          -9.5,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          10.0,
+          10.0,
+          10.0
+        ]
       }
     },
     {
+      "animation": {
+        "clips": [
+          {
+            "end_frame": 57,
+            "name": "jump",
+            "start_frame": 0
+          },
+          {
+            "end_frame": 96,
+            "name": "walk",
+            "start_frame": 65
+          },
+          {
+            "end_frame": 355,
+            "name": "idle",
+            "start_frame": 105
+          }
+        ],
+        "current_animation": 0,
+        "current_clip": 2,
+        "is_playing": true,
+        "loop": true,
+        "speed": 1.0
+      },
+      "collider": {
+        "isTrigger": false,
+        "type": "MESH"
+      },
       "id": 1,
       "material": {
-        "path": "./Spring Trap/Textures/char_tex_springtrap_basecolor.png",
+        "path": "Spring Trap/Textures/char_tex_springtrap_basecolor.png",
         "type": "texture"
       },
       "mesh": {
+        "height": 1.0,
+        "mesh_type": "MESH",
+        "normal": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "path": "Spring Trap/jump_walk_idle.fbx",
+        "subdivisions": 100.0,
         "type": "file",
-        "path": "Spring Trap/jump_walk_idle.fbx"
+        "width": 1.0
       },
       "script": {
-        "path": "/Scripts/ChangeColor.lua",
-        "type": "Lua"
+        "path": "Scripts/ChangeColor.lua"
       },
       "transform": {
         "children": [],
-        "parent": 4294967295,
         "position": [
           0.0,
           -9.0,
@@ -67,147 +135,234 @@
           0.0
         ],
         "scale": [
-          0.001,
-          0.001,
-          0.001
-        ]
-      },
-      "collider": {
-        "type": "MESH",
-        "isTrigger": false
-      },
-      "animation": {
-        "is_playing": true,
-        "clips":[
-            {"name": "jump","start_frame":0,"end_frame":57},
-            {"name": "walk","start_frame":65,"end_frame":96},
-            {"name": "idle","start_frame":105,"end_frame":355}
+          0.0010000000474974513,
+          0.0010000000474974513,
+          0.0010000000474974513
         ]
       }
     },
     {
-      "id" : 2,
       "camera": {
-        "idCam": 0,
-        "target": [0.0, 0.0, 0.0],
-        "up": [0.0, 1.0, 0.0],
+        "far_plane": 100.0,
         "fov": 45.0,
-        "near_plane": 0.1,
-        "far_plane": 100.0
-      },
-      "transform": {
-        "position": [0.0, -8.0, 5.0],
-        "rotation": [0.0, 0.0, 0.0],
-        "scale": [1.0, 1.0, 1.0],
-        "parent": -1,
-        "children": []
+        "idCam": 0,
+        "near_plane": 0.10000000149011612,
+        "target": [
+          -4.371138828673793e-08,
+          0.0,
+          -1.0
+        ],
+        "up": [
+          0.0,
+          1.0,
+          0.0
+        ]
       },
       "controller": {
-        "speed": 2.5
+        "sensitivity": 0.10000000149011612,
+        "speed": 2.5,
+        "zoom_speed": 0.5
       },
+      "id": 2,
       "script": {
-        "type": "Lua",
-        "path": "/Scripts/MoveCam.lua"
+        "path": "Scripts/MoveCam.lua"
+      },
+      "transform": {
+        "children": [],
+        "position": [
+          0.0,
+          -8.0,
+          5.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
       }
     },
     {
       "id": 3,
       "light": {
-        "intensity": 0.7
+        "intensity": 0.6000000238418579
       },
-      "transform": {
-        "position": [0.0, -12.0, 0.0],
-        "rotation": [0.0, 0.0, 0.0],
-        "scale": [1.0, 1.0, 1.0],
-        "parent": -1,
-        "children": []
-      },
-      "material":{
-        "type":"color",
-        "color":[1.0, 1.0, 1.0],
-        "ambient":[1.0, 0.0, 0.0],
-        "diffuse":[1.0, 0.0, 0.0],
-        "specular":[1.0, 0.0, 0.0],
-        "shininess":0.5
+      "material": {
+        "ambient": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "color": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "diffuse": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "path": "",
+        "shininess": 0.5,
+        "specular": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "type": "color"
       },
       "script": {
-        "type": "Lua",
-        "path": "/Scripts/SunCycle.lua"
+        "path": "Scripts/SunCycle.lua"
+      },
+      "transform": {
+        "children": [],
+        "position": [
+          0.0,
+          30.299999237060547,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
       }
     },
     {
+      "collider": {
+        "isTrigger": false,
+        "type": "SPHERE"
+      },
       "id": 4,
-      "transform": {
-      "position": [-2.5, -5.0, 0.0],
-      "rotation": [0.0, 0.0, 0.0],
-      "scale": [0.5, 0.5, 0.5],
-      "parent": -1,
-      "children": []
+      "material": {
+        "path": "texture/grass.png",
+        "type": "texture"
       },
       "mesh": {
-      "type": "primitive",
-      "mesh_type": "SPHERE",
-      "subdivisions": 100,
-      "normal": [0.0, 1.0, 0.0],
-      "height": 2.0,
-      "width": 0.4
+        "height": 1.0,
+        "mesh_type": "SPHERE",
+        "normal": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "path": "",
+        "subdivisions": 100.0,
+        "type": "primitive",
+        "width": 1.0
       },
-      "material":{
-      "type":"color",
-      "color":[0.9, 0.9, 1.0],
-      "ambient":[0.0, 0.0, 0.0],
-      "diffuse":[1.0, 1.0, 1.0],
-      "specular":[1.0, 1.0, 1.0],
-      "shininess":16.0, 
-      "path":"./texture/grass.png"
+      "rigidbody": {
+        "bounce": 0.699999988079071,
+        "friction": 0.9998999834060669,
+        "gravity": [
+          0.0,
+          -9.8100004196167,
+          0.0
+        ],
+        "mass": 1.0
       },
-      "collider": {
-        "type": "SPHERE",
-        "isTrigger": false,
-        "radius": 0.5
-      },
-      "rigidbody":{
-
+      "transform": {
+        "children": [],
+        "position": [
+          -2.5,
+          -5.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          0.7200000286102295,
+          0.7200000286102295,
+          0.7200000286102295
+        ]
       }
     },
     {
       "id": 5,
       "particule": {
-        "nombre":500,
-        "offset":[8.0, 0.5, 8.0],
-        "velocity":[0.0, -9.81, 0.0],
-        "ageMax":2.0,
-        "bouncing":0.1,
-        "texture":"./texture/nicolas_lutz.jpg"
+        "bouncing": 0.10000000149011612,
+        "nombre": 500,
+        "offset": [
+          8.0,
+          0.5,
+          8.0
+        ],
+        "path": "",
+        "texture": "texture/nicolas_lutz.jpg",
+        "velocity": [
+          0.0,
+          -9.8100004196167,
+          0.0
+        ]
       },
       "transform": {
-        "position": [0.0, -4.0, 0.0],
-        "rotation": [0.0, 0.0, 0.0],
-        "scale": [0.5, 0.5, 0.5],
-        "parent": -1,
-        "children": []
+        "children": [],
+        "position": [
+          0.0,
+          -4.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          0.5,
+          0.5,
+          0.5
+        ]
       }
     },
     {
       "id": 6,
       "particule": {
-        "nombre":50,
-        "path":"./texture/grass.png",
-        "offset":[0.25, 0.5, 0.25],
-        "velocity":[0.0, 5.0, 0.0],
-        "ageMax":0.8,
-        "rayon":0.1,
-        "bouncing":0.5, 
-        "texture":"./texture/2k_moon.jpg"
+        "bouncing": 0.5,
+        "nombre": 50,
+        "offset": [
+          0.25,
+          0.5,
+          0.25
+        ],
+        "path": "texture/grass.png",
+        "texture": "texture/2k_moon.jpg",
+        "velocity": [
+          0.0,
+          5.0,
+          0.0
+        ]
       },
       "transform": {
-        "position": [-5.0, -9.25, 0.0],
-        "rotation": [0.0, 0.0, 0.0],
-        "scale": [0.5, 0.5, 0.5],
-        "parent": -1,
-        "children": []
+        "children": [],
+        "position": [
+          -5.0,
+          -9.25,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          0.5,
+          0.5,
+          0.5
+        ]
       }
     }
   ]
 }
-

@@ -15,7 +15,6 @@ struct LayerComponent {
     }
 
     void renderEditor(){
-        if (ImGui::CollapsingHeader("Layer Component", ImGuiTreeNodeFlags_DefaultOpen)) {
             char layerNameBuffer[256];
             strncpy(layerNameBuffer, name.c_str(), sizeof(layerNameBuffer));
             layerNameBuffer[sizeof(layerNameBuffer) - 1] = '\0';
@@ -24,7 +23,6 @@ struct LayerComponent {
                 name = std::string(layerNameBuffer);
             }
             ImGui::InputInt("Layer ID", &id);
-        }
     }
 
     json toJson(){

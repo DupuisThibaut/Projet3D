@@ -25,13 +25,11 @@ struct ControllerComponent {
     }
 
     void renderEditor(){
-        if(ImGui::CollapsingHeader("Controller", ImGuiTreeNodeFlags_DefaultOpen)) {
             ImGui::Text("Controller Component");
             ImGui::Separator();
             ImGui::DragFloat("Move Speed", &moveSpeed, 0.1f);
             ImGui::DragFloat("Zoom Speed", &zoomSpeed, 0.01f);
             ImGui::DragFloat("Sensitivity", &sensitivity, 0.01f);
-        }
     }
 
     json toJson() {

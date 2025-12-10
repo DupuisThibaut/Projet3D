@@ -39,13 +39,11 @@ struct RigidBodyComponent {
     }
 
     void renderEditor(){
-        if(ImGui::CollapsingHeader("RigidBody Component")){
             ImGui::Text("RigidBody Component:");
             ImGui::DragFloat3("Gravity", &gravity[0], 0.1f);
             ImGui::DragFloat("Friction", &friction, 0.001f, 0.0f, 1.0f);
             ImGui::DragFloat("Bounce", &bounce, 0.01f, 0.0f, 1.0f);
             ImGui::DragFloat("Mass", &mass, 0.1f, 0.0f, 1000.0f);
-        }
     }
 
     json toJson(){

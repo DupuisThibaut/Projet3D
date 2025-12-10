@@ -56,10 +56,13 @@ struct MeshComponent {
     glm::vec3 m_bottom_left;
     float rayon;
 
+    std::string GameFolder;
+
     bool update=false;
     int nb=-1;
 
         void loadFromFile(const nlohmann::json& entityData, uint32_t entityId, const std::string& gameFolder, glm::vec3& position) {
+            GameFolder = gameFolder;
         if(entityData["entities"][entityId].contains("mesh")){
             if (entityData["entities"][entityId]["mesh"]["type"] == "primitive") {
                 if (entityData["entities"][entityId]["mesh"]["mesh_type"] == "PLANE") {
@@ -436,7 +439,6 @@ struct MeshComponent {
     }
 
     void renderEditor(){
-        if(ImGui::CollapsingHeader("Mesh Component", ImGuiTreeNodeFlags_DefaultOpen)) {
             bool needsRebuild = false;
             int meshTypeIdx = static_cast<int>(type);
             const char* meshTypes[] = { "PLANE", "CUBE", "SPHERE", "CYLINDER", "MESH" };
@@ -474,7 +476,6 @@ struct MeshComponent {
                     
                 case PrimitiveType::SPHERE:
                     ImGui::Text("Sphere Settings");
-                    needsRebuild |= ImGui::DragFloat("Radius", &rayon, 0.1f, 0.1f, 100.0f);
                     needsRebuild |= ImGui::DragFloat("Subdivisions", &subdivisions, 1.0f, 4.0f, 100.0f);
                     break;
                     
@@ -631,7 +632,6 @@ struct MeshComponent {
             ImGui::Text("Triangles: %zu", indices.size() / 3);
             ImGui::Text("VAO: %u", VAO);
 
-        }
     }
 
     json toJson() const {
@@ -648,7 +648,14 @@ struct MeshComponent {
         } else if (type == PrimitiveType::MESH) {
             j["mesh_type"] = "MESH";
         }
-        j["path"] = meshFilePath;
+        std::string relPath = meshFilePath;
+        size_t pos = meshFilePath.find(GameFolder + "/");
+        if (pos != std::string::npos) {
+            relPath = meshFilePath.substr(pos + GameFolder.length() + 1);
+        } else {
+            relPath = meshFilePath;
+        }
+        j["path"] = relPath;
         j["width"] = width;
         j["height"] = height;
         j["subdivisions"] = subdivisions;

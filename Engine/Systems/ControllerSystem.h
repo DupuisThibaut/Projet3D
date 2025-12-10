@@ -115,7 +115,6 @@ public:
     }
 
     void dispatch(const InputEvent& event){
-        std::cout << "ControllerSystem: Sending event to script\n";
         for(auto sub : subs){
             sub->onInput(event);
         }

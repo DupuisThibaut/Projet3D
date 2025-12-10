@@ -16,9 +16,7 @@ struct LightComponent {
     }
 
     void renderEditor(){
-        if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen)) {
             ImGui::DragFloat("Intensity", &intensity, 0.1f, 0.0f, 100.0f);
-        }
     }
 
     json toJson() {

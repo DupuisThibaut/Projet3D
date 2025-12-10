@@ -416,7 +416,7 @@ struct AnimationComponent {
                       << "' with " << anim.boneAnimations.size() << " bone channels" << std::endl;
         }
 
-        fbxPath = meshPath;
+        fbxPath = entityData["mesh"]["path"].get<std::string>();
         
         // ═══════════════════════════════════════════════════════════════
         // 3. CHARGER LES CLIPS
@@ -430,13 +430,13 @@ struct AnimationComponent {
                 clip.name = clipData["name"];
                 
                 if (clipData.contains("fbx_path")) {
-                    clip.fbxPath = folder + "/" + clipData["fbx_path"].get<std::string>();
+                    clip.fbxPath = clipData["fbx_path"].get<std::string>();
                     clip.animationIndex = clipData.value("animation_index", 0);
                     clip.start_frame = 0;
                     clip.end_frame = 0;
                     
                     Assimp::Importer tempImporter;
-                    const aiScene* tempScene = tempImporter.ReadFile(clip.fbxPath, aiProcess_Triangulate);
+                    const aiScene* tempScene = tempImporter.ReadFile(folder + "/" + clip.fbxPath, aiProcess_Triangulate);
                     if (tempScene && tempScene->mNumAnimations > clip.animationIndex) {
                         const aiAnimation* aiAnim = tempScene->mAnimations[clip.animationIndex];
                         double tps = aiAnim->mTicksPerSecond != 0 ? aiAnim->mTicksPerSecond : 30.0;
@@ -513,7 +513,6 @@ struct AnimationComponent {
 
 
     void renderEditor() {
-        if (ImGui::CollapsingHeader("Animation Component")) {
             ImGui::Text("Is Playing: %s", isPlaying ? "Yes" : "No");
             ImGui::Text("Animation Speed: %.2f", animationSpeed);
             ImGui::Text("Loop: %s", loop ? "Yes" : "No");
@@ -551,7 +550,6 @@ struct AnimationComponent {
                 newClip.animationIndex = 0;
                 clips.push_back(newClip);
             }
-        }
     }
 
     json toJson() {

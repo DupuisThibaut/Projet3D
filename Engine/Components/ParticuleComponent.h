@@ -23,8 +23,14 @@ struct ParticuleComponent {
     glm::vec3 offset = glm::vec3(0.0f);
     float bouncingFactor = 0.2f;
     int particularite=0;
+    std::string GameFolder;
+    float ageMaxGlobal=1.0f;
+    float rayonGlobal=0.05f;
+    bool rayonAleatoire=true;
+    bool ageMaxAleatoire=true;
 
     void loadFromFile(const nlohmann::json& entityData, uint32_t entityId, const std::string& gameFolder){
+        GameFolder = gameFolder;
         if(entityData.contains("particule")){
             nb=entityData["particule"]["nombre"];
             if( entityData["particule"].contains("path")){
@@ -54,6 +60,7 @@ struct ParticuleComponent {
                 float r=entityData["particule"]["rayon"];
                 for(int i=0;i<nb;i++){
                     rayon.push_back(r);
+                    rayonGlobal=r;
                 }
             } else {
                 for(int i=0;i<nb;i++){
@@ -64,6 +71,7 @@ struct ParticuleComponent {
                 float a=entityData["particule"]["ageMax"];
                 for(int i=0;i<nb;i++){
                     ageMax.push_back(a + (0.75f*a * rand() / float(RAND_MAX)));
+                    ageMaxGlobal=a;
                 }
             } else {
                 for(int i=0;i<nb;i++){
@@ -110,11 +118,18 @@ struct ParticuleComponent {
     }
     
     void renderEditor(){
-        if(ImGui::CollapsingHeader("Particule Component")){
             ImGui::InputInt("Nombre de particules", &nb);
             ImGui::InputFloat3("Offset", &offset[0]);
             ImGui::InputFloat3("Position Emission", &position[0]);
-            ImGui::InputFloat("Age Max", &ageMax[0]);
+            ImGui::Checkbox("Age Max Aléatoire", &ageMaxAleatoire);
+            if (!ageMaxAleatoire) {
+                ImGui::InputFloat("Age Max", &ageMaxGlobal);
+            }
+
+            ImGui::Checkbox("Rayon Aléatoire", &rayonAleatoire);
+            if (!rayonAleatoire) {
+                ImGui::InputFloat("Rayon", &rayonGlobal);
+            }
             ImGui::InputFloat3("Velocity", &velocity[0][0]);
             ImGui::InputFloat("Bouncing Factor", &bouncingFactor);
             ImGui::InputInt("Particularite", &particularite);
@@ -140,20 +155,33 @@ struct ParticuleComponent {
             texturePathBuffer[sizeof(texturePathBuffer) - 1] = '\0';
             ImGui::InputText("Texture Path", texturePathBuffer, sizeof(texturePathBuffer));
             path = std::string(texturePathBuffer);
-        }
     }
 
     json toJson(){
         nlohmann::json j;
         j["nombre"] = nb;
-        j["path"] = path;
+        std::string relPath = path;
+        size_t pos = path.find(GameFolder + "/");
+        if (pos != std::string::npos) {
+            relPath = path.substr(pos + GameFolder.length() + 1);
+        } else {
+            relPath = path;
+        }
+        j["path"] = relPath;
         j["offset"] = { offset.x, offset.y, offset.z };
-        j["rayon"] = rayon[0];
+        if(!rayonAleatoire) j["rayon"] = rayonGlobal;
         j["bouncing"] = bouncingFactor;
-        j["ageMax"] = ageMax[0];
+        if(!ageMaxAleatoire) j["ageMax"] = ageMaxGlobal;
         j["velocity"] = { velocity[0].x, velocity[0].y, velocity[0].z };
         if(!texture.empty()){
-            j["texture"] = texture;
+            std::string relTexPath = texture;
+            size_t posTex = texture.find(GameFolder + "/");
+            if (posTex != std::string::npos) {
+                relTexPath = texture.substr(posTex + GameFolder.length() + 1);
+            } else {
+                relTexPath = texture;
+            }
+            j["texture"] = relTexPath;
         }
         if(particularite==1){
             j["reflection"] = true;

@@ -6,17 +6,17 @@
 struct LuaScriptComponent {
     std::string luaScriptPath;
     lua_State* L = nullptr;
-
+    std::string GameFolder;
     bool initialized = false;
 
     void loadFromFile(const nlohmann::json& entityData, uint32_t entityId, const std::string& gameFolder) {
+        GameFolder = gameFolder;
         if(entityData["entities"][entityId].contains("script")){
-            if(entityData["entities"][entityId]["script"].contains("path")) luaScriptPath = gameFolder + entityData["entities"][entityId]["script"]["path"].get<std::string>();
+            if(entityData["entities"][entityId]["script"].contains("path")) luaScriptPath = gameFolder + "/" + entityData["entities"][entityId]["script"]["path"].get<std::string>();
         }
     }
 
     void renderEditor() {
-        if(ImGui::CollapsingHeader("Lua Script Component", ImGuiTreeNodeFlags_DefaultOpen)) {
             char pathBuffer[512];
             strncpy(pathBuffer, luaScriptPath.c_str(), sizeof(pathBuffer));
             pathBuffer[sizeof(pathBuffer) - 1] = '\0';
@@ -40,12 +40,21 @@ struct LuaScriptComponent {
                     }
                 }
             }
-        }
     }
 
     json toJson() {
         nlohmann::json j;
-        j["path"] = luaScriptPath;
+        std::string relPath = luaScriptPath;
+        size_t pos = luaScriptPath.find(GameFolder);
+        std::cout << "GameFolder: " << GameFolder << std::endl;
+        if (pos != std::string::npos) {
+            std::cout << "Found GameFolder in path at position: " << pos << std::endl;
+            relPath = luaScriptPath.substr(pos + GameFolder.length() + 1); ;
+        } else {
+            relPath = luaScriptPath;
+        }
+        std::cout << "Saving Lua script path: " << relPath << std::endl;
+        j["path"] = relPath;
         return j;
     }
 };
