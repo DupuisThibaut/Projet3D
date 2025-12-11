@@ -41,10 +41,6 @@ function onUpdate(dt)
     local angle = t * 2 * math.pi
     local radius = 20.0
 
-    -- local light=get_entity(3)
-    -- light.caca=true
-    -- local l=this.light
-    -- l.caca=true
     this.light.update=true
 
     this.transform.position = { radius * math.cos(angle), radius * math.sin(angle), 0.0 }

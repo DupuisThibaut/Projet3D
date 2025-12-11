@@ -57,7 +57,6 @@ struct ColliderComponent {
             auto transform = entityManager->GetComponent<TransformComponent>(index);
             glm::vec3 center = transform.position;
             collider = std::make_unique<SphereCollider>(center, std::max({transform.scale.x, transform.scale.y, transform.scale.z}));
-            radius = std::max({transform.scale.x, transform.scale.y, transform.scale.z});
         }
         else if(colliderType == "AABB"){
             type = ColliderType::AABB;

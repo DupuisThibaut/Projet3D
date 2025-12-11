@@ -28,7 +28,7 @@ public:
                 auto& collider = dynamic_cast<SphereCollider&>(*t.collider);
                 auto& transform = entityManager->GetComponent<TransformComponent>(id);
                 collider.position = transform.position;
-                collider.radius = std::max({transform.scale.x, transform.scale.y, transform.scale.z}) * 0.5f;
+                collider.radius = std::max({transform.scale.x, transform.scale.y, transform.scale.z});
             } else if(t.type == ColliderType::OBB) {
                 auto& collider = static_cast<OBBCollider&>(*t.collider);
                 auto& transform = entityManager->GetComponent<TransformComponent>(id);
