@@ -31,13 +31,25 @@ public:
             if (!animComp.isPlaying || animComp.animations.empty()) continue;
             if (animComp.currentAnimation < 0 || animComp.currentAnimation >= (int)animComp.animations.size()) continue;
 
+            if(animComp.lastAnimation != animComp.currentAnimation || animComp.lastClip != animComp.currentClip) {
+                if(animComp.prevFinalBoneMatrices.size() == animComp.bones.size()){
+                    animComp.prevFinalBoneMatrices = animComp.finalBoneMatrices;
+                } else {
+                    animComp.prevFinalBoneMatrices.assign(animComp.bones.size(), glm::mat4(1.0f));
+                }
+                animComp.blendActive = true;
+                animComp.blendTime = 0.0f;
+                animComp.lastAnimation = animComp.currentAnimation;
+                animComp.lastClip = animComp.currentClip;
+            }
+
             if (animComp.currentClip >= 0 && animComp.currentClip < (int)animComp.clips.size()) {
                 UpdateClip(animComp, deltaTime);
             } else {
                 UpdateFullAnimation(animComp, deltaTime);
             }
 
-            CalculateBoneMatrices(animComp);
+            CalculateBoneMatrices(animComp, deltaTime);
         }
     }
 
@@ -106,7 +118,7 @@ private:
         }
     }
 
-    void CalculateBoneMatrices(AnimationComponent& animComp) {
+    void CalculateBoneMatrices(AnimationComponent& animComp, float deltaTime) {
         if (animComp.bones.empty()) return;
         if (animComp.currentAnimation < 0 || animComp.currentAnimation >= (int)animComp.animations.size()) return;
 
@@ -121,6 +133,22 @@ private:
         // Traverse Assimp hierarchy
         glm::mat4 identity(1.0f);
         TraverseHierarchy(animComp, anim, &anim.rootNode, identity, animComp.animationTime);
+
+
+        if(animComp.blendActive) {
+            if (animComp.prevFinalBoneMatrices.size() != animComp.bones.size()) {
+                animComp.prevFinalBoneMatrices.assign(animComp.bones.size(), glm::mat4(1.0f));
+            }
+            animComp.blendTime += deltaTime;
+            float t = animComp.blendDuration > 0.0f ? glm::clamp(animComp.blendTime / animComp.blendDuration, 0.0f, 1.0f) : 1.0f;
+
+            for (size_t i = 0; i < animComp.finalBoneMatrices.size(); ++i) {
+                animComp.finalBoneMatrices[i] = glm::mix(animComp.prevFinalBoneMatrices[i], animComp.finalBoneMatrices[i], t);
+            }
+            if (t >= 1.0f) {
+                animComp.blendActive = false;
+            }
+        }
 
         // Upload SSBO
         if (animComp.bonesSSBO != 0 && !animComp.finalBoneMatrices.empty()) {

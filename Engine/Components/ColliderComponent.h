@@ -25,7 +25,9 @@ struct ColliderComponent {
     std::unique_ptr<BaseCollider> collider;
     float radius;
 
-    ColliderComponent() = default;
+    ColliderComponent()
+        : type(ColliderType::SPHERE), isTrigger(false), collider(std::make_unique<SphereCollider>(glm::vec3(0.0f), 1.0f)), radius(1.0f)
+    {}
 
     // Supprimer le copy ctor/assignment pour éviter la perte du unique_ptr
     ColliderComponent(const ColliderComponent& other) = delete;
@@ -44,6 +46,10 @@ struct ColliderComponent {
     }
 
     void loadFromFile(const nlohmann::json& entityData, uint32_t& index, EntityManager *entityManager) {
+        if (!entityData.contains("collider") || !entityData["collider"].contains("type")) {
+            std::cerr << "loadFromFile: collider type missing for entity " << index << std::endl;
+            return;
+        }
         std::string colliderType = entityData["collider"]["type"];
         if(entityData["collider"].contains("isTrigger")) isTrigger = entityData["collider"]["isTrigger"];
         if(colliderType == "SPHERE"){
@@ -51,6 +57,7 @@ struct ColliderComponent {
             auto transform = entityManager->GetComponent<TransformComponent>(index);
             glm::vec3 center = transform.position;
             collider = std::make_unique<SphereCollider>(center, std::max({transform.scale.x, transform.scale.y, transform.scale.z}));
+            radius = std::max({transform.scale.x, transform.scale.y, transform.scale.z});
         }
         else if(colliderType == "AABB"){
             type = ColliderType::AABB;

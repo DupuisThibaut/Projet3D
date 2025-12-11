@@ -28,6 +28,8 @@ struct ParticuleComponent {
     float rayonGlobal=0.05f;
     bool rayonAleatoire=true;
     bool ageMaxAleatoire=true;
+    glm::vec3 vel = glm::vec3(0.0f);
+    bool velociteAleatoire=true;
 
     void loadFromFile(const nlohmann::json& entityData, uint32_t entityId, const std::string& gameFolder){
         GameFolder = gameFolder;
@@ -130,7 +132,10 @@ struct ParticuleComponent {
             if (!rayonAleatoire) {
                 ImGui::InputFloat("Rayon", &rayonGlobal);
             }
-            ImGui::InputFloat3("Velocity", &velocity[0][0]);
+            ImGui::Checkbox("Vélocité Aléatoire", &velociteAleatoire);
+            if(!velociteAleatoire) {
+                ImGui::InputFloat3("Velocity", &vel[0]);
+            }
             ImGui::InputFloat("Bouncing Factor", &bouncingFactor);
             ImGui::InputInt("Particularite", &particularite);
             ImGui::Separator();
@@ -172,7 +177,7 @@ struct ParticuleComponent {
         if(!rayonAleatoire) j["rayon"] = rayonGlobal;
         j["bouncing"] = bouncingFactor;
         if(!ageMaxAleatoire) j["ageMax"] = ageMaxGlobal;
-        j["velocity"] = { velocity[0].x, velocity[0].y, velocity[0].z };
+        if(!velociteAleatoire) j["velocity"] = { vel.x, vel.y, vel.z };
         if(!texture.empty()){
             std::string relTexPath = texture;
             size_t posTex = texture.find(GameFolder + "/");

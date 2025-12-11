@@ -279,6 +279,14 @@ struct AnimationComponent {
     bool loop = true;
     bool isPlaying = false;
 
+    std::vector<glm::mat4> prevFinalBoneMatrices;
+    bool blendActive = false;
+    float blendTime = 0.0f;
+    float blendDuration = 0.5f;
+    int lastAnimation = -1;
+    int lastClip = -1;
+
+
     auto& GetBoneMap(){return bones;}
     int& GetNumBones(){return m_numBones;}
 

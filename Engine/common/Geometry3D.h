@@ -1436,7 +1436,7 @@ void ResetCollisionManifold(CollisionManifold* result) {
     }
 }
 
-CollisionManifold SphereSphereManifold(const SphereCollider& s1, const SphereCollider& s2){
+CollisionManifold FindCollisionFeatures(const SphereCollider& s1, const SphereCollider& s2){
     CollisionManifold result;
     ResetCollisionManifold(&result);
     float r = s1.radius + s2.radius;
@@ -1445,7 +1445,7 @@ CollisionManifold SphereSphereManifold(const SphereCollider& s1, const SphereCol
     if(distSq - r * r > 0.0f || CMP(distSq, 0.0f)){
         return result;
     }
-    normalize(d);
+    d = Normalized(d);
     result.colliding = true;
     result.normal = d;
     result.depth = fabsf(sqrtf(distSq) - r) * 0.5f;
@@ -1455,35 +1455,7 @@ CollisionManifold SphereSphereManifold(const SphereCollider& s1, const SphereCol
     return result;
 }
 
-CollisionManifold AABBSPhereManifold(const AABBCollider& aabb, const SphereCollider& sphere){
-    CollisionManifold result;
-    ResetCollisionManifold(&result);
-    PointCollider closest = ClosestPoint(aabb, sphere.position);
-    float distanceSq = MagnitudeSq(closest - sphere.position);
-    if (distanceSq > sphere.radius * sphere.radius) {
-        return result;
-    }
-    vec3 normal;
-    if(CMP(distanceSq, 0.0f)){
-        float mSq = MagnitudeSq(closest - aabb.origin);
-        if(CMP(mSq, 0.0f)){
-            return result;
-        }
-        normal = Normalized(closest - aabb.origin);
-    } else {
-        normal = Normalized(closest - sphere.position);
-    }
-    PointCollider outsidePoint = sphere.position + normal * sphere.radius;
-    float distance = Magnitude(closest - outsidePoint);
-    result.colliding = true;
-    result.normal = normal;
-    result.depth = distance * 0.5f;
-    result.contacts.push_back(closest + (outsidePoint - closest) * 0.5f);
-    return result;
-}
-#define SphereAABBManifold(sphere, aabb) AABBSPhereManifold(aabb, sphere)
-
-CollisionManifold OBBSphereManifold(const OBBCollider& obb, const SphereCollider& sphere){
+CollisionManifold FindCollisionFeatures(const OBBCollider& obb, const SphereCollider& sphere){
     CollisionManifold result;
     ResetCollisionManifold(&result);
     PointCollider closest = ClosestPoint(obb, sphere.position);
@@ -1499,9 +1471,9 @@ CollisionManifold OBBSphereManifold(const OBBCollider& obb, const SphereCollider
         }
         normal = Normalized(closest - obb.position);
     } else {
-        normal = Normalized(closest - sphere.position);
+        normal = Normalized(sphere.position - closest);
     }
-    PointCollider outsidePoint = sphere.position + normal * sphere.radius;
+    PointCollider outsidePoint = sphere.position - normal * sphere.radius;
     float distance = Magnitude(closest - outsidePoint);
     result.colliding = true;
     result.normal = normal;
@@ -1509,93 +1481,6 @@ CollisionManifold OBBSphereManifold(const OBBCollider& obb, const SphereCollider
     result.contacts.push_back(closest + (outsidePoint - closest) * 0.5f);
     return result;
 }
-#define SphereOBBManifold(sphere, obb) OBBSphereManifold(obb, sphere)
-
-CollisionManifold PlaneSphereManifold(const PlaneCollider& plane, const SphereCollider& sphere){
-    CollisionManifold result;
-    ResetCollisionManifold(&result);
-    float dist = glm::dot(plane.normal, sphere.position) - plane.distance;
-    if(dist > sphere.radius){
-        return result;
-    }
-    result.colliding = true;
-    result.normal = plane.normal;
-    result.depth = (sphere.radius - dist) * 0.5f;
-    PointCollider contact = sphere.position - plane.normal * (dist + result.depth);
-    result.contacts.push_back(contact);
-    return result;
-}
-#define SpherePlaneManifold(sphere, plane) PlaneSphereManifold(plane, sphere)
-
-CollisionManifold TriangleSphereManifold(const Triangle& triangle, const SphereCollider& sphere){
-    CollisionManifold result;
-    ResetCollisionManifold(&result);
-    PointCollider closest = ClosestPoint(triangle, sphere.position);
-    float distanceSq = MagnitudeSq(closest - sphere.position);
-    if (distanceSq > sphere.radius * sphere.radius) {
-        return result;
-    }
-    vec3 normal;
-    if(CMP(distanceSq, 0.0f)){
-        vec3 triNormal = Normalized(glm::cross(triangle.b - triangle.a, triangle.c - triangle.a));
-        float mSq = MagnitudeSq(triNormal);
-        if(CMP(mSq, 0.0f)){
-            return result;
-        }
-        normal = triNormal;
-    } else {
-        normal = Normalized(closest - sphere.position);
-    }
-    PointCollider outsidePoint = sphere.position + normal * sphere.radius;
-    float distance = Magnitude(closest - outsidePoint);
-    result.colliding = true;
-    result.normal = normal;
-    result.depth = distance * 0.5f;
-    result.contacts.push_back(closest + (outsidePoint - closest) * 0.5f);
-    return result;
-}
-#define SphereMeshManifold(sphere, mesh) MeshSphereManifold(mesh, sphere)
-
-CollisionManifold MeshSphereManifold(const MeshCollider& mesh, const SphereCollider& sphere){
-    CollisionManifold result;
-    ResetCollisionManifold(&result);
-    if(mesh.accelerator != nullptr){
-        std::list<BVHNode*> toProcess;
-        toProcess.push_front(mesh.accelerator);
-        while(!toProcess.empty()){
-            BVHNode* iterator = *(toProcess.begin());
-            toProcess.erase(toProcess.begin());
-            if(iterator->numTriangles >=0){
-                for(int i = 0; i < iterator->numTriangles; i++){
-                    CollisionManifold tempResult = TriangleSphereManifold(mesh.triangles[iterator->triangles[i]], sphere);
-                    if(tempResult.colliding){
-                        if(!result.colliding || tempResult.depth < result.depth){
-                            result = tempResult;
-                        }
-                    }
-                }
-            }
-            if(iterator->children != nullptr){
-                for(int i = 0; i < 8; i++){
-                    if(SphereAABB(sphere, iterator->children[i].bounds)){
-                        toProcess.push_front(&iterator->children[i]);
-                    }
-                }
-            }
-        }   
-    } else {
-        for(int i = 0; i < mesh.numTriangles; i++){
-            CollisionManifold tempResult = TriangleSphereManifold(mesh.triangles[i], sphere);
-            if(tempResult.colliding){
-                if(!result.colliding || tempResult.depth < result.depth){
-                    result = tempResult;
-                }
-            }
-        }
-    }
-    return result;
-}
-#define SphereMeshManifold(sphere, mesh) MeshSphereManifold(mesh, sphere)
 
 
 // Helpers 
@@ -1749,7 +1634,7 @@ AABBCollider AABBFromMesh(const MeshCollider& mesh){
     return FromMinMax(min, max);
 }
 
-CollisionManifold OBBOBBManifold(const OBBCollider& o1, const OBBCollider& o2){
+CollisionManifold FindCollisionFeatures(const OBBCollider& o1, const OBBCollider& o2){
     CollisionManifold result;
     ResetCollisionManifold(&result);
 
@@ -1793,8 +1678,8 @@ CollisionManifold OBBOBBManifold(const OBBCollider& o1, const OBBCollider& o2){
     result.contacts.reserve(c1.size() + c2.size());
     result.contacts.insert(result.contacts.end(), c1.begin(), c1.end());
     result.contacts.insert(result.contacts.end(), c2.begin(), c2.end());
-    Interval i = GetInterval(o1, axis);
-    float distance = (i.max - i.min)* 0.5f - result.depth * 0.5f;
+    Interval interval = GetInterval(o1, axis);
+    float distance = (interval.max - interval.min)* 0.5f - result.depth * 0.5f;
     vec3 pointOnPlane = o1.position + axis * distance;
     for (int i = result.contacts.size() - 1; i>= 0; --i) {
         vec3 contact = result.contacts[i];
@@ -1812,180 +1697,4 @@ CollisionManifold OBBOBBManifold(const OBBCollider& o1, const OBBCollider& o2){
     result.normal = axis;
     return result;
 }
-
-#define OBBOBBManifold(o1, o2) OBBOBBManifold(o1, o2)
-
-CollisionManifold OBBAABBManifold(const OBBCollider& obb, const AABBCollider& aabb){
-    CollisionManifold result;
-    ResetCollisionManifold(&result);
-    OBBCollider aabbAsObb;
-    aabbAsObb.position = aabb.origin;
-    aabbAsObb.size = aabb.size;
-    aabbAsObb.orientation = glm::mat3(1.0f);
-    result = OBBOBBManifold(obb, aabbAsObb);
-    return result;
-}
-#define AABBOBBManifold(aabb, obb) OBBAABBManifold(obb, aabb)
-
-CollisionManifold OBBPlaneManifold(const OBBCollider& obb, const PlaneCollider& plane){
-    CollisionManifold result;
-    ResetCollisionManifold(&result);
-    float r = 
-        obb.size.x * fabsf(glm::dot(plane.normal, vec3(obb.orientation[0][0], obb.orientation[1][0], obb.orientation[2][0]))) +
-        obb.size.y * fabsf(glm::dot(plane.normal, vec3(obb.orientation[0][1], obb.orientation[1][1], obb.orientation[2][1]))) +
-        obb.size.z * fabsf(glm::dot(plane.normal, vec3(obb.orientation[0][2], obb.orientation[1][2], obb.orientation[2][2])));
-    float s = glm::dot(plane.normal, obb.position) - plane.distance;
-    if (fabsf(s) > r) {
-        return result;
-    }
-    result.colliding = true;
-    result.normal = plane.normal;
-    result.depth = (r - fabsf(s)) * 0.5f;
-    vec3 contactPoint = obb.position - plane.normal * (s + (s < 0 ? -result.depth : result.depth));
-    result.contacts.push_back(contactPoint);
-    return result;
-}
-#define PlaneOBBManifold(plane, obb) OBBPlaneManifold(obb, plane)
-
-CollisionManifold OBBTriangleManifold(const OBBCollider& obb, const Triangle& triangle){
-    CollisionManifold result;
-    ResetCollisionManifold(&result);
-    // Pour simplifier, on peut approximer le triangle par son AABB
-    AABBCollider triangleAABB = AABBFromTriangle(triangle);
-    CollisionManifold tempResult = OBBAABBManifold(obb, triangleAABB);
-    if(tempResult.colliding){
-        result = tempResult;
-    }
-    return result;
-}
-#define TriangleOBBManifold(triangle, obb) OBBTriangleManifold(obb, triangle)
-
-CollisionManifold MeshOBBManifold(const MeshCollider& mesh, const OBBCollider& obb){
-    CollisionManifold result;
-    ResetCollisionManifold(&result);
-    if(mesh.accelerator != nullptr){
-        std::list<BVHNode*> toProcess;
-        toProcess.push_front(mesh.accelerator);
-        while(!toProcess.empty()){
-            BVHNode* iterator = *(toProcess.begin());
-            toProcess.erase(toProcess.begin());
-            if(iterator->numTriangles >=0){
-                for(int i = 0; i < iterator->numTriangles; i++){
-                    CollisionManifold tempResult = OBBTriangleManifold(obb, mesh.triangles[iterator->triangles[i]]);
-                    if(tempResult.colliding){
-                        if(!result.colliding || tempResult.depth < result.depth){
-                            result = tempResult;
-                        }
-                    }
-                }
-            }
-            if(iterator->children != nullptr){
-                for(int i = 0; i < 8; i++){
-                    if(OBBAABB(obb, iterator->children[i].bounds)){
-                        toProcess.push_front(&iterator->children[i]);
-                    }
-                }
-            }
-        }   
-    } else {
-        for(int i = 0; i < mesh.numTriangles; i++){
-            CollisionManifold tempResult = OBBTriangleManifold(obb, mesh.triangles[i]);
-            if(tempResult.colliding){
-                if(!result.colliding || tempResult.depth < result.depth){
-                    result = tempResult;
-                }
-            }
-        }
-    }
-    return result;
-}
-#define OBBMeshManifold(obb, mesh) MeshOBBManifold(mesh, obb)
-
-CollisionManifold AABBAABBManifold(const AABBCollider& aabb1, const AABBCollider& aabb2){
-    CollisionManifold result;
-    ResetCollisionManifold(&result);
-    // Pour simplifier, on peut approximer les AABB par des OBB
-    OBBCollider obb1;
-    obb1.position = aabb1.origin;
-    obb1.size = aabb1.size;
-    obb1.orientation = glm::mat3(1.0f);
-    OBBCollider obb2;
-    obb2.position = aabb2.origin;
-    obb2.size = aabb2.size;
-    obb2.orientation = glm::mat3(1.0f);
-    result = OBBOBBManifold(obb1, obb2);
-    return result;
-}
-#define AABBAABBManifold(aabb1, aabb2) AABBAABBManifold(aabb1, aabb2)
-
-CollisionManifold AABBPlaneManifold(const AABBCollider& aabb, const PlaneCollider& plane){
-    CollisionManifold result;
-    ResetCollisionManifold(&result);
-    // Pour simplifier, on peut approximer l'AABB par un OBB
-    OBBCollider obb;
-    obb.position = aabb.origin;
-    obb.size = aabb.size;
-    obb.orientation = glm::mat3(1.0f);
-    result = OBBPlaneManifold(obb, plane);
-    return result;
-}
-#define PlaneAABBManifold(plane, aabb) AABBPlaneManifold(aabb, plane)
-
-CollisionManifold AABBTriangleManifold(const AABBCollider& aabb, const Triangle& triangle){
-    CollisionManifold result;
-    ResetCollisionManifold(&result);
-    // Pour simplifier, on peut approximer le triangle par son AABB
-    AABBCollider triangleAABB = AABBFromTriangle(triangle);
-    result = AABBAABBManifold(aabb, triangleAABB);
-    return result;
-}
-#define TriangleAABBManifold(triangle, aabb) AABBTriangleManifold(aabb, triangle)
-
-CollisionManifold MeshAABBManifold(const MeshCollider& mesh, const AABBCollider& aabb){
-    CollisionManifold result;
-    ResetCollisionManifold(&result);
-    // Pour simplifier, on peut approximer l'AABB par un OBB
-    OBBCollider obb;
-    obb.position = aabb.origin;
-    obb.size = aabb.size;
-    obb.orientation = glm::mat3(1.0f);
-    result = MeshOBBManifold(mesh, obb);
-    return result;
-}
-#define AABBMeshManifold(aabb, mesh) MeshAABBManifold(mesh, aabb)
-
-CollisionManifold PlaneMeshManifold(const PlaneCollider& plane, const MeshCollider& mesh){
-    CollisionManifold result;
-    ResetCollisionManifold(&result);
-    // Pour simplifier, on peut approximer le plan par un grand AABB
-    float largeSize = 10000.0f;
-    AABBCollider aabb;
-    aabb.origin = plane.normal * (plane.distance - largeSize * 0.5f);
-    aabb.size = vec3(largeSize);
-    result = MeshAABBManifold(mesh, aabb);
-    return result;
-}
-#define MeshPlaneManifold(mesh, plane) PlaneMeshManifold(plane, mesh)
-
-CollisionManifold MeshMeshManifold(const MeshCollider& m1, const MeshCollider& m2){
-    CollisionManifold result;
-    ResetCollisionManifold(&result);
-    // Pour simplifier, on peut approximer les Mesh par des AABB
-    AABBCollider aabb1 = AABBFromMesh(m1);
-    AABBCollider aabb2 = AABBFromMesh(m2);
-    result = AABBAABBManifold(aabb1, aabb2);
-    return result;
-}
-
-CollisionManifold TriangleTriangleManifold(const Triangle& t1, const Triangle& t2){
-    CollisionManifold result;
-    ResetCollisionManifold(&result);
-    // Pour simplifier, on peut approximer les triangles par des AABB
-    AABBCollider aabb1 = AABBFromTriangle(t1);
-    AABBCollider aabb2 = AABBFromTriangle(t2);
-    result = AABBAABBManifold(aabb1, aabb2);
-    return result;
-}
-#define TriangleTriangleManifold(t1, t2) TriangleTriangleManifold(t1, t2)
-
 #endif // GEOMETRY3D_H

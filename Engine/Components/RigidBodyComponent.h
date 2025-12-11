@@ -17,6 +17,11 @@ struct RigidBodyComponent {
     glm::vec3 oldVelocity = glm::vec3(0,0,0);
     bool firstFrame = true;
 
+    // Angular Impulse
+    glm::vec3 angVel = glm::vec3(0,0,0);
+    glm::vec3 orientation = glm::vec3(0,0,0);
+    glm::vec3 torques = glm::vec3(0,0,0);
+
     glm::vec3 forces = glm::vec3(0,0,0);
 
     void loadFromFile(const nlohmann::json& entityData, uint32_t entityId){
