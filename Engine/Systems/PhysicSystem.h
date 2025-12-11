@@ -8,11 +8,22 @@ class PhysicSystem {
     const double FIXED_DELTA_TIME = 1.0/60.0;
     double accumulator = 0.0;
     const double MAX_ACCUMULATOR = 1.0/60.0;
+    std::vector<uint32_t> bodies;
+    std::vector<uint32_t> colliders1;
+    std::vector<uint32_t> colliders2;
+    std::vector<CollisionManifold> results;
 
 public:
     EntityManager* entityManager;
+    float linearProjectionPercent = 0.8f;
+    float penetrationSlack = 0.01f;
+    int ImpulseIterations = 10;
 
-    PhysicSystem(EntityManager* em) : entityManager(em) {}
+    PhysicSystem(EntityManager* em) : entityManager(em) {
+        colliders1.reserve(100);
+        colliders2.reserve(100);
+        results.reserve(100);
+    }
 
     // Helpers
     void ApplyForces(uint32_t e){
@@ -24,11 +35,113 @@ public:
         if(rigid.mass <=0.0f) rigid.mass = 1.0f;
         rigid.velocity += impulse;
     }
+
+    glm::mat4 invTensor(uint32_t e){
+        float ix = 0.0f;
+        float iy = 0.0f;
+        float iz = 0.0f;
+        float iw = 0.0f;
+        auto& rigid = entityManager->GetComponent<RigidBodyComponent>(e);
+        auto& colliderComp = entityManager->GetComponent<ColliderComponent>(e);
+        if (rigid.mass != 0 && colliderComp.type == ColliderType::SPHERE) {
+            auto* sphere = static_cast<SphereCollider*>(colliderComp.collider.get());
+            float r2 = sphere->radius * sphere->radius;
+            float fraction = (2.0f / 5.0f);
+            ix = r2 * rigid.mass * fraction;
+            iy = r2 * rigid.mass * fraction;
+            iz = r2 * rigid.mass * fraction;
+            iw = 1.0f;
+        }else if(colliderComp.type == ColliderType::OBB){
+                auto* obb = static_cast<OBBCollider*>(colliderComp.collider.get());
+                glm::vec3 size = obb->size * 2.0f;
+                float fraction = (1.0f / 12.0f);
+                float x2 = size.x * size.x;
+                float y2 = size.y * size.y;
+                float z2 = size.z * size.z;
+                ix = (y2 + z2) * rigid.mass * fraction;
+                iy = (x2 + z2) * rigid.mass * fraction;
+                iz = (x2 + y2) * rigid.mass * fraction;
+                iw = 1.0f;
+            }
+        return glm::inverse(glm::mat4(
+                ix, 0, 0, 0,
+                0, iy, 0, 0,
+                0, 0, iz, 0,
+                0, 0, 0, iw));
+    }
+
+    void addRotationImpulse(uint32_t e, const glm::vec3& impulse){
+        auto& rigid = entityManager->GetComponent<RigidBodyComponent>(e);
+        glm::vec3& centerOfMass = entityManager->GetComponent<TransformComponent>(e).position;
+        glm::vec3 torque = glm::cross(impulse - centerOfMass, impulse);
+        glm::vec3 angAcc = glm::vec3(invTensor(e) * glm::vec4(torque, 0.0f));
+        rigid.angVel += angAcc;
+    }
+
+    void ApplyImpulse(uint32_t e1,  uint32_t e2, const CollisionManifold& manifold, float restitution){
+        auto& rigid1 = entityManager->GetComponent<RigidBodyComponent>(e1);
+        auto& rigid2 = entityManager->GetComponent<RigidBodyComponent>(e2);
+        if(glm::dot(rigid1.velocity, rigid1.velocity) < 0.00001f && glm::dot(rigid2.velocity, rigid2.velocity) < 0.00001f) return;
+        float invMass1 = InvMass(e1);
+        float invMass2 = InvMass(e2);
+        float invMassSum = invMass1 + invMass2;
+        if(invMassSum == 0.0f) return;
+        glm::vec3 relativeVelocity = rigid2.velocity - rigid1.velocity;
+        glm::vec3 relativeNormal = glm::normalize(manifold.normal);
+        if(glm::dot(relativeVelocity, relativeNormal) > 0) return;
+        float e = fminf(rigid1.bounce, rigid2.bounce);
+        float numerator = (-(1.0f + e) * glm::dot(relativeVelocity, relativeNormal));
+        float j = numerator / invMassSum;
+        if(manifold.contacts.size() > 0){
+            j /= static_cast<float>(manifold.contacts.size());
+        }
+        glm::vec3 impulse = j * relativeNormal;
+        rigid1.velocity -= impulse * invMass1;
+        rigid2.velocity += impulse * invMass2;
+        glm::vec3 t = relativeVelocity - (glm::dot(relativeVelocity, relativeNormal) * relativeNormal);
+        if(CMP(MagnitudeSq(t),0.0f)) return;
+        t = glm::normalize(t);
+        numerator = -glm::dot(relativeVelocity, t);
+        float jt = numerator / invMassSum;
+        if(manifold.contacts.size() > 0 && jt != 0.0f){
+            jt /= static_cast<float>(manifold.contacts.size());
+        }
+        if(CMP(jt,0.0f)) return;
+        float friction = std::sqrt(rigid1.friction * rigid2.friction);
+        if(jt > j * friction){
+            jt = j * friction;
+        } else if(jt < -j * friction){
+            jt = -j * friction;
+        }
+        glm::vec3 frictionImpulse = jt * t;
+        rigid1.velocity -= frictionImpulse * invMass1;
+        rigid2.velocity += frictionImpulse * invMass2;
+    }
+
     float InvMass(uint32_t e){
         auto& rigid = entityManager->GetComponent<RigidBodyComponent>(e);
         if(rigid.mass ==0.0f) return 0.0f;
         return 1.0f/rigid.mass;
     }
+
+    void SynchCollisionVolumes(){
+        const auto& colliders = entityManager->GetComponents<ColliderComponent>();
+        for(const auto& pair : colliders){
+            uint32_t id = pair.first;
+            auto& t = entityManager->GetComponent<TransformComponent>(id);
+            auto& col = entityManager->GetComponent<ColliderComponent>(id);
+            if(col.type == ColliderType::SPHERE) {
+                auto& collider = static_cast<SphereCollider&>(*col.collider);
+                collider.position = t.position;
+            } else if(col.type == ColliderType::OBB){
+                auto& collider = static_cast<OBBCollider&>(*col.collider);
+                collider.position = t.position;
+                collider.orientation = glm::mat3(glm::quat(glm::radians(t.rotation)));
+            }
+        }
+    }
+
+
 
 
     // Calcul de la physique des objets (gravité, friction)
@@ -396,32 +509,81 @@ public:
     }
     
     void update(float deltaTime) {
-        accumulator += deltaTime;
-        if (accumulator > MAX_ACCUMULATOR) {
-            accumulator = MAX_ACCUMULATOR;
+    accumulator += deltaTime;
+    if (accumulator > MAX_ACCUMULATOR) accumulator = MAX_ACCUMULATOR;
+    const float fixedDeltaTime = static_cast<float>(FIXED_DELTA_TIME);
+
+    while (accumulator >= FIXED_DELTA_TIME) {
+        bodies.clear();
+        for (const auto& rb : entityManager->GetComponents<RigidBodyComponent>()) {
+            bodies.push_back(rb.first);
         }
-        const float fixedDeltaTime = static_cast<float>(FIXED_DELTA_TIME);
-        while(accumulator >= FIXED_DELTA_TIME){
-            const auto& rigidBodies = entityManager->GetComponents<RigidBodyComponent>();
-            if(rigidBodies.empty()){
-                accumulator -= FIXED_DELTA_TIME;
-                continue;
+        colliders1.clear();
+        colliders2.clear();
+        results.clear();
+        for (int i = 0; i < bodies.size(); ++i) {
+            for (int j = 0; j < bodies.size(); ++j) {
+                if(i == j) continue;
+                uint32_t idA = bodies[i];
+                uint32_t idB = bodies[j];
+                CollisionManifold manifold;
+                manifold = FindCollisionFeatures(
+                    entityManager->GetComponent<ColliderComponent>(idA).collider.get(),
+                    entityManager->GetComponent<ColliderComponent>(idB).collider.get()
+                );
+                //std::cout << "Testing collision between Entity " << idA << " and Entity " << idB << std::endl;
+                if (manifold.colliding) {
+                    //std::cout << "Collision detected between Entity " << idA << " and Entity " << idB << std::endl;
+                    colliders1.push_back(idA);
+                    colliders2.push_back(idB);
+                    results.push_back(manifold);
+                }
             }
-            // Appliquer les forces avant de calculer la vélocité
-            for(const auto& rb : rigidBodies){
-                ApplyForces(rb.first);
-            }
-            // Calcul de la vélocité
-            for(const auto& rb : rigidBodies){
-                computeVelocity(rb.first, fixedDeltaTime);
-            }
-            WorldConstraints wc = getWorldConstraints();
-            for(const auto& rb : rigidBodies){
-                SolveConstraints(rb.first, wc);
-            } 
-            accumulator -= FIXED_DELTA_TIME;
         }
+        for (uint32_t e : bodies) {
+            ApplyForces(e);
+        }
+        for (int k = 0; k < ImpulseIterations; ++k) {
+            for (int i = 0; i < results.size(); ++i) {
+                for (int j = 0; j < results[i].contacts.size(); ++j) {
+                    ApplyImpulse(colliders1[i], colliders2[i], results[i], 0.7f);
+                }
+            }
+        }
+        for (uint32_t e : bodies) {
+            computeVelocity(e, fixedDeltaTime);
+            // if(entityManager->HasComponent<ColliderComponent>(e)){
+            //     auto& collider = entityManager->GetComponent<ColliderComponent>(e);
+            //     auto& rigid =  entityManager->GetComponent<RigidBodyComponent>(e);
+            //     if(collider.type == ColliderType::SPHERE || collider.type == ColliderType::OBB){
+            //         glm::vec3 angAccel = rigid.torques * invTensor(e);
+            //         angVel = angVel + angAccel * dt;
+            //         angVel = angVel * damping;
+            //         SynchCollisionVolumes();
+            //     }
+            // }
+        }
+        // Vélocité linéaire
+        for (int i = 0; i < results.size(); ++i) {
+            float invMass1 = InvMass(colliders1[i]);
+            float invMass2 = InvMass(colliders2[i]);
+            float totalMass = invMass1 + invMass2;
+            if (totalMass == 0.0f) continue;
+            float depth = std::max(results[i].depth - penetrationSlack, 0.0f);
+            float scalar = depth / totalMass;
+            glm::vec3 correction = results[i].normal * scalar * linearProjectionPercent;
+            auto& t1 = entityManager->GetComponent<TransformComponent>(colliders1[i]);
+            auto& t2 = entityManager->GetComponent<TransformComponent>(colliders2[i]);
+            t1.position -= correction * invMass1;
+            t2.position += correction * invMass2;
+        }
+        for (uint32_t e : bodies) {
+            SolveConstraints(e, getWorldConstraints());
+        }
+
+        accumulator -= FIXED_DELTA_TIME;
     }
+}
 };
 
 #endif // PHYSICSYSTEM_H

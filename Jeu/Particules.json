@@ -1,0 +1,167 @@
+{
+  "entities": [
+    {
+      "id": 0,
+      "material": {
+        "path": "/texture/grass.png",
+        "type": "texture"
+      },
+      "mesh": {
+        "height": 1.0,
+        "mesh_type": "PLANE",
+        "normal": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "path": "",
+        "subdivisions": 10.0,
+        "type": "primitive",
+        "width": 1.0
+      },
+      "transform": {
+        "children": [],
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          2.0,
+          2.0,
+          2.0
+        ]
+      }
+    },
+    {
+      "camera": {
+        "far_plane": 100.0,
+        "fov": 45.0,
+        "idCam": 1954906192,
+        "near_plane": 0.10000000149011612,
+        "target": [
+          -4.371138473402425e-08,
+          0.0,
+          -0.9999999403953552
+        ],
+        "up": [
+          0.0,
+          1.0,
+          0.0
+        ]
+      },
+      "controller": {
+        "sensitivity": 0.10000000149011612,
+        "speed": 5.0,
+        "zoom_speed": 0.5
+      },
+      "id": 1,
+      "script": {
+        "path": "./Jeu//Scripts/MoveCam.lua"
+      },
+      "transform": {
+        "children": [],
+        "position": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "particule": {
+        "bouncing": 0.20000000298023224,
+        "nombre": 100,
+        "offset": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "path": ""
+      },
+      "transform": {
+        "children": [],
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "light": {
+        "intensity": 2.0
+      },
+      "material": {
+        "ambient": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "color": [
+          0.8999999761581421,
+          0.8999999761581421,
+          1.0
+        ],
+        "diffuse": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "path": "",
+        "shininess": 0.5,
+        "specular": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "type": "color"
+      },
+      "transform": {
+        "children": [],
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    }
+  ]
+}

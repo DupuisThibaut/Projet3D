@@ -37,5 +37,47 @@ function onInput(event)
         if btn.name == "C" and btn.state == "RELEASED" and created then
             created = false
         end
+        if btn.name == "1" and btn.state == "PRESSED" then
+            if not created then
+                --local t = create_entity()
+                --add_component(t, "Transform", { position = {-0.5, -9.0, 0.0} })
+                --local mesh = add_component(t, "Mesh", { type = "primitive", name = "SPHERE" })
+                --local m = add_component(t, "Material", { color = { 1.0,0.0,1.0 }, type = "color" })
+                --print("[Lua] Created new entity with id: " .. t)
+                created = true
+                change_scene("scene.json")
+            end
+        end
+        if btn.name == "1" and btn.state == "RELEASED" and created then
+            created = false
+        end
+        if btn.name == "2" and btn.state == "PRESSED" then
+            if not created then
+                --local t = create_entity()
+                --add_component(t, "Transform", { position = {-0.5, -9.0, 0.0} })
+                --local mesh = add_component(t, "Mesh", { type = "primitive", name = "SPHERE" })
+                --local m = add_component(t, "Material", { color = { 1.0,0.0,1.0 }, type = "color" })
+                --print("[Lua] Created new entity with id: " .. t)
+                created = true
+                change_scene("cornelBox.json")
+            end
+        end
+        if btn.name == "2" and btn.state == "RELEASED" and created then
+            created = false
+        end
+        if btn.name == "3" and btn.state == "PRESSED" then
+            if not created then
+                --local t = create_entity()
+                --add_component(t, "Transform", { position = {-0.5, -9.0, 0.0} })
+                --local mesh = add_component(t, "Mesh", { type = "primitive", name = "SPHERE" })
+                --local m = add_component(t, "Material", { color = { 1.0,0.0,1.0 }, type = "color" })
+                --print("[Lua] Created new entity with id: " .. t)
+                created = true
+                change_scene("Particules.json")
+            end
+        end
+        if btn.name == "3" and btn.state == "RELEASED" and created then
+            created = false
+        end
     end
 end

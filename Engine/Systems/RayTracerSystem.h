@@ -49,7 +49,7 @@ struct bvh{
 struct world{
     glm::mat4 modelMat;
     glm::mat4 invModelMatrix;
-    glm::mat3 normalMat;
+    glm::mat4 normalMat;
     glm::vec4 testSphere;
 };
 
@@ -76,7 +76,7 @@ std::vector<bvh> creerBVH(std::vector<glm::vec3> vertices, std::vector<std::vect
     bvhs.push_back(b);
     std::vector<int> test;
     test.push_back(0);
-    int prof=10;
+    int prof=15;
     std::vector<std::vector<int>> triangleNode;
     std::vector<int> premier;
     for(unsigned int i=0;i<triangles.size();i++){
@@ -322,19 +322,19 @@ public:
 
     }
 
-void onInput(const InputEvent& event) {
-    static bool firstClick = true;
-    if(event.buttons.empty()) return;
-    for(const auto& button : event.buttons) {
-        if(button.first == "B" && button.second == STATE::PRESSED && firstClick) {
-            blinn=!blinn;
-            std::cout<<"Blinn mode : "<<(blinn ? "ON" : "OFF")<<std::endl;
-            firstClick = false;
-        } else if(button.second == STATE::RELEASED && button.first == "B" && !firstClick) {
-            firstClick = true;
+    void onInput(const InputEvent& event) {
+        static bool firstClick = true;
+        if(event.buttons.empty()) return;
+        for(const auto& button : event.buttons) {
+            if(button.first == "B" && button.second == STATE::PRESSED && firstClick) {
+                blinn=!blinn;
+                std::cout<<"Blinn mode : "<<(blinn ? "ON" : "OFF")<<std::endl;
+                firstClick = false;
+            } else if(button.second == STATE::RELEASED && button.first == "B" && !firstClick) {
+                firstClick = true;
+            }
         }
     }
-}
 
     bool initialize(){
 
@@ -495,7 +495,7 @@ void onInput(const InputEvent& event) {
         for(auto& e : entities){
             if(entityManager->HasComponent<MeshComponent>(e.id)){
                 MeshComponent M = entityManager->GetComponent<MeshComponent>(e.id);
-                // M.update=true;
+                M.update=true;
                 // auto& t = entityManager->GetComponent<TransformComponent>(e.id);
                 // t.position[0]+=0.01;
                 if(M.update){
@@ -539,7 +539,7 @@ void onInput(const InputEvent& event) {
                         updateSquare=true;
                     }
                     if(M.type==PrimitiveType::MESH){
-                        worlds[i].modelMat=t.worldMatrix;worlds[i].invModelMatrix=inverse(t.worldMatrix);worlds[i].normalMat=transpose(inverse(mat3(t.worldMatrix)));
+                        worlds[i].modelMat=t.worldMatrix;worlds[i].invModelMatrix=inverse(t.worldMatrix);worlds[i].normalMat=transpose(worlds[i].invModelMatrix);
                         updateMesh=true;
                     }
                     M.update=false;
@@ -618,7 +618,16 @@ void onInput(const InputEvent& event) {
             updateParticule=false;
             reset=true;
         }
-        
+
+        // for(int i=0;i<worlds.size();i++){
+        //     std::cout<<"centreModel : "<<worlds[i].testSphere[0]<<" centreModel : "<<worlds[i].testSphere[1]<<" centreModel : "<<worlds[i].testSphere[2]<<std::endl;
+        //     std::cout<<"rayon : "<<worlds[i].testSphere[3]<<std::endl;
+        //     std::cout<<"world matrix : "<<worlds[i].modelMat[0][0]<<" world matrix : "<<worlds[i].modelMat[0][1]<<" world matrix : "<<worlds[i].modelMat[0][2]<<" world matrix : "<<worlds[i].modelMat[0][3]<<std::endl;
+        //     std::cout<<"world matrix : "<<worlds[i].modelMat[1][0]<<" world matrix : "<<worlds[i].modelMat[1][1]<<" world matrix : "<<worlds[i].modelMat[1][2]<<" world matrix : "<<worlds[i].modelMat[1][3]<<std::endl;
+        //     std::cout<<"world matrix : "<<worlds[i].modelMat[2][0]<<" world matrix : "<<worlds[i].modelMat[2][1]<<" world matrix : "<<worlds[i].modelMat[2][2]<<" world matrix : "<<worlds[i].modelMat[2][3]<<std::endl;
+        //     std::cout<<"world matrix : "<<worlds[i].modelMat[3][0]<<" world matrix : "<<worlds[i].modelMat[3][1]<<" world matrix : "<<worlds[i].modelMat[3][2]<<" world matrix : "<<worlds[i].modelMat[3][3]<<std::endl;
+        // }
+
         // calculer et uploader les matrices + cam pos depuis la Camera actuelle
         for(auto& camera : entityManager->GetComponents<CameraComponent>()){
             GLfloat mv[16], proj[16];
@@ -627,12 +636,12 @@ void onInput(const InputEvent& event) {
             glm::mat4 view = camera.second.getViewMatrix(glm::vec3(entityManager->GetComponent<TransformComponent>(camera.first).worldMatrix[3]));
             glm::mat4 projM = camera.second.getProjectionMatrix();
             glm::mat4 invVP = glm::inverse(projM * view);
-            
+
             glm::vec3 cpos = entityManager->GetComponent<TransformComponent>(camera.first).position;
             glm::vec3 camPosGLM(cpos[0], cpos[1], cpos[2]);
-            
+
             // std::cout<<"camPos : "<<camPosGLM.x<<" camPos : "<<camPosGLM.y<<" camPos : "<<camPosGLM.z<<std::endl;
-            
+
             glUseProgram(computeProg);
             // upload uniforms every frame
             GLint locRes = glGetUniformLocation(computeProg, "uResolution");
@@ -831,6 +840,7 @@ void onInput(const InputEvent& event) {
         bvh root;bvhs.push_back(root);
         int nbBVH=1,nbV=0,nbT=0,nbP=0;
         float minx=FLT_MAX,miny=FLT_MAX,minz=FLT_MAX,maxx=-FLT_MAX,maxy=-FLT_MAX,maxz=-FLT_MAX;
+        int plusNBV=0;
         for(auto& e : entities){
             minx=FLT_MAX,miny=FLT_MAX,minz=FLT_MAX,maxx=-FLT_MAX,maxy=-FLT_MAX,maxz=-FLT_MAX;
             // std::cout<<"debut de la boucle"<<std::endl;
@@ -1031,8 +1041,8 @@ void onInput(const InputEvent& event) {
                         }else{
                             b.padding[0]=-1;
                         }
-                        if(mat.particularite==1)b.padding[1]=1;
-                        if(mat.particularite==2)b.padding[1]=2;
+                        if(mat.particularite==1){b.padding[1]=1;std::cout<<"MIROIR OUAIIIIS"<<std::endl;}
+                        if(mat.particularite==2){b.padding[1]=2;std::cout<<"VITRE OUAIIIIS"<<std::endl;}
                         // b.texture=text;
                         M.nb=sqs.size();
                         sqs.push_back(b);
@@ -1041,7 +1051,8 @@ void onInput(const InputEvent& event) {
                     if(M.type==PrimitiveType::MESH){
                         std::vector<bvh> bvhsYep=creerBVH(M.vertices,M.triangles);
                         M.triangles=newTriangles;
-                        int nbV=0,nbT=0;
+                        newTriangles.clear();
+                        // std::cout<<"transformation : "<<t.position[0]<<"transformation : "<<t.position[1]<<"transformation : "<<t.position[2]<<std::endl;
                         for(unsigned int j=0;j<M.vertices.size();j++){
                             glm::vec3 vertex=M.vertices[j];
                             v ve;
@@ -1061,7 +1072,7 @@ void onInput(const InputEvent& event) {
                             ve.v=M.uvs[j][1];
                             vs.push_back(ve);
                         }
-                        world w;w.modelMat=t.worldMatrix;w.invModelMatrix=inverse(t.worldMatrix);w.normalMat=transpose(inverse(mat3(t.worldMatrix)));
+                        world w;w.modelMat=t.worldMatrix;w.invModelMatrix=inverse(t.worldMatrix);w.normalMat=transpose(w.invModelMatrix);
                         glm::vec3 centre=glm::vec3((maxx+minx)/2.0f,(maxy+miny)/2.0f,(maxz+minz)/2.0f);
                         glm::vec3 centreModel=glm::vec3(w.modelMat*vec4(centre,1.0));
                         w.testSphere[0]=centreModel[0];w.testSphere[1]=centreModel[1];w.testSphere[2]=centreModel[2];w.testSphere[3]=distance(centre,glm::vec3(maxx,maxy,maxz))*0.2;
@@ -1071,24 +1082,24 @@ void onInput(const InputEvent& event) {
                         // std::cout<<"centreModel : "<<centreModel[0]<<" centreModel : "<<centreModel[1]<<" centreModel : "<<centreModel[2]<<std::endl;
                         // std::cout<<"rayon : "<<w.testSphere[3]<<std::endl;
                         // std::cout<<"distance : "<<distance(centre,glm::vec3(maxx,maxy,maxz))<<std::endl;
+                        // std::cout<<"world matrix : "<<w.modelMat[0][0]<<" world matrix : "<<w.modelMat[0][1]<<" world matrix : "<<w.modelMat[0][2]<<" world matrix : "<<w.modelMat[0][3]<<std::endl;
+                        // std::cout<<"world matrix : "<<w.modelMat[1][0]<<" world matrix : "<<w.modelMat[1][1]<<" world matrix : "<<w.modelMat[1][2]<<" world matrix : "<<w.modelMat[1][3]<<std::endl;
+                        // std::cout<<"world matrix : "<<w.modelMat[2][0]<<" world matrix : "<<w.modelMat[2][1]<<" world matrix : "<<w.modelMat[2][2]<<" world matrix : "<<w.modelMat[2][3]<<std::endl;
+                        // std::cout<<"world matrix : "<<w.modelMat[3][0]<<" world matrix : "<<w.modelMat[3][1]<<" world matrix : "<<w.modelMat[3][2]<<" world matrix : "<<w.modelMat[3][3]<<std::endl;
+
                         worlds.push_back(w);
                         for(unsigned int j=0;j<M.triangles.size();j++){
                             std::vector<unsigned short> triangle=M.triangles[j];
                             tri tr;
-                            tr.a=triangle[0];
-                            tr.b=triangle[1];
-                            tr.c=triangle[2];
+                            tr.a=triangle[0]+plusNBV;
+                            tr.b=triangle[1]+plusNBV;
+                            tr.c=triangle[2]+plusNBV;
+                            // std::cout<<"j : "<<j<<" tr : "<<tr.a<<" tr : "<<tr.b<<" tr : "<<tr.c<<std::endl;
                             tr.d=0;
                             ts.push_back(tr);
                         }
+                        plusNBV+=M.vertices.size();
                         m mesh;
-                        mesh.nbv=M.vertices.size();
-                        mesh.nbt=M.triangles.size();
-                        mesh.pv=nbV;
-                        mesh.pt=nbT;
-                        nbV+=mesh.nbv;
-                        nbT+=mesh.nbt;
-                        mesh.nbv=nbBVH;
                         mesh.ar=mat.ambient_material[0];
                         mesh.ag=mat.ambient_material[1];
                         mesh.ab=mat.ambient_material[2];
@@ -1121,14 +1132,27 @@ void onInput(const InputEvent& event) {
                         }else{
                             mesh.padding[0]=-1;
                         }
-                        M.nb=sps.size();
-                        ms.push_back(mesh);
+                        M.nb=ms.size();
+                        mesh.nbv=nbBVH;
+                        mesh.pv=nbV;
+                        mesh.pt=nbT;
                         for(unsigned int j=0;j<bvhsYep.size();j++){
+                            if(bvhsYep[j].count!=0)bvhsYep[j].start+=nbT;
                             if(bvhsYep[j].left!=-1)bvhsYep[j].left+=nbBVH;
                             if(bvhsYep[j].right!=-1)bvhsYep[j].right+=nbBVH;
+                            // std::cout<<"start : "<<bvhsYep[j].start<<" count : "<<bvhsYep[j].count<<" left : "<<bvhsYep[j].left<<" right : "<<bvhsYep[j].right<<std::endl;
+                            // std::cout<<"left : "<<bvhsYep[j].left<<std::endl;
+                            // std::cout<<"right : "<<bvhsYep[j].right<<std::endl;
                             bvhs.push_back(bvhsYep[j]);
                         }
+                        mesh.nbt=M.triangles.size();
+                        nbT+=mesh.nbt;
+                        nbV+=M.vertices.size();
                         nbBVH+=bvhsYep.size();
+                        // std::cout<<"nbv : "<<mesh.pv<<std::endl;
+                        // std::cout<<"nbt : "<<mesh.pt<<std::endl;
+                        // std::cout<<"nbbvh : "<<mesh.nbv<<std::endl;
+                        ms.push_back(mesh);
                     }
                 }
                 //Lights
@@ -1144,13 +1168,26 @@ void onInput(const InputEvent& event) {
                     b.cb=mat.color[2];
                     light.nb=ls.size();
                     ls.push_back(b);
-                    std::cout<<"light x : "<<b.x<<" light y : "<<b.y<<" light z : "<<b.z<<std::endl;
-                    std::cout<<"mat : "<<b.cr<<" mat : "<<b.cg<<" mat : "<<b.cb<<std::endl;
+                    // std::cout<<"light x : "<<b.x<<" light y : "<<b.y<<" light z : "<<b.z<<std::endl;
+                    // std::cout<<"mat : "<<b.cr<<" mat : "<<b.cg<<" mat : "<<b.cb<<std::endl;
                 }
             }
         }
-        std::cout<<"creation donnees finies !"<<std::endl;
+        // std::cout<<"creation donnees finies !"<<std::endl;
         bvhs[0].minx=minx;bvhs[0].miny=miny;bvhs[0].minz=minz;bvhs[0].maxx=maxx;bvhs[0].maxy=maxy;bvhs[0].maxz=maxz;bvhs[0].left=-1;bvhs[0].right=-1;bvhs[0].prof=0;bvhs[0].nb=0;bvhs[0].count=0;bvhs[0].start=0;
+
+        // for(int i=0;i<worlds.size();i++){
+        //     std::cout<<"centreModel : "<<worlds[i].testSphere[0]<<" centreModel : "<<worlds[i].testSphere[1]<<" centreModel : "<<worlds[i].testSphere[2]<<std::endl;
+        //     std::cout<<"rayon : "<<worlds[i].testSphere[3]<<std::endl;
+        //     std::cout<<"world matrix : "<<worlds[i].modelMat[0][0]<<" world matrix : "<<worlds[i].modelMat[0][1]<<" world matrix : "<<worlds[i].modelMat[0][2]<<" world matrix : "<<worlds[i].modelMat[0][3]<<std::endl;
+        //     std::cout<<"world matrix : "<<worlds[i].modelMat[1][0]<<" world matrix : "<<worlds[i].modelMat[1][1]<<" world matrix : "<<worlds[i].modelMat[1][2]<<" world matrix : "<<worlds[i].modelMat[1][3]<<std::endl;
+        //     std::cout<<"world matrix : "<<worlds[i].modelMat[2][0]<<" world matrix : "<<worlds[i].modelMat[2][1]<<" world matrix : "<<worlds[i].modelMat[2][2]<<" world matrix : "<<worlds[i].modelMat[2][3]<<std::endl;
+        //     std::cout<<"world matrix : "<<worlds[i].modelMat[3][0]<<" world matrix : "<<worlds[i].modelMat[3][1]<<" world matrix : "<<worlds[i].modelMat[3][2]<<" world matrix : "<<worlds[i].modelMat[3][3]<<std::endl;
+        // }
+        // for(int i=0;i<ms.size();i++){
+        //     std::cout<<"mesh : "<<i<<"mesh.pv : "<<ms[i].pv<<" mesh.nbv : "<<ms[i].nbv<<" mesh.pt : "<<ms[i].pt<<" mesh.nbt : "<<ms[i].nbt<<std::endl;
+        // }
+        // std::cout<<"2048 : "<<bvhs[2048].minx<<" 2048 : "<<bvhs[2048].miny<<" 2048 : "<<bvhs[2048].minz<<std::endl;
 
         
         // std::cout<<"min : "<<minx<<" min : "<<miny<<" min : "<<minz<<std::endl;
@@ -1233,6 +1270,7 @@ void onInput(const InputEvent& event) {
         if(locM>=0)glUniform1i(locM,(GLint)ms.size());
         GLint locP=glGetUniformLocation(computeProg,"nbParticule");
         if(locP>=0)glUniform1i(locP,(GLint)particules.size());
+        std::cout<<"nb vertices : "<<vs.size()<<" nb triangles : "<<ts.size()<<" nb bvh : "<<bvhs.size()<<" nb worlds : "<<worlds.size()<<std::endl;
         std::cout<<"nb sphere : "<<sps.size()<<" nb squares : "<<sqs.size()<<" nb lights : "<<ls.size()<<" nb meshes : "<<ms.size()<<" nb particules : "<<particules.size()<<std::endl;
         glUseProgram(0);
 

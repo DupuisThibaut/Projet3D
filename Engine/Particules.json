@@ -1,0 +1,87 @@
+{
+  "entities": [
+    {
+      "id": 0,
+      "material": {
+        "path": "Jeu//texture/grass.png",
+        "type": "texture"
+      },
+      "mesh": {
+        "height": 10.0,
+        "mesh_type": "PLANE",
+        "normal": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "path": "",
+        "subdivisions": 10.0,
+        "type": "primitive",
+        "width": 10.0
+      },
+      "transform": {
+        "children": [],
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    {
+      "camera": {
+        "far_plane": 100.0,
+        "fov": 45.0,
+        "idCam": 1954906192,
+        "near_plane": 0.10000000149011612,
+        "target": [
+          0.0,
+          0.0,
+          -1.0
+        ],
+        "up": [
+          0.0,
+          1.0,
+          0.0
+        ]
+      },
+      "controller": {
+        "sensitivity": 0.10000000149011612,
+        "speed": 5.0,
+        "zoom_speed": 0.5
+      },
+      "id": 1,
+      "script": {
+        "path": "./Jeu//Scripts/MoveCam.lua"
+      },
+      "transform": {
+        "children": [],
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    }
+  ]
+}
