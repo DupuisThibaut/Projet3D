@@ -57,7 +57,7 @@
         "children": [],
         "position": [
           0.0,
-          -9.5,
+          0.0,
           0.0
         ],
         "rotation": [
@@ -73,34 +73,6 @@
       }
     },
     {
-      "animation": {
-        "clips": [
-          {
-            "end_frame": 57,
-            "name": "jump",
-            "start_frame": 0
-          },
-          {
-            "end_frame": 96,
-            "name": "walk",
-            "start_frame": 65
-          },
-          {
-            "end_frame": 355,
-            "name": "idle",
-            "start_frame": 105
-          }
-        ],
-        "current_animation": 0,
-        "current_clip": 2,
-        "is_playing": true,
-        "loop": true,
-        "speed": 1.0
-      },
-      "collider": {
-        "isTrigger": false,
-        "type": "MESH"
-      },
       "id": 1,
       "material": {
         "path": "Spring Trap/Textures/char_tex_springtrap_basecolor.png",
@@ -119,31 +91,23 @@
         "type": "file",
         "width": 1.0
       },
-      "script": {
-        "path": "Scripts/ChangeColor.lua"
-      },
       "transform": {
         "children": [],
         "position": [
+          -2.5999999046325684,
           0.0,
-          -9.0,
           0.0
         ],
         "rotation": [
-          0.0,
-          45.0,
+          -90.0,
+          90.0,
           0.0
         ],
         "scale": [
-          0.0010000000474974513,
-          0.0010000000474974513,
-          0.0010000000474974513
+          0.009999999776482582,
+          0.009999999776482582,
+          0.009999999776482582
         ]
-      },
-      "rigidbody": {
-        "bounce": 0.0,
-        "friction": 0.999,
-        "mass": 1.0
       }
     },
     {
@@ -153,9 +117,9 @@
         "idCam": 0,
         "near_plane": 0.10000000149011612,
         "target": [
-          -4.371138828673793e-08,
+          -4.371138473402425e-08,
           0.0,
-          -1.0
+          -0.9999999403953552
         ],
         "up": [
           0.0,
@@ -175,9 +139,9 @@
       "transform": {
         "children": [],
         "position": [
-          0.0,
-          -8.0,
-          5.0
+          5.0,
+          3.0,
+          0.0
         ],
         "rotation": [
           0.0,
@@ -221,14 +185,11 @@
         ],
         "type": "color"
       },
-      "script": {
-        "path": "Scripts/SunCycle.lua"
-      },
       "transform": {
         "children": [],
         "position": [
-          0.0,
-          30.299999237060547,
+          5.0,
+          10.299999237060547,
           0.0
         ],
         "rotation": [
@@ -250,8 +211,13 @@
       },
       "id": 4,
       "material": {
-        "path": "texture/grass.png",
-        "type": "texture"
+        "path": "/texture/2k_moon.jpg",
+        "type":"color",
+        "color":[0.9, 0.9, 1.0],
+        "ambient":[0.0, 0.0, 0.0],
+        "diffuse":[1.0, 1.0, 1.0],
+        "specular":[1.0, 1.0, 1.0],
+        "shininess":16.0
       },
       "mesh": {
         "height": 1.0,
@@ -267,8 +233,8 @@
         "width": 1.0
       },
       "rigidbody": {
-        "bounce": 0.699999988079071,
-        "friction": 0.9998999834060669,
+        "bounce": 0.30000001192092896,
+        "friction": 0.30000001192092896,
         "gravity": [
           0.0,
           -9.8100004196167,
@@ -279,9 +245,9 @@
       "transform": {
         "children": [],
         "position": [
-          0.0,
-          -5.0,
-          0.0
+          2.700000047683716,
+          1.100000023841858,
+          2.0
         ],
         "rotation": [
           0.0,
@@ -289,9 +255,9 @@
           0.0
         ],
         "scale": [
-          0.7200000286102295,
-          0.7200000286102295,
-          0.7200000286102295
+          0.5,
+          0.5,
+          0.5
         ]
       }
     },
@@ -301,23 +267,18 @@
         "bouncing": 0.10000000149011612,
         "nombre": 500,
         "offset": [
-          8.0,
+          4.0,
           0.5,
-          8.0
+          4.0
         ],
-        "path": "",
-        "texture": "texture/nicolas_lutz.jpg",
-        "velocity": [
-          0.0,
-          -9.8100004196167,
-          0.0
-        ]
+        "ageMax":1,
+        "refraction":1
       },
       "transform": {
         "children": [],
         "position": [
           0.0,
-          -4.0,
+          4.0,
           0.0
         ],
         "rotation": [
@@ -342,20 +303,17 @@
           0.5,
           0.25
         ],
+        "velocity": [0.0,9.81,0.0],
+        "ageMax":1,
         "path": "texture/grass.png",
-        "texture": "texture/2k_moon.jpg",
-        "velocity": [
-          0.0,
-          5.0,
-          0.0
-        ]
+        "texture": "texture/2k_moon.jpg"
       },
       "transform": {
         "children": [],
         "position": [
-          -5.0,
-          -9.25,
-          0.0
+          0.0,
+          0.2,
+          5.0
         ],
         "rotation": [
           0.0,
@@ -367,6 +325,218 @@
           0.5,
           0.5
         ]
+      }
+    },
+    {
+      "id": 7,
+      "material": {
+        "ambient": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "color": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "diffuse": [
+          1.0,1.0,1.0
+        ],
+        "shininess": 16.118999481201172,
+        "specular": [
+          1.0,1.0,1.0
+        ],
+        "type": "color",
+        "reflection": true
+      },
+      "mesh": {
+        "height": 1.0,
+        "mesh_type": "PLANE",
+        "normal": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "path": "",
+        "subdivisions": 10.0,
+        "type": "primitive",
+        "width": 1.0
+      },
+      "transform": {
+        "children": [],
+        "position": [
+          -5.0,
+          2.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          -90.0
+        ],
+        "scale": [
+          4.0,
+          10.0,
+          10.0
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "material": {
+        "type":"color",
+        "color":[1.0, 1.0, 1.0],
+        "ambient":[0.0, 0.0, 0.0],
+        "diffuse":[1.0,1.0,1.0],
+        "specular":[1.0, 1.0, 1.0],
+        "shininess":16.0,
+        "refraction":1
+      },
+      "mesh": {
+        "height": 1.0,
+        "mesh_type": "PLANE",
+        "normal": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "subdivisions": 10.0,
+        "type": "primitive",
+        "width": 1.0
+      },
+      "transform": {
+        "children": [],
+        "position": [
+          0.0,
+          2.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          -90.0
+        ],
+        "scale": [
+          4.0,
+          1.0,
+          10.0
+        ]
+      }
+    },
+    {
+      "collider": {
+        "isTrigger": false,
+        "type": "SPHERE"
+      },
+      "id": 9,
+      "material": {
+        "type":"color",
+        "color":[0.9, 0.9, 1.0],
+        "ambient":[0.0, 0.0, 0.0],
+        "diffuse":[1.0, 1.0, 1.0],
+        "specular":[1.0, 1.0, 1.0],
+        "shininess":16.0,
+        "reflection":true
+      },
+      "mesh": {
+        "height": 1.0,
+        "mesh_type": "SPHERE",
+        "normal": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "path": "",
+        "subdivisions": 100.0,
+        "type": "primitive",
+        "width": 1.0
+      },
+      "rigidbody": {
+        "bounce": 0.30000001192092896,
+        "friction": 0.30000001192092896,
+        "gravity": [
+          0.0,
+          -9.8100004196167,
+          0.0
+        ],
+        "mass": 1.0
+      },
+      "transform": {
+        "children": [],
+        "position": [
+          2.700000047683716,
+          1.100000023841858,
+          -2.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          0.5,
+          0.5,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "particule": {
+        "bouncing": 0.5,
+        "nombre": 50,
+        "offset": [
+          0.25,
+          0.5,
+          0.25
+        ],
+        "velocity": [0.0,9.81,0.0],
+        "ageMax":1,
+        "path": "texture/grass.png",
+        "texture": "texture/2k_moon.jpg"
+      },
+      "transform": {
+        "children": [],
+        "position": [
+          0.0,
+          0.2,
+          -5.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          0.5,
+          0.5,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": 11,
+      "texture": {
+        "numero":0,
+        "path":"./textures/grass.png",
+        "positionX":0.1,
+        "positionY":0.1,
+        "width":0.1,
+        "height":0.1
+      }
+    },
+    {
+      "id": 12,
+      "texture": {
+        "numero":1,
+        "texte":"Bonjour !",
+        "positionX":0.1,
+        "positionY":0.1,
+        "width":0.1,
+        "height":0.1,
+        "taille":32,
+        "police":"./texture/COMICATE.TTF"
       }
     }
   ]

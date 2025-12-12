@@ -495,7 +495,7 @@ public:
         for(auto& e : entities){
             if(entityManager->HasComponent<MeshComponent>(e.id)){
                 MeshComponent M = entityManager->GetComponent<MeshComponent>(e.id);
-                M.update=true;
+                // M.update=true;
                 // auto& t = entityManager->GetComponent<TransformComponent>(e.id);
                 // t.position[0]+=0.01;
                 if(M.update){

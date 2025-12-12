@@ -84,7 +84,7 @@
         "intensity": 0.7
       },
       "transform": {
-        "position": [0.0, 1.0, 0.95],
+        "position": [0.0, 1.5, 0.0],
         "rotation": [0.0, 0.0, 0.0],
         "scale": [0.1, 0.1, 0.1],
         "parent": -1,
@@ -260,7 +260,7 @@
     {
       "id": 10,
       "transform": {
-        "position": [0.0, 0.5, 0.75],
+        "position": [0.0, 0.5, -0.999],
         "rotation": [90.0, 0.0, 0.0],
         "scale": [0.5, 0.5, 0.5],
         "parent": -1,
@@ -281,30 +281,7 @@
         "diffuse":[0.8, 0.8, 0.8],
         "specular":[1.0, 1.0, 1.0],
         "shininess":16.0,
-        "refraction":1
-      }
-    },
-    {
-      "id": 11,
-      "transform": {
-        "position": [0.0, 0.3, -0.5],
-        "rotation": [0.0, 0.0, 0.0],
-        "scale": [0.2, 0.2, 0.2],
-        "parent": -1,
-        "children": []
-      },
-      "mesh": {
-        "type": "file",
-        "path": "./mesh/suzanne.off"
-      },
-      "material":{
-        "type":"color",
-        "color":[1.0, 0.0, 0.0],
-        "ambient":[0.0, 0.0, 0.0],
-        "diffuse":[0.0, 1.0, 0.0],
-        "specular":[0.0, 1.0, 0.0],
-        "shininess":16.0,
-        "path":"./texture/2k_moon.jpg"
+        "reflection":1
       }
     }
   ]

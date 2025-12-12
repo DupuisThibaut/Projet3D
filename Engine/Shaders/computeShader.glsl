@@ -1,5 +1,5 @@
 #version 430 core
-// #extension GL_ARB_bindless_texture : require
+#extension GL_ARB_bindless_texture : require
 layout(local_size_x = 16, local_size_y = 16) in;
 
 layout(rgba32f, binding = 0) uniform image2D imgOutput;
@@ -592,12 +592,12 @@ vec3 couleurSphere(Ray rayon,float tmin,int hitIndex,vec2 pix){
 	vec3 ro=rayon.origin;
 	vec3 rd=rayon.direction;
 	vec3 finalColor=vec3(1.0,1.0,1.0);
-	// if(spheres[hitIndex].padding[0]==1){
-	// 	sampler2D tex=sampler2D(spheres[hitIndex].text);
-	// 	finalColor=texture(tex,uvFinal).rgb;
-	// }else{
-	// 	finalColor=vec3(1.0,1.0,1.0);
-	// }
+	if(spheres[hitIndex].padding[0]==1){
+		sampler2D tex=sampler2D(spheres[hitIndex].text);
+		finalColor=texture(tex,uvFinal).rgb;
+	}else{
+		finalColor=vec3(1.0,1.0,1.0);
+	}
 	for(int i=0;i<nbLight;i++){
 		l=lights[i].color;
 		vec3 light=lights[i].pos;
@@ -610,9 +610,10 @@ vec3 couleurSphere(Ray rayon,float tmin,int hitIndex,vec2 pix){
 		if(bool(blinn)){
 			vec3 directionLumiere=p-light;
 			Ray rayonLumiere;rayonLumiere.origin=light;rayonLumiere.direction=normalize(directionLumiere);
-			if(testOmbre(rayonLumiere,length(directionLumiere)-0.001)){
-				return vec3(0.0);
-			}
+			// if(testOmbre(rayonLumiere,length(directionLumiere)-0.001)){
+			// 	return vec3(0.0);
+			// }
+			finalColor*=ombre(p,n,pix,light);
 		}
 		v=normalize(v);
 		float cosT=max(dot(n,L),0.0);
@@ -635,12 +636,12 @@ vec3 couleurSquare(Ray rayon,float tmin,int hitIndex,vec2 pix){
 	vec3 ro=rayon.origin;
 	vec3 rd=rayon.direction;
 	vec3 finalColor=vec3(1.0,1.0,1.0);
-	// if(squares[hitIndex].padding[0]==1){
-	// 	sampler2D tex=sampler2D(squares[hitIndex].text);
-	// 	finalColor=texture(tex,uvFinal).rgb;
-	// }else{
-	// 	finalColor=vec3(1.0,1.0,1.0);
-	// }
+	if(squares[hitIndex].padding[0]==1){
+		sampler2D tex=sampler2D(squares[hitIndex].text);
+		finalColor=texture(tex,uvFinal).rgb;
+	}else{
+		finalColor=vec3(1.0,1.0,1.0);
+	}
 	for(int i=0;i<nbLight;i++){
 		l=lights[i].color;
 		vec3 light=lights[i].pos;
@@ -648,14 +649,15 @@ vec3 couleurSquare(Ray rayon,float tmin,int hitIndex,vec2 pix){
 		vec3 L=light-p;
 		float Ldist=length(L);
 		L=normalize(L);
+		vec3 n=squares[hitIndex].m_normal.xyz;
 		if(bool(blinn)){
 			vec3 directionLumiere=p-light;
 			Ray rayonLumiere;rayonLumiere.origin=light;rayonLumiere.direction=normalize(directionLumiere);
-			if(testOmbre(rayonLumiere,length(directionLumiere)-0.001)){
-				return vec3(0.0);
-			}
+			// if(testOmbre(rayonLumiere,length(directionLumiere)-0.001)){
+			// 	return vec3(0.0);
+			// }
+			finalColor*=ombre(p,n,pix,light);
 		}
-		vec3 n=squares[hitIndex].m_normal.xyz;
 		vec3 v=ro-p;
 		v=normalize(v);
 		float cosT=max(dot(n,L),0.0);
@@ -678,13 +680,13 @@ vec3 couleurMesh(Ray rayon,float tmin,int hitIndex,vec2 pix){
 	vec3 ro=rayon.origin;
 	vec3 rd=rayon.direction;
 	vec3 finalColor=vec3(1.0,1.0,1.0);
-	// if(meshes[hitIndex].padding[0]==1){
-	// 	sampler2D tex=sampler2D(meshes[hitIndex].text);
-	// 	finalColor=texture(tex,uvFinal).rgb;
-	// 	// return finalColor;
-	// }else{
-	// 	finalColor=vec3(1.0,1.0,1.0);
-	// }
+	if(meshes[hitIndex].padding[0]==1){
+		sampler2D tex=sampler2D(meshes[hitIndex].text);
+		finalColor=texture(tex,uvFinal).rgb;
+		// return finalColor;
+	}else{
+		finalColor=vec3(1.0,1.0,1.0);
+	}
 	for(int i=0;i<nbLight;i++){
 		l=lights[i].color;
 		vec3 light=lights[i].pos;
@@ -692,14 +694,15 @@ vec3 couleurMesh(Ray rayon,float tmin,int hitIndex,vec2 pix){
 		vec3 L=light-p;
 		float Ldist=length(L);
 		L=normalize(L);
+		vec3 n=normalTriangleFinal;
 		if(bool(blinn)){
 			vec3 directionLumiere=p-light;
 			Ray rayonLumiere;rayonLumiere.origin=light;rayonLumiere.direction=normalize(directionLumiere);
-			if(testOmbre(rayonLumiere,length(directionLumiere)-0.001)){
-				return vec3(0.0);
-			}
+			// if(testOmbre(rayonLumiere,length(directionLumiere)-0.001)){
+			// 	return vec3(0.0);
+			// }
+			finalColor*=ombre(p,n,pix,light);
 		}
-		vec3 n=normalTriangleFinal;
 		vec3 v=ro-p;
 		v=normalize(v);
 		float cosT=max(dot(n,L),0.0);
@@ -720,13 +723,13 @@ vec3 couleurMesh(Ray rayon,float tmin,int hitIndex,vec2 pix){
 
 vec3 couleurParticule(int hitIndex){
 	vec3 finalColor=vec3(1.0,1.0,1.0);
-	// if(particules[hitIndex].padding[0]==1){
-	// 	sampler2D tex=sampler2D(particules[hitIndex].text);
-	// 	finalColor=texture(tex,uvFinal).rgb;
-	// }else{
-	// 	finalColor=vec3(0.0,0.6,1.0);
-	// }
-	finalColor=vec3(0.0,0.6,1.0);
+	if(particules[hitIndex].padding[0]==1){
+		sampler2D tex=sampler2D(particules[hitIndex].text);
+		finalColor=texture(tex,uvFinal).rgb;
+	}else{
+		finalColor=vec3(0.0,0.6,1.0);
+	}
+	// finalColor=vec3(0.0,0.6,1.0);
 	return finalColor;
 }
 
