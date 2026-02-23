@@ -13,6 +13,9 @@
 
 #include <common/stb_truetype.h>
 
+#include <sstream>
+#include <fstream>
+
 
 struct sp{
     float x,y,z,rayon,ra,ga,ba,b,rd,gd,bd,c,rs,gs,bs,s;
@@ -84,47 +87,59 @@ std::vector<bvh> creerBVH(std::vector<glm::vec3> vertices, std::vector<std::vect
     }
     triangleNode.push_back(premier);
     int nb1=0,nb2=0,nb3=0,debut=0;
+    std::cout << "BVH size: " << bvhs.size() << " TriangleNode size: " << triangleNode.size() << std::endl;
+    for(int idx : test){
+        if(idx >= bvhs.size()){
+            std::cout << "ERROR: test index out of bounds: " << idx << std::endl;
+        }
+    }
     while(test.size()>0){
-        bvh* current=&bvhs[test[0]];
-        if(current->prof>=prof || triangleNode[current->nb].size()<=4){
+        // std::cout<<"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"<<std::endl;
+        int currentIndex = test[0];
+        // bvh& current = bvhs[currentIndex];
+        // bvh* bvhs[currentIndex]=&bvhs[test[0]];
+        // std::cout << "bvhs[currentIndex].nb = " << bvhs[currentIndex].nb << " triangleNode.size() = " << triangleNode.size() << std::endl;
+        if(bvhs[currentIndex].prof>=prof || triangleNode[bvhs[currentIndex].nb].size()<=4){
             test.erase(test.begin());
             continue;
         }
         int axe;
-        float x=current->maxx-current->minx;
-        float y=current->maxy-current->miny;
-        float z=current->maxz-current->minz;
+        float x=bvhs[currentIndex].maxx-bvhs[currentIndex].minx;
+        float y=bvhs[currentIndex].maxy-bvhs[currentIndex].miny;
+        float z=bvhs[currentIndex].maxz-bvhs[currentIndex].minz;
         if(x>=y && x>=z)axe=0;else if(y>=x && y>=z)axe=1;else axe=2;
         bvh l,r;
         l.count=0;r.count=0;l.start=0;r.start=0;
-        // l.minx=current->minx;l.miny=current->miny;l.minz=current->minz;l.maxx=current->maxx;l.maxy=current->maxy;l.maxz=current->maxz;
-        // r.minx=current->minx;r.miny=current->miny;r.minz=current->minz;r.maxx=current->maxx;r.maxy=current->maxy;r.maxz=current->maxz;
+        // l.minx=bvhs[currentIndex].minx;l.miny=bvhs[currentIndex].miny;l.minz=bvhs[currentIndex].minz;l.maxx=bvhs[currentIndex].maxx;l.maxy=bvhs[currentIndex].maxy;l.maxz=bvhs[currentIndex].maxz;
+        // r.minx=bvhs[currentIndex].minx;r.miny=bvhs[currentIndex].miny;r.minz=bvhs[currentIndex].minz;r.maxx=bvhs[currentIndex].maxx;r.maxy=bvhs[currentIndex].maxy;r.maxz=bvhs[currentIndex].maxz;
         l.minx=l.miny=l.minz=FLT_MAX;
         l.maxx=l.maxy=l.maxz=-FLT_MAX;
         r.minx=r.miny=r.minz=FLT_MAX;
         r.maxx=r.maxy=r.maxz=-FLT_MAX;
         int nba=0,nbb=0,nbc=0;
         float milieu;
+        // std::cout<<"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"<<std::endl;
         if(axe==0){
             nba++;
-            milieu=(current->minx+current->maxx)/2.0f;
+            milieu=(bvhs[currentIndex].minx+bvhs[currentIndex].maxx)/2.0f;
             l.maxx=milieu;
             r.minx=milieu;
         }else if(axe==1){
             nbb++;
-            milieu=(current->miny+current->maxy)/2.0f;
+            milieu=(bvhs[currentIndex].miny+bvhs[currentIndex].maxy)/2.0f;
             l.maxy=milieu;
             r.miny=milieu;
         }else{
             nbc++;
-            milieu=(current->minz+current->maxz)/2.0f;
+            milieu=(bvhs[currentIndex].minz+bvhs[currentIndex].maxz)/2.0f;
             l.maxz=milieu;
             r.minz=milieu;
         }
         std::vector<int> lTri;std::vector<int> rTri;std::vector<float>milieux;
         std::vector<std::pair<float,int>> centres;
-        for(unsigned int i=0;i<triangleNode[current->nb].size();i++){
-            int ind=triangleNode[current->nb][i];
+        // std::cout<<"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"<<std::endl;
+        for(unsigned int i=0;i<triangleNode[bvhs[currentIndex].nb].size();i++){
+            int ind=triangleNode[bvhs[currentIndex].nb][i];
             std::vector<unsigned short> triangle=triangles[ind];
             glm::vec3 p0=vertices[triangle[0]];
             glm::vec3 p1=vertices[triangle[1]];
@@ -133,12 +148,13 @@ std::vector<bvh> creerBVH(std::vector<glm::vec3> vertices, std::vector<std::vect
             milieux.push_back(centreGravite[axe]);
             centres.emplace_back(centreGravite[axe], ind);
         }
+        // std::cout<<"DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"<<std::endl;
         std::sort(milieux.begin(),milieux.end());
         milieu=milieux[milieux.size()/2];
         std::sort(centres.begin(), centres.end(),[](auto &a, auto &b){ return a.first < b.first; });
         // std::cout<<"milieu : "<<milieu<<std::endl;
-        // for(unsigned int i=0;i<triangleNode[current->nb].size();i++){
-        //     int ind=triangleNode[current->nb][i];
+        // for(unsigned int i=0;i<triangleNode[bvhs[currentIndex].nb].size();i++){
+        //     int ind=triangleNode[bvhs[currentIndex].nb][i];
         //     std::cout<<"ind : "<<ind<<std::endl;
         //     if(milieux[i]<milieu){
         //         lTri.push_back(ind);
@@ -146,12 +162,14 @@ std::vector<bvh> creerBVH(std::vector<glm::vec3> vertices, std::vector<std::vect
         //         rTri.push_back(ind);
         //     }
         // }
-        for(int i=0;i<centres.size();i++){
+        // std::cout<<"EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"<<std::endl;
+        for(size_t i=0;i<centres.size();i++){
             if(centres[i].first < milieu)
                 lTri.push_back(centres[i].second);
             else
                 rTri.push_back(centres[i].second);
         }
+        // std::cout<<"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"<<std::endl;
         if(lTri.size()>0){
             minx=FLT_MAX;miny=FLT_MAX;minz=FLT_MAX;maxx=-FLT_MAX;maxy=-FLT_MAX;maxz=-FLT_MAX;
             for(unsigned int i=0;i<lTri.size();i++){
@@ -168,6 +186,7 @@ std::vector<bvh> creerBVH(std::vector<glm::vec3> vertices, std::vector<std::vect
             }
             l.minx=minx;l.miny=miny;l.minz=minz;l.maxx=maxx;l.maxy=maxy;l.maxz=maxz;
         }
+        // std::cout<<"GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"<<std::endl;
         if(rTri.size()>0){
             minx=FLT_MAX;miny=FLT_MAX;minz=FLT_MAX;maxx=-FLT_MAX;maxy=-FLT_MAX;maxz=-FLT_MAX;
             for(unsigned int i=0;i<rTri.size();i++){
@@ -184,39 +203,46 @@ std::vector<bvh> creerBVH(std::vector<glm::vec3> vertices, std::vector<std::vect
             }
             r.minx=minx;r.miny=miny;r.minz=minz;r.maxx=maxx;r.maxy=maxy;r.maxz=maxz;
         }
+        // std::cout<<"HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH"<<std::endl;
         if(lTri.size()>0 && rTri.size()>0){
+            // std::cout<<"aaaaaaaaaaaaaa"<<std::endl;
             nb1++;
-            current->left=bvhs.size();
+            bvhs[currentIndex].left=bvhs.size();
             l.nb=triangleNode.size();
-            l.prof=current->prof+1;
+            l.prof=bvhs[currentIndex].prof+1;
             l.left=-1;
             l.right=-1;
             triangleNode.push_back(lTri);
             bvhs.push_back(l);
             test.push_back(bvhs.size()-1);
-            current->right=bvhs.size();
+            // std::cout<<"size bvhs : "<<bvhs.size()<<std::endl;
+            // std::cout<<"bvhs[currentIndex] right : "<<bvhs[currentIndex].right<<std::endl;
+            bvhs[currentIndex].right=bvhs.size();
+            // std::cout<<"probleme ici"<<std::endl;
             r.nb=triangleNode.size();
-            r.prof=current->prof+1;
+            r.prof=bvhs[currentIndex].prof+1;
             r.left=-1;
             r.right=-1;
             triangleNode.push_back(rTri);
             bvhs.push_back(r);
             test.push_back(bvhs.size()-1);
         }else if(lTri.size()>0){
+            // std::cout<<"bbbbbbbbbbbbbb"<<std::endl;
             nb2++;
-            current->left=bvhs.size();
+            bvhs[currentIndex].left=bvhs.size();
             l.nb=triangleNode.size();
-            l.prof=current->prof+1;
+            l.prof=bvhs[currentIndex].prof+1;
             l.left=-1;
             l.right=-1;
             triangleNode.push_back(lTri);
             bvhs.push_back(l);
             test.push_back(bvhs.size()-1);
         }else if(rTri.size()>0){
+            // std::cout<<"ccccccccccccccccccccccc"<<std::endl;
             nb3++;
-            current->right=bvhs.size();
+            bvhs[currentIndex].right=bvhs.size();
             r.nb=triangleNode.size();
-            r.prof=current->prof+1;
+            r.prof=bvhs[currentIndex].prof+1;
             r.left=-1;
             r.right=-1;
             triangleNode.push_back(rTri);
@@ -224,6 +250,8 @@ std::vector<bvh> creerBVH(std::vector<glm::vec3> vertices, std::vector<std::vect
             test.push_back(bvhs.size()-1);
         }
         test.erase(test.begin());
+        // std::cout<<"IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"<<std::endl;
+        // std::cout<<"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"<<std::endl;
     }
     for(unsigned int i=0;i<bvhs.size();i++){
         bvh* bv=&bvhs[i];
@@ -1050,6 +1078,7 @@ public:
                     //Meshes
                     if(M.type==PrimitiveType::MESH){
                         std::vector<bvh> bvhsYep=creerBVH(M.vertices,M.triangles);
+                        std::cout<<"je crée un mesh"<<std::endl;
                         M.triangles=newTriangles;
                         newTriangles.clear();
                         // std::cout<<"transformation : "<<t.position[0]<<"transformation : "<<t.position[1]<<"transformation : "<<t.position[2]<<std::endl;
@@ -1153,6 +1182,7 @@ public:
                         // std::cout<<"nbt : "<<mesh.pt<<std::endl;
                         // std::cout<<"nbbvh : "<<mesh.nbv<<std::endl;
                         ms.push_back(mesh);
+                        // std::cout<<"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"<<std::endl;
                     }
                 }
                 //Lights

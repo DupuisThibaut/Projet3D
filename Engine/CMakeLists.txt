@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.27)
+cmake_policy(VERSION 3.27)
+cmake_policy(SET CMP0175 NEW)
 project(Engine)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -17,7 +19,7 @@ endif()
 if(CMAKE_BUILD_TYPE MATCHES Release)
     message(STATUS "Release mode: optimizations enabled")
     if(NOT MSVC)
-        add_compile_options(
+        target_compile_options(Engine PRIVATE
             -O3
             -ffast-math
             -march=native
@@ -83,9 +85,9 @@ target_include_directories(imgui PUBLIC
     ${IMGUI_DIR}/backends
 )
 
-# ✅ Force l'utilisation de GLFW 3.1.2 locale
+# ✅ Force l'utilisation de GLFW 3.4 locale
 target_include_directories(imgui PRIVATE
-    ${CMAKE_SOURCE_DIR}/external/glfw-3.1.2/include
+    ${CMAKE_SOURCE_DIR}/external/glfw-3.4/include
 )
 
 target_link_libraries(imgui PUBLIC
@@ -156,7 +158,7 @@ message(STATUS "Assimp will be downloaded and built automatically")
 add_subdirectory(external)
 
 include_directories(
-    external/glfw-3.1.2/include/
+    external/glfw-3.4/include/
     external/glm-0.9.7.1/
     external/glew-1.13.0/include/
     ${lua_SOURCE_DIR}
@@ -219,11 +221,17 @@ add_library(lua_static STATIC
 )
 
 # Ajouter les flags de compilation nécessaires pour Lua
-target_compile_definitions(lua_static PRIVATE LUA_USE_LINUX)
+if(WIN32)
+    target_compile_definitions(lua_static PRIVATE LUA_USE_WINDOWS)
+else()
+    target_compile_definitions(lua_static PRIVATE LUA_USE_LINUX)
+endif()
 target_include_directories(lua_static PUBLIC ${lua_SOURCE_DIR})
 
 # Lier avec les bibliothèques système nécessaires pour Lua (libm et libdl sur Linux)
-target_link_libraries(lua_static PUBLIC m dl)
+if(UNIX AND NOT APPLE)
+    target_link_libraries(lua_static PUBLIC m dl)
+endif()
 
 # === Cible principale ===
 add_executable(Engine

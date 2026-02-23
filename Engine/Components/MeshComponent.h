@@ -177,8 +177,8 @@ struct MeshComponent {
             if (r > 0.0f) {
                 float theta = atan2(vertex.z, vertex.x);
                 float phi = acos(glm::clamp(vertex.y / r, -1.0f, 1.0f));
-                float u = theta / (2.0f * M_PI);
-                float v = phi / M_PI;
+                float u = theta / (2.0f * PI);
+                float v = phi / PI;
                 if (u < 0.0f) u += 1.0f;
                 uvs.push_back(glm::vec2(u, v));
             } else {
@@ -491,6 +491,7 @@ struct MeshComponent {
                     break;
                     
                 case PrimitiveType::MESH:
+                {
                     ImGui::Text("Mesh File (OFF/FBX):");
                     ImGui::BeginChild("MeshDropZone", ImVec2(0, 40), true, ImGuiWindowFlags_NoScrollbar);
                     ImGui::TextWrapped("%s", meshFilePath.empty() ? "Drag & drop a mesh file (.off/.fbx) here" : meshFilePath.c_str());
@@ -535,6 +536,7 @@ struct MeshComponent {
                         }
                     }
                     break;
+                }
                 default:
                     ImGui::Text("Unknown Primitive Type");
             }

@@ -26,7 +26,7 @@ public:
         // --- Cylindre ---
         int cylStart = positions.size();
         for (int i = 0; i <= segments; i++) {
-            float theta = (float)i / segments * 2.0f * M_PI;
+            float theta = (float)i / segments * 2.0f * PI;
             float x = r * cos(theta);
             float z = r * sin(theta);
             // bas
@@ -53,9 +53,9 @@ public:
         // --- Hémisphère bas ---
         int hemiBottomStart = positions.size();
         for (int phiIt = 0; phiIt <= rings; phiIt++) {
-            float phi = (float)phiIt / rings * (M_PI / 2.0f) - M_PI / 2.0f; // -π/2 -> 0
+            float phi = (float)phiIt / rings * (PI / 2.0f) - PI / 2.0f; // -π/2 -> 0
             for (int thetaIt = 0; thetaIt <= segments; thetaIt++) {
-                float theta = (float)thetaIt / segments * 2.0f * M_PI;
+                float theta = (float)thetaIt / segments * 2.0f * PI;
                 glm::vec3 xyz;
                 xyz.x = r * cos(phi) * cos(theta);
                 xyz.y = r * sin(phi); // vertical
@@ -82,9 +82,9 @@ public:
         // --- Hémisphère haut ---
         int hemiTopStart = positions.size();
         for (int phiIt = 0; phiIt <= rings; phiIt++) {
-            float phi = (float)phiIt / rings * (M_PI / 2.0f); // 0 -> π/2
+            float phi = (float)phiIt / rings * (PI / 2.0f); // 0 -> π/2
             for (int thetaIt = 0; thetaIt <= segments; thetaIt++) {
-                float theta = (float)thetaIt / segments * 2.0f * M_PI;
+                float theta = (float)thetaIt / segments * 2.0f * PI;
                 glm::vec3 xyz;
                 xyz.x = r * cos(phi) * cos(theta);
                 xyz.y = r * sin(phi) + h; // décalé en haut

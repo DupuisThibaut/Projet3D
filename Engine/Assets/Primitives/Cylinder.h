@@ -10,11 +10,11 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/norm.hpp>
 #include <algorithm>
-#if defined(__APPLE__) || defined(MACOSX)
-#include <GLUT/glut.h>
-#else
-#include <GL/glut.h>
-#endif
+// #if defined(__APPLE__) || defined(MACOSX)
+// #include <GLUT/glut.h>
+// #else
+// #include <GL/glut.h>
+// #endif
 
 
 
@@ -32,7 +32,7 @@ public:
         uvs.clear();
         indices.clear();
         for(unsigned int i = 0; i<= segments; i++){
-            float theta = (float)i / (float)segments * 2.0f * M_PI;
+            float theta = (float)i / (float)segments * 2.0f * PI;
             float x = r * cos(theta);
             float z = r * sin(theta);
             // Bottom circle

@@ -4,6 +4,7 @@
 
 #include <cmath>
 #include <cfloat>
+#include <algorithm>
 #include <glm/glm.hpp>
 
 typedef glm::vec2 vec2;
@@ -13,8 +14,16 @@ typedef glm::vec3 vec3;
     (fabsf((x)-(y))<=FLT_EPSILON) * \
     fmax(1.0f, fmax(fabsf(x), fabsf(y))) \
 
-#define ABSOLUTE(x,y) (fabsf((x)-(y))<=FLT_EPSILON)
-#define RELATIVE(x,y) (fabsf((x)-(y))<=FLT_EPSILON * fmax(fabsf(x), fabsf(y)))
+// #define ABSOLUTE(x,y) (fabsf((x)-(y))<=FLT_EPSILON)
+// #define RELATIVE(x,y) (fabsf((x)-(y))<=FLT_EPSILON * fmax(fabsf(x), fabsf(y)))
+
+inline bool absolute_equal(float x, float y) {
+    return std::fabs(x - y) <= FLT_EPSILON;
+}
+
+inline bool relative_equal(float x, float y) {
+    return std::fabs(x - y) <= FLT_EPSILON * std::fmax(std::fabs(x), std::fabs(y));
+}
 
 
 // Magnitude équivalente à length

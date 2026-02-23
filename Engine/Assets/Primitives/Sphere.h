@@ -10,11 +10,11 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/norm.hpp>
 #include <algorithm>
-#if defined(__APPLE__) || defined(MACOSX)
-#include <GLUT/glut.h>
-#else
-#include <GL/glut.h>
-#endif
+// #if defined(__APPLE__) || defined(MACOSX)
+// #include <GLUT/glut.h>
+// #else
+// #include <GL/glut.h>
+// #endif
 
 // struct RaySphereIntersection{
 //     bool intersectionExists;
@@ -62,11 +62,11 @@ public:
         indices.reserve( 6 * (nTheta - 1) * (nPhi - 1) );
          for( unsigned int thetaIt = 0 ; thetaIt < nTheta ; ++thetaIt ) {
              float u = (float)(thetaIt) / (float)(nTheta-1);
-             float theta = u * 2 * M_PI;
+             float theta = u * 2 * PI;
              for( unsigned int phiIt = 0 ; phiIt < nPhi ; ++phiIt ) {
                  unsigned int vertexIndex = thetaIt + phiIt * nTheta;
                  float v = (float)(phiIt) / (float)(nPhi-1);
-                 float phi = - M_PI/2.0 + v * M_PI;
+                 float phi = - PI/2.0 + v * PI;
                  glm::vec3 xyz = SphericalCoordinatesToEuclidean( theta , phi );
                 positions[ vertexIndex ] = m_center + m_radius * xyz;
                 normals[ vertexIndex ] = glm::normalize(xyz);
@@ -134,8 +134,8 @@ public:
     //     intersection.intersectionExists = true;
     //     float theta = atan2(intersection.normal[2], intersection.normal[0]);
     //      float phi = acos(intersection.normal[1]); 
-    //      intersection.u = (theta + M_PI) / (2.0 * M_PI); 
-    //      intersection.v = phi / M_PI;
+    //      intersection.u = (theta + PI) / (2.0 * PI); 
+    //      intersection.v = phi / PI;
     //     return intersection;
     // }
 

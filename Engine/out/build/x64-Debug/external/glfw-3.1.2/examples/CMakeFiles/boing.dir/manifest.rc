@@ -1,0 +1,2 @@
+#pragma code_page(65001)
+1 /* CREATEPROCESS_MANIFEST_RESOURCE_ID */ 24 /* RT_MANIFEST */ "C:/Users/Virtualis/Thibaut/testgit/Projet3D/Engine/out/build/x64-Debug/external/glfw-3.1.2/examples/CMakeFiles/boing.dir/embed.manifest"

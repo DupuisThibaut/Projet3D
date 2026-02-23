@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": false,
-      "cwd": "/home/e20210002499/Documents/Bastian/M2/HAI928I/Engine",
-      "program": "/home/e20210002499/Documents/Bastian/M2/HAI928I/Engine/build/Debug/outDebug",
+      "cwd": "C:/Users/Virtualis/Thibaut/testgit/Projet3D/Engine",
+      "program": "C:/Users/Virtualis/Thibaut/testgit/Projet3D/Engine/execute.bat",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

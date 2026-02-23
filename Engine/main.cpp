@@ -10,7 +10,11 @@
 #include <stdlib.h>
 #include <vector>
 #include <iostream>
-#include <unistd.h>
+#ifdef _WIN32
+    #include <windows.h>
+#else
+    #include <unistd.h>
+#endif
 
 extern "C" {
 #include "lua.h"
@@ -599,6 +603,7 @@ int main( int argc, char* argv[] )
         // Swap buffers
         glfwSwapBuffers(window);
         glfwPollEvents();
+        
 
     } // Check if the ESC key was pressed or the window was closed
     while( glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS &&

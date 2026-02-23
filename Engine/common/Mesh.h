@@ -6,11 +6,16 @@
 #include <string>
 #include "Ray.h"
 
-#if defined(__APPLE__) 
-#include <GLUT/glut.h>
-#else
-#include <GL/glut.h>
+// #if defined(__APPLE__) 
+// #include <GLUT/glut.h>
+// #else
+// #include <GL/freeglut.h>
+// #endif
+#ifndef PI
+#define PI 3.14159265358979323846f
 #endif
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include <cfloat>
 
 #include <glm/glm.hpp>
@@ -141,7 +146,7 @@ public:
     }
 
     void rotate_x ( float angle ){
-        float x_angle = angle * M_PI / 180.;
+        float x_angle = angle * PI / 180.;
         glm::mat3 x_rotation(1., 0., 0.,
                         0., cos(x_angle), -sin(x_angle),
                         0., sin(x_angle), cos(x_angle));
@@ -149,7 +154,7 @@ public:
     }
 
     void rotate_y ( float angle ){
-        float y_angle = angle * M_PI / 180.;
+        float y_angle = angle * PI / 180.;
         glm::mat3 y_rotation(cos(y_angle), 0., sin(y_angle),
                         0., 1., 0.,
                         -sin(y_angle), 0., cos(y_angle));
@@ -157,7 +162,7 @@ public:
     }
 
     void rotate_z ( float angle ){
-        float z_angle = angle * M_PI / 180.;
+        float z_angle = angle * PI / 180.;
         glm::mat3 z_rotation(cos(z_angle), -sin(z_angle), 0.,
                         sin(z_angle), cos(z_angle), 0.,
                         0., 0., 1.);
@@ -190,8 +195,8 @@ public:
     //             // Interpolation des u v en utilisant les coordonnées barycentriques :         
     //             float theta = atan2(closestIntersection.normal[2], closestIntersection.normal[0]);
     //             float phi = acos(closestIntersection.normal[1]); 
-    //             closestIntersection.u = (theta + M_PI) / (2.0 * M_PI); 
-    //             closestIntersection.v = phi / M_PI;
+    //             closestIntersection.u = (theta + PI) / (2.0 * PI); 
+    //             closestIntersection.v = phi / PI;
     //             // Interpolation de la couleur en utilisant les coordonnées barycentriques : 
     //             closestIntersection.color = tmp.w0 * vertices[triangles_array[e]].normal + tmp.w1 * vertices[triangles_array[e+1]].normal + tmp.w2 *vertices[triangles_array[e+2]].normal;
     //         }

@@ -10,7 +10,12 @@
 #include "../Entities/Entity.h"
 #include <iostream>
 #include <filesystem>
-#include <dirent.h> 
+#ifdef _WIN32
+#include <filesystem>
+namespace fs = std::filesystem;
+#else
+#include <dirent.h>
+#endif
 
 #if defined(__APPLE__) || defined(__MACH__)
     #define PLATFORM_MACOS
@@ -270,84 +275,75 @@ public:
         if (relativePath.empty()) relativePath = "/";
         ImGui::Text("Path: %s", relativePath.c_str());
         ImGui::Separator();
-        DIR* dir = opendir(currentBrowserPath.c_str());
-        if (dir) {
-            std::vector<std::pair<std::string, bool>> items;
-            struct dirent* entry;
-            while ((entry = readdir(dir)) != nullptr) {
-                std::string filename = entry->d_name;
-                if (filename == "." || filename == "..") continue;
-                std::string fullPath = currentBrowserPath + "/" + filename;
-                struct stat fileStat;
-                if (stat(fullPath.c_str(), &fileStat) == 0) {
-                    bool isDirectory = S_ISDIR(fileStat.st_mode);
-                    items.push_back({filename, isDirectory});
-                }
-            }
-            closedir(dir);
-            std::sort(items.begin(), items.end(), [](const auto& a, const auto& b) {
-                if (a.second != b.second) return a.second > b.second;
-                return a.first < b.first;
-            });
-            ImGui::BeginChild("FileList", ImVec2(0, 0), true);
-            for (const auto& [filename, isDirectory] : items) {
-                std::string fullPath = currentBrowserPath + "/" + filename;
-                std::string icon = isDirectory ? "[DIR] " : "[FILE] ";
-                if (isDirectory) {
-                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.8f, 0.2f, 1.0f)); // Jaune
-                } else {
-                    std::string ext = "";
-                    size_t dotPos = filename.find_last_of('.');
-                    if (dotPos != std::string::npos) {
-                        ext = filename.substr(dotPos + 1);
-                    }
-                    if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp" || ext == "tga" ||
-                        ext == "PNG" || ext == "JPG" || ext == "JPEG" || ext == "BMP" || ext == "TGA") {
-                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 1.0f, 0.5f, 1.0f)); // Vert (images)
-                    } else if (ext == "lua" || ext == "LUA") {
-                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.7f, 1.0f, 1.0f)); // Bleu (scripts)
-                    } else if (ext == "wav" || ext == "mp3" || ext == "ogg" || ext == "WAV" || ext == "MP3" || ext == "OGG") {
-                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.5f, 1.0f, 1.0f)); // Magenta (audio)
-                    } else if (ext == "fbx" || ext == "obj" || ext == "off" || ext == "FBX" || ext == "OBJ" || ext == "OFF") {
-                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.8f, 1.0f)); // Gris (3D models)
-                    } else {
-                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f)); // Gris clair (autres)
-                    }
-                }
-                ImGui::Selectable((icon + filename).c_str());
-                ImGui::PopStyleColor();
-                if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
-                    if (isDirectory) {
-                        navigateTo(fullPath);
-                    }
-                }
-                if (!isDirectory && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
-                    ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", 
-                                            fullPath.c_str(), 
-                                            fullPath.size() + 1);
-                    ImGui::Text("Dragging: %s", filename.c_str());
-                    ImGui::EndDragDropSource();
-                }
-                if (ImGui::IsItemHovered()) {
-                    ImGui::BeginTooltip();
-                    ImGui::Text("%s", filename.c_str());
-                    ImGui::Separator();
-                    struct stat fileStat;
-                    if (stat(fullPath.c_str(), &fileStat) == 0) {
-                        if (isDirectory) {
-                            ImGui::Text("Type: Directory");
-                        } else {
-                            ImGui::Text("Type: File");
-                            ImGui::Text("Size: %.2f KB", fileStat.st_size / 1024.0f);
-                        }
-                    }
-                    ImGui::EndTooltip();
-                }
-            }
-            ImGui::EndChild();
-        } else {
-            ImGui::TextColored(ImVec4(1, 0, 0, 1), "Failed to open directory: %s", currentBrowserPath.c_str());
+        try {
+        std::vector<std::pair<std::string, bool>> items;
+        for (const auto& entry : fs::directory_iterator(currentBrowserPath)) {
+            std::string filename = entry.path().filename().string();
+            bool isDirectory = entry.is_directory();
+            items.push_back({filename, isDirectory});
         }
+
+        // Tri dossiers en premier, puis alphabétique
+        std::sort(items.begin(), items.end(), [](const auto& a, const auto& b) {
+            if (a.second != b.second) return a.second > b.second;
+            return a.first < b.first;
+        });
+
+        ImGui::BeginChild("FileList", ImVec2(0, 0), true);
+        for (const auto& [filename, isDirectory] : items) {
+            std::string fullPath = currentBrowserPath + "/" + filename;
+            std::string icon = isDirectory ? "[DIR] " : "[FILE] ";
+            if (isDirectory) {
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.8f, 0.2f, 1.0f));
+            } else {
+                std::string ext = "";
+                size_t dotPos = filename.find_last_of('.');
+                if (dotPos != std::string::npos) ext = filename.substr(dotPos + 1);
+                if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp" || ext == "tga" ||
+                    ext == "PNG" || ext == "JPG" || ext == "JPEG" || ext == "BMP" || ext == "TGA") {
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 1.0f, 0.5f, 1.0f));
+                } else if (ext == "lua" || ext == "LUA") {
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.7f, 1.0f, 1.0f));
+                } else if (ext == "wav" || ext == "mp3" || ext == "ogg" || ext == "WAV" || ext == "MP3" || ext == "OGG") {
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.5f, 1.0f, 1.0f));
+                } else if (ext == "fbx" || ext == "obj" || ext == "off" || ext == "FBX" || ext == "OBJ" || ext == "OFF") {
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
+                } else {
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.7f, 0.7f, 0.7f, 1.0f));
+                }
+            }
+
+            ImGui::Selectable((icon + filename).c_str());
+            ImGui::PopStyleColor();
+
+            if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
+                if (isDirectory) navigateTo(fullPath);
+            }
+
+            if (!isDirectory && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+                ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", fullPath.c_str(), fullPath.size() + 1);
+                ImGui::Text("Dragging: %s", filename.c_str());
+                ImGui::EndDragDropSource();
+            }
+
+            if (ImGui::IsItemHovered()) {
+                ImGui::BeginTooltip();
+                ImGui::Text("%s", filename.c_str());
+                ImGui::Separator();
+                if (!isDirectory) {
+                    auto fileSize = fs::file_size(currentBrowserPath + "/" + filename);
+                    ImGui::Text("Type: File");
+                    ImGui::Text("Size: %.2f KB", fileSize / 1024.0f);
+                } else {
+                    ImGui::Text("Type: Directory");
+                }
+                ImGui::EndTooltip();
+            }
+        }
+        ImGui::EndChild();
+    } catch (fs::filesystem_error& e) {
+        ImGui::TextColored(ImVec4(1, 0, 0, 1), "Failed to open directory: %s", currentBrowserPath.c_str());
+    }
         ImGui::End();
         ImGui::PopStyleColor(2);
     }
