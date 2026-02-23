@@ -87,12 +87,6 @@ std::vector<bvh> creerBVH(std::vector<glm::vec3> vertices, std::vector<std::vect
     }
     triangleNode.push_back(premier);
     int nb1=0,nb2=0,nb3=0,debut=0;
-    std::cout << "BVH size: " << bvhs.size() << " TriangleNode size: " << triangleNode.size() << std::endl;
-    for(int idx : test){
-        if(idx >= bvhs.size()){
-            std::cout << "ERROR: test index out of bounds: " << idx << std::endl;
-        }
-    }
     while(test.size()>0){
         // std::cout<<"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"<<std::endl;
         int currentIndex = test[0];
@@ -253,17 +247,21 @@ std::vector<bvh> creerBVH(std::vector<glm::vec3> vertices, std::vector<std::vect
         // std::cout<<"IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"<<std::endl;
         // std::cout<<"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"<<std::endl;
     }
+    std::cout << "BVH size: " << bvhs.size() << " TriangleNode size: " << triangleNode.size() << std::endl;
+    int nbTriangles=0;
     for(unsigned int i=0;i<bvhs.size();i++){
         bvh* bv=&bvhs[i];
         if(bv->left==-1 && bv->right==-1 && triangleNode[bv->nb].size()>0){
             bv->count=triangleNode[bv->nb].size();
             bv->start=newTriangles.size();
+            nbTriangles+=triangleNode[bv->nb].size();
             // if(triangleNode[bv->nb].size()>10)std::cout<<newTriangles.size()<<std::endl;
             for(unsigned int j=0;j<triangleNode[bv->nb].size();j++){
                 newTriangles.push_back(triangles[triangleNode[bv->nb][j]]);
             }
         }
     }
+    std::cout<<"nombre de triangles dans les bvhs : "<<nbTriangles<<std::endl;
     return bvhs;
 }
 
@@ -1082,6 +1080,7 @@ public:
                         M.triangles=newTriangles;
                         newTriangles.clear();
                         // std::cout<<"transformation : "<<t.position[0]<<"transformation : "<<t.position[1]<<"transformation : "<<t.position[2]<<std::endl;
+                        std::cout<<"On a donc "<<M.vertices.size()<<" sommets !"<<std::endl;
                         for(unsigned int j=0;j<M.vertices.size();j++){
                             glm::vec3 vertex=M.vertices[j];
                             v ve;
@@ -1117,6 +1116,7 @@ public:
                         // std::cout<<"world matrix : "<<w.modelMat[3][0]<<" world matrix : "<<w.modelMat[3][1]<<" world matrix : "<<w.modelMat[3][2]<<" world matrix : "<<w.modelMat[3][3]<<std::endl;
 
                         worlds.push_back(w);
+                        std::cout<<"Ainsi que "<<M.triangles.size()<<" triangles !"<<std::endl;
                         for(unsigned int j=0;j<M.triangles.size();j++){
                             std::vector<unsigned short> triangle=M.triangles[j];
                             tri tr;

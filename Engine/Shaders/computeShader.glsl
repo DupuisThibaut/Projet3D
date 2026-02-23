@@ -249,8 +249,8 @@ float intersectMesh(Ray rayon, int indice){
 					uvTest=vec2(wTriangle.x*vertices[i0].position.w+wTriangle.y*vertices[i1].position.w+wTriangle.z*vertices[i2].position.w,wTriangle.x*vertices[i0].normal.w+wTriangle.y*vertices[i1].normal.w+wTriangle.z*vertices[i2].normal.w);
                 }
             }
-			if(tmin!=1e20)return tmin;
-            continue;
+			// if(tmin!=1e20)return tmin;
+            // continue;
         }
         float tLeft=(left!=-1)? intersectBVH(rayon,bvhs[left].minp.xyz,bvhs[left].maxp.xyz):-1;
         float tRight=(right!=-1)? intersectBVH(rayon,bvhs[right].minp.xyz,bvhs[right].maxp.xyz):-1;

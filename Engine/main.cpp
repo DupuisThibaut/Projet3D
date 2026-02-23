@@ -354,8 +354,8 @@ int main( int argc, char* argv[] )
         mode2 = "-r";
         EditorMode = false;
     }
-    scenePath = gameFolder + "/scene.json";
-    // scenePath = gameFolder + "/cornelBox.json";
+    // scenePath = gameFolder + "/scene.json";
+    scenePath = gameFolder + "/cornelBox.json";
     sceneManager.gameFolder = gameFolder;
 
 
@@ -474,9 +474,12 @@ int main( int argc, char* argv[] )
             for (const auto &kv : entityManager.GetComponents<CameraComponent>()) if (kv.first < camEntityId) camEntityId = kv.first;
             entityManager.GetComponent<CameraComponent>(camEntityId).isActive = true;
         }
+        std::cout<<"i"<<std::endl;
     }
 
     glfwSetWindowPos(window, x + 100, y + 100);
+
+    std::cout<<"Début de la boucle !"<<std::endl;
 
     do{
         lastTime = affiche(window,lastTime);
