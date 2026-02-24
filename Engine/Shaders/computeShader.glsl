@@ -613,7 +613,7 @@ vec3 couleurSphere(Ray rayon,float tmin,int hitIndex,vec2 pix){
 			// if(testOmbre(rayonLumiere,length(directionLumiere)-0.001)){
 			// 	return vec3(0.0);
 			// }
-			finalColor*=ombre(p,n,pix,light);
+			// finalColor*=ombre(p,n,pix,light);
 		}
 		v=normalize(v);
 		float cosT=max(dot(n,L),0.0);
@@ -656,7 +656,7 @@ vec3 couleurSquare(Ray rayon,float tmin,int hitIndex,vec2 pix){
 			// if(testOmbre(rayonLumiere,length(directionLumiere)-0.001)){
 			// 	return vec3(0.0);
 			// }
-			finalColor*=ombre(p,n,pix,light);
+			// finalColor*=ombre(p,n,pix,light);
 		}
 		vec3 v=ro-p;
 		v=normalize(v);
@@ -701,7 +701,7 @@ vec3 couleurMesh(Ray rayon,float tmin,int hitIndex,vec2 pix){
 			// if(testOmbre(rayonLumiere,length(directionLumiere)-0.001)){
 			// 	return vec3(0.0);
 			// }
-			finalColor*=ombre(p,n,pix,light);
+			// finalColor*=ombre(p,n,pix,light);
 		}
 		vec3 v=ro-p;
 		v=normalize(v);

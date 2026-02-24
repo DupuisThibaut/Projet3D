@@ -179,8 +179,11 @@ struct MaterialComponent {
                     if( entityData["material"].contains("reflection")){
                         particularite=1;
                     }
-                    if( entityData["material"].contains("refraction")){
+                    else if( entityData["material"].contains("refraction")){
                         particularite=2;
+                    }
+                    else{
+                        particularite=0;
                     }
                 } else {
                     // Default material
